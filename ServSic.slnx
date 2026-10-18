@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ServsicPV/ServsicPV.csproj">
+    <Platform Project="x86" />
+  </Project>
+  <Project Path="ServSic.Core/ServSic.Core.csproj" />
+</Solution>

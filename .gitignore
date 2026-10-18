@@ -1,0 +1,47 @@
+## .NET / C# / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.log
+crash.log
+
+# Visual Studio cache and settings
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Build results and packages
+[Tt]est[Rr]esults/
+[Bb]uild/
+packages/
+*.nupkg
+*.snupkg
+
+# WinUI 3 / Windows App SDK / MSIX
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+Generated\ Files/
+Generated Files/
+arm/
+arm64/
+x86/
+x64/
+
+# Windows OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

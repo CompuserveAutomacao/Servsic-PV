@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ServsicPV (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ServsicPV (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

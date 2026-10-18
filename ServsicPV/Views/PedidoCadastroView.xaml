@@ -1,0 +1,788 @@
+<UserControl
+    x:Class="ServsicPV.Views.PedidoCadastroView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ic="using:FluentIcons.WinUI"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource BrushIceBackground}">
+        <!-- Layout Principal: 2 Colunas (Esquerda = Operação / Direita = Resumo Financeiro Vertical) -->
+        <Grid Padding="20" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="350"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ========================================== -->
+            <!-- COLUNA ESQUERDA: CLIENTE, PRODUTOS E AÇÕES -->
+            <!-- ========================================== -->
+            <Grid Grid.Column="0" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- 0. Alerta de Status -->
+                    <RowDefinition Height="Auto"/> <!-- 1. Card Compacto de Cliente -->
+                    <RowDefinition Height="*"/>    <!-- 2. Grade de Produtos -->
+                    <RowDefinition Height="Auto"/> <!-- 3. Barra de Ações Rápidas -->
+                </Grid.RowDefinitions>
+
+                <!-- 0. Alerta de Notificação / Status com Botão Fechar -->
+                <Border Grid.Row="0" CornerRadius="6" Padding="14,8" Margin="0,0,0,4"
+                        Visibility="{Binding StatusMensagem, Converter={StaticResource StringToVisibilityConverter}}"
+                        Background="{Binding IsSucesso, Converter={StaticResource StatusColorConverter}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ic:SymbolIcon Grid.Column="0" Symbol="Info" FontSize="16" Foreground="#FFFFFF" Margin="0,0,10,0" VerticalAlignment="Center"/>
+
+                        <TextBlock Grid.Column="1" Text="{Binding StatusMensagem}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+
+                        <Button Grid.Column="2" Command="{Binding FecharMensagemCommand}" Background="Transparent" BorderThickness="0" Padding="6,2" VerticalAlignment="Center" ToolTipService.ToolTip="Fechar mensagem">
+                            <ic:SymbolIcon Symbol="Dismiss" FontSize="14" Foreground="#FFFFFF"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- 1. Card de Identificação do Cliente -->
+                <Border Grid.Row="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,14">
+                    <Grid RowSpacing="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Cabeçalho do Card -->
+                            <RowDefinition Height="Auto"/> <!-- Conteúdo (Busca ou Cliente Selecionado) -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Cabeçalho do Card de Cliente -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="Person" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <TextBlock Text="Cliente" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                        </StackPanel>
+
+                        <!-- Conteúdo: ESTADO A ou ESTADO B -->
+                        <Grid Grid.Row="1">
+                            <!-- ESTADO A: Nenhum cliente selecionado (Campo de Pesquisa + Ações) -->
+                            <Grid Visibility="{Binding HasClienteSelecionado, Converter={StaticResource InverseBoolToVisibilityConverter}}" ColumnSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Input de Busca Rápida -->
+                                <TextBox Grid.Column="0"
+                                         x:Name="TxtFiltroCliente"
+                                         Text="{Binding FiltroCliente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="FiltroCliente_KeyDown"
+                                         PlaceholderText="Digite Código, CPF/CNPJ ou Nome do Cliente e aperte Enter ou F3..."
+                                         Height="38"
+                                         VerticalAlignment="Center"/>
+
+                                <!-- Botão Buscar com Atalho F3 -->
+                                <Button Grid.Column="1" Command="{Binding BuscarClienteRapidoCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0" ToolTipService.ToolTip="Buscar ou Consultar Clientes (F3)">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ic:SymbolIcon Symbol="Search" FontSize="16"/>
+                                        <TextBlock Text="Buscar (F3)" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Botão Cadastrar Rápido -->
+                                <Button Grid.Column="2" Command="{Binding AbrirCadastroRapidoClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="14,0" ToolTipService.ToolTip="Cadastro Rápido de Novo Cliente">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ic:SymbolIcon Symbol="Add" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="Novo Cliente" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <!-- ESTADO B: Cliente Selecionado (Exibição Elegante dos Dados + Botão Trocar) -->
+                            <Grid Visibility="{Binding HasClienteSelecionado, Converter={StaticResource BoolToVisibilityConverter}}" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Ícone do Cliente -->
+                                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="19" Background="{StaticResource BrushServsicBlueSoft}" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="Person" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </Border>
+
+                                <!-- Dados do Cliente -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Pedido.Cliente}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                        <Border Background="#F1F5F9" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                                            <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}">
+                                                <Run Text="Cód: "/><Run Text="{Binding Pedido.LkCliente}"/>
+                                            </TextBlock>
+                                        </Border>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <TextBlock Text="{Binding Pedido.DocFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Text="{Binding Pedido.TelFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Text="{Binding Pedido.CidadeFormatada}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- Botões de Ação para Cliente Selecionado -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Button Command="{Binding AbrirConsultaClienteCommand}" Style="{StaticResource BtnSecondary}" Height="34" Padding="10,0" ToolTipService.ToolTip="Trocar Cliente">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <ic:SymbolIcon Symbol="ArrowSync" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <TextBlock Text="Trocar" FontSize="12" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding LimparClienteCommand}" Style="{StaticResource BtnSecondary}" Height="34" Padding="8,0" ToolTipService.ToolTip="Limpar Cliente">
+                                        <ic:SymbolIcon Symbol="Dismiss" FontSize="14" Foreground="{StaticResource BrushDanger}"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 2. Grade de Produtos e Inserção de Itens -->
+                <Border Grid.Row="2" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,14">
+                    <Grid RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho do Card -->
+                            <RowDefinition Height="Auto"/> <!-- 1. Barra Rápida de Produto -->
+                            <RowDefinition Height="*"/>    <!-- 2. ListView de Itens -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Cabeçalho do Card de Produtos -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="Box" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                        </StackPanel>
+
+                        <!-- Barra de Inserção de Produto -->
+                        <Grid Grid.Row="1" ColumnSpacing="10" RowSpacing="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="Código / Barra" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox x:Name="TxtCodigoProduto"
+                                         Text="{Binding CodigoProdutoInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="CodigoProduto_KeyDown"
+                                         PlaceholderText="Bipe ou digite..."
+                                         Height="36"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="Descrição do Produto" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox Text="{Binding ProdutoSelecionado.Descricao, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         PlaceholderText="Produto localizado..."
+                                         Height="36"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2" Spacing="4">
+                                <TextBlock Text="Qtd" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox Text="{Binding QuantidadeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="36"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="3" Spacing="4">
+                                <TextBlock Text="Desc (R$)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox Text="{Binding DescontoItemInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="36"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
+                                <Button Command="{Binding AdicionarItemCommand}" Style="{StaticResource BtnPrimary}" Height="36" Padding="16,0" ToolTipService.ToolTip="Adicionar Item">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ic:SymbolIcon Symbol="Add" FontSize="16"/>
+                                        <TextBlock Text="Inserir" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Lista de Itens do Pedido -->
+                        <ListView Grid.Row="2" ItemsSource="{Binding Pedido.Itens}" SelectionMode="None">
+                            <ListView.HeaderTemplate>
+                                <DataTemplate>
+                                    <Grid Background="#F1F5F9" Padding="12,8" CornerRadius="4" Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="95"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="1" Text="DESCRIÇÃO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="2" Text="UN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="3" Text="QTD" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="4" Text="UNITÁRIO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="5" Text="DESC." FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="6" Text="TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="7" Text="" FontSize="11"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.HeaderTemplate>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="12,10" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="90"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="60"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="95"/>
+                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="40"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding CodInterno}" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Produto}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Unidade}" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Quantidade}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding Desconto, Converter={StaticResource CurrencyConverter}}" FontSize="12" Foreground="{StaticResource BrushDanger}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="6" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                        
+                                        <Button Grid.Column="7" 
+                                                Click="BtnRemoverItem_Click"
+                                                Background="Transparent" BorderThickness="0" Padding="0" Width="30" Height="30"
+                                                ToolTipService.ToolTip="Remover Item">
+                                            <ic:SymbolIcon Symbol="Delete" FontSize="16" Foreground="{StaticResource BrushDanger}"/>
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                    </Grid>
+                </Border>
+
+                <!-- 3. Card de Opções Abaixo de Produtos -->
+                <Border Grid.Row="3" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Botões de Ações -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <Button Command="{Binding NovoCommand}" 
+                                    Style="{StaticResource BtnSecondary}" 
+                                    Height="38" 
+                                    Padding="16,0"
+                                    ToolTipService.ToolTip="Iniciar Novo Pedido ou Orçamento (F2)">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ic:SymbolIcon Symbol="Add" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text="Novo Pedido (F2)" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+
+                            <Button Click="BtnConsultarHistorico_Click" 
+                                    Style="{StaticResource BtnSecondary}" 
+                                    Height="38" 
+                                    Padding="16,0"
+                                    ToolTipService.ToolTip="Consultar Histórico de Vendas e Orçamentos">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ic:SymbolIcon Symbol="History" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text="Consultar Histórico" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Resumo Rápido de Itens -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <Border Background="#F1F5F9" CornerRadius="6" Padding="12,6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ic:SymbolIcon Symbol="ShoppingBag" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding Pedido.QtdItens}" 
+                                                   FontSize="12" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="{StaticResource BrushTextDark}"/>
+                                        <TextBlock Text="item(ns) na lista" 
+                                                   FontSize="12" 
+                                                   Foreground="{StaticResource BrushTextSubtle}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================== -->
+            <!-- COLUNA DIREITA: RESUMO FINANCEIRO VERTICAL OCUPANDO TODA A TELA -->
+            <!-- ============================================================== -->
+            <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="18">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Título & Data -->
+                        <RowDefinition Height="*"/>    <!-- Campos e Totais -->
+                        <RowDefinition Height="Auto"/> <!-- Botão Gravar -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabeçalho do Resumo -->
+                    <Grid Grid.Row="0">
+                        <StackPanel Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ic:SymbolIcon Symbol="Receipt" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Resumo Financeiro" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            </StackPanel>
+                            <TextBlock FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}">
+                                <Run Text="Emissão: "/><Run Text="{Binding Pedido.DataFormatada}"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Detalhamento de Valores e Observações -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                            <Grid>
+                                <TextBlock Text="Itens no Pedido:" Foreground="{StaticResource BrushTextSubtle}" FontSize="13"/>
+                                <TextBlock Text="{Binding Pedido.QtdItens}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
+                            </Grid>
+
+                            <Grid>
+                                <TextBlock Text="Subtotal Bruto:" Foreground="{StaticResource BrushTextSubtle}" FontSize="13"/>
+                                <TextBlock Text="{Binding Pedido.Subtotal, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
+                            </Grid>
+
+                            <Grid>
+                                <TextBlock Text="Desconto Geral (R$):" Foreground="{StaticResource BrushTextSubtle}" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Pedido.Desconto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" HorizontalAlignment="Right" Height="32"/>
+                            </Grid>
+
+                            <Grid>
+                                <TextBlock Text="Acréscimo / Frete (R$):" Foreground="{StaticResource BrushTextSubtle}" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding Pedido.Acrescimo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" HorizontalAlignment="Right" Height="32"/>
+                            </Grid>
+
+                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,4"/>
+
+                            <!-- Total Geral em Destaque -->
+                            <Border Background="{StaticResource BrushServsicDark}" CornerRadius="8" Padding="16">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="VALOR TOTAL" FontSize="11" FontWeight="Bold" Foreground="#94A3B8" CharacterSpacing="80"/>
+                                    <TextBlock Text="{Binding Pedido.Total, Converter={StaticResource CurrencyConverter}}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlueLight}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Observações do Pedido -->
+                            <StackPanel Spacing="6" Margin="0,4,0,0">
+                                <TextBlock Text="Observações" Style="{StaticResource TextLabel}"/>
+                                <TextBox Text="{Binding Pedido.Obs, Mode=TwoWay}" Height="90" TextWrapping="Wrap" AcceptsReturn="True" PlaceholderText="Instruções de entrega, pagamento, etc..."/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Botão Gravar Pedido Direto ao Banco -->
+                    <Button Grid.Row="2" Command="{Binding SalvarCommand}" Style="{StaticResource BtnPrimary}" Height="48" FontSize="15" FontWeight="Bold">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ic:SymbolIcon Symbol="Save" FontSize="18"/>
+                            <TextBlock Text="Gravar Pedido"/>
+                        </StackPanel>
+                    </Button>
+
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
+        <!-- MODAL 1: CONSULTA DE CLIENTES OVERLAY                          -->
+        <!-- ============================================================== -->
+        <Grid x:Name="ModalConsultaOverlay"
+              Background="#750B192C" 
+              KeyDown="ModalConsulta_KeyDown"
+              Visibility="{Binding IsConsultaClienteOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+              Padding="32">
+            
+            <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12"
+                    MaxWidth="840" MaxHeight="620" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="24">
+                <Grid RowSpacing="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Cabeçalho -->
+                        <RowDefinition Height="Auto"/> <!-- Barra de Busca -->
+                        <RowDefinition Height="*"/>    <!-- Grade de Clientes -->
+                        <RowDefinition Height="Auto"/> <!-- Rodapé com Botões -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabeçalho do Modal -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <ic:SymbolIcon Symbol="People" FontSize="22" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <TextBlock Text="Consulta de Clientes" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding FecharConsultaClienteCommand}" Background="Transparent" BorderThickness="0" Padding="6">
+                            <ic:SymbolIcon Symbol="Dismiss" FontSize="16" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- Barra de Pesquisa de Clientes -->
+                    <Grid Grid.Row="1" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Column="0" 
+                                 x:Name="TxtFiltroConsulta"
+                                 Text="{Binding FiltroConsultaCliente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 KeyDown="FiltroConsulta_KeyDown"
+                                 PlaceholderText="Buscar por Nome, Razão Social, CPF/CNPJ ou Código e aperte Enter..."
+                                 Height="38"/>
+
+                        <Button Grid.Column="1" Command="{Binding PesquisarConsultaClienteCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Search" FontSize="16"/>
+                                <TextBlock Text="Pesquisar" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Grid.Column="2" Command="{Binding AbrirCadastroRapidoClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="14,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Add" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Novo Cliente" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Grade de Resultados -->
+                    <Grid Grid.Row="2">
+                        <ProgressBar IsIndeterminate="True" 
+                                     Visibility="{Binding IsBuscandoClientesConsulta, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     VerticalAlignment="Top"/>
+
+                        <ListView x:Name="ListaClientesConsulta"
+                                  ItemsSource="{Binding ClientesConsulta}" 
+                                  SelectedItem="{Binding ClienteConsultaSelecionado, Mode=TwoWay}"
+                                  KeyDown="ListaClientesConsulta_KeyDown"
+                                  DoubleTapped="ListaClientesConsulta_DoubleTapped"
+                                  BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6"
+                                  SelectionMode="Single">
+                            <ListView.HeaderTemplate>
+                                <DataTemplate>
+                                    <Grid Background="#F1F5F9" Padding="12,8" CornerRadius="4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="110"/>
+                                            <ColumnDefinition Width="120"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="1" Text="NOME / RAZÃO SOCIAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="2" Text="CPF / CNPJ" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="3" Text="TELEFONE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="4" Text="CIDADE/UF" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.HeaderTemplate>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Padding="12,9" BorderBrush="#F1F5F9" BorderThickness="0,0,0,1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="110"/>
+                                            <ColumnDefinition Width="120"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Controle}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Nome}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding DocumentoFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding Telefone}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding CidadeUF}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+
+                    <!-- Rodapé do Modal -->
+                    <Grid Grid.Row="3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="* Dê duplo clique no cliente ou clique em 'Selecionar' para confirmar." FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                            <Button Command="{Binding FecharConsultaClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="18,0">
+                                <TextBlock Text="Cancelar" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Command="{Binding ConfirmarSelecaoClienteCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="20,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Checkmark" FontSize="16"/>
+                                    <TextBlock Text="Selecionar Cliente" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
+        <!-- MODAL 2: CADASTRO RÁPIDO DE CLIENTE COM OPÇÃO DE PESSOA & CNPJ  -->
+        <!-- ============================================================== -->
+        <Grid x:Name="ModalCadastroRapidoOverlay"
+              Background="#750B192C" 
+              KeyDown="ModalCadastroRapido_KeyDown"
+              Visibility="{Binding IsCadastroRapidoClienteOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+              Padding="24">
+
+            <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12"
+                    MaxWidth="780" MaxHeight="660" HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Padding="24">
+                <Grid RowSpacing="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Cabeçalho -->
+                        <RowDefinition Height="Auto"/> <!-- Seletor Tipo Pessoa -->
+                        <RowDefinition Height="*"/>    <!-- Formulário -->
+                        <RowDefinition Height="Auto"/> <!-- Mensagem Status -->
+                        <RowDefinition Height="Auto"/> <!-- Botões -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabeçalho -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                            <ic:SymbolIcon Symbol="PersonAdd" FontSize="22" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <TextBlock Text="Cadastro Rápido de Cliente" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Command="{Binding FecharCadastroRapidoClienteCommand}" Background="Transparent" BorderThickness="0" Padding="6">
+                            <ic:SymbolIcon Symbol="Dismiss" FontSize="16" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- Seletor de Tipo de Pessoa (Física x Jurídica) -->
+                    <Border Grid.Row="1" Background="#F1F5F9" CornerRadius="8" Padding="4" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <!-- Pessoa Física -->
+                            <Button Command="{Binding SelecionarPessoaFisicaCommand}"
+                                    BorderThickness="0" CornerRadius="6" Height="34" Padding="16,0"
+                                    Background="{Binding IsPessoaFisica, Converter={StaticResource StatusColorConverter}}"
+                                    Foreground="#FFFFFF">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Person" FontSize="15"/>
+                                    <TextBlock Text="Pessoa Física (CPF)" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Pessoa Jurídica -->
+                            <Button Command="{Binding SelecionarPessoaJuridicaCommand}"
+                                    BorderThickness="0" CornerRadius="6" Height="34" Padding="16,0"
+                                    Background="{Binding IsPessoaJuridica, Converter={StaticResource StatusColorConverter}}"
+                                    Foreground="#FFFFFF">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Building" FontSize="15"/>
+                                    <TextBlock Text="Pessoa Jurídica (CNPJ)" FontWeight="SemiBold"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Formulário de Cadastro Rápido -->
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+
+                            <!-- Linha do Documento (CPF / CNPJ + Botão de Consulta Online quando CNPJ) -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="{Binding LabelDocumento}" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteDocumento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             KeyDown="NovoClienteCnpj_KeyDown"
+                                             PlaceholderText="{Binding PlaceholderDocumento}"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <!-- Botão de Consulta de CNPJ na Web (Visível apenas quando Jurídica) -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Bottom"
+                                            Visibility="{Binding IsPessoaJuridica, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <Button Command="{Binding ConsultarCnpjCommand}" Style="{StaticResource BtnPrimary}" Height="36" Padding="14,0" HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <ProgressRing IsActive="{Binding IsConsultandoCnpj}" Width="16" Height="16" Foreground="#FFFFFF"
+                                                          Visibility="{Binding IsConsultandoCnpj, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                            <ic:SymbolIcon Symbol="Globe" FontSize="16"
+                                                          Visibility="{Binding IsConsultandoCnpj, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                                            <TextBlock Text="Buscar Dados CNPJ na Receita" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Linha: Razão Social / Nome e Fantasia -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="Nome / Razão Social *" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteNome, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="Ex: João da Silva / Empresa Ltda"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="Nome Fantasia / Apelido" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteFantasia, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="Ex: Loja Central"
+                                             Height="36"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Linha: Contatos (Telefone, Celular/WhatsApp, Email) -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="Telefone Fixo" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteTelefone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="(00) 0000-0000"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="Celular / WhatsApp" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteCelular, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="(00) 90000-0000"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="E-mail" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="contato@email.com"
+                                             Height="36"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Linha: CEP, Endereço e Número -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="90"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="CEP" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteCEP, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="00000-000"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="Endereço (Rua, Av.)" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteEndereco, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="Rua Principal..."
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="Número" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteNumero, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="123"
+                                             Height="36"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Linha: Bairro, Cidade e UF -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.2*"/>
+                                    <ColumnDefinition Width="1.5*"/>
+                                    <ColumnDefinition Width="60"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="Bairro" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteBairro, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="Centro"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="Cidade" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteCidade, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="Cidade"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Text="UF" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteUF, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="SP"
+                                             MaxLength="2"
+                                             Height="36"/>
+                                </StackPanel>
+                            </Grid>
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Mensagem de Retorno / Validação do Cadastro Rápido -->
+                    <Border Grid.Row="3" CornerRadius="6" Padding="12,8" Background="#F1F5F9"
+                            Visibility="{Binding CadastroRapidoMensagem, Converter={StaticResource StringToVisibilityConverter}}">
+                        <TextBlock Text="{Binding CadastroRapidoMensagem}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                    </Border>
+
+                    <!-- Botões de Ação do Modal -->
+                    <Grid Grid.Row="4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                            <Button Command="{Binding FecharCadastroRapidoClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="18,0">
+                                <TextBlock Text="Cancelar" FontWeight="SemiBold"/>
+                            </Button>
+                            <Button Command="{Binding SalvarCadastroRapidoClienteCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="20,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Save" FontSize="16"/>
+                                    <TextBlock Text="Salvar e Selecionar" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+    </Grid>
+</UserControl>
