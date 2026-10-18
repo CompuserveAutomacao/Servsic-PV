@@ -25,6 +25,7 @@ public partial class PedidoCadastroView : UserControl
             vm.OnClienteDefinido = () => FocarCodigoProduto();
             vm.OnProdutoDefinido = () => FocarQuantidade();
             vm.OnItemAdicionado = () => FocarCodigoProduto();
+            vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
         }
     }
 
@@ -32,7 +33,7 @@ public partial class PedidoCadastroView : UserControl
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(50);
+            await Task.Delay(60);
             TxtCodigoProduto?.Focus(FocusState.Programmatic);
             TxtCodigoProduto?.SelectAll();
         });
@@ -50,8 +51,9 @@ public partial class PedidoCadastroView : UserControl
 
     public void FocarDescontoItem()
     {
-        DispatcherQueue.TryEnqueue(() =>
+        DispatcherQueue.TryEnqueue(async () =>
         {
+            await Task.Delay(60);
             TxtDescontoItem?.Focus(FocusState.Programmatic);
             TxtDescontoItem?.SelectAll();
         });
@@ -59,8 +61,9 @@ public partial class PedidoCadastroView : UserControl
 
     public void FocarBotaoInserir()
     {
-        DispatcherQueue.TryEnqueue(() =>
+        DispatcherQueue.TryEnqueue(async () =>
         {
+            await Task.Delay(60);
             BtnInserirItem?.Focus(FocusState.Programmatic);
         });
     }
@@ -108,12 +111,14 @@ public partial class PedidoCadastroView : UserControl
             e.Handled = true;
             if (this.DataContext is PedidoViewModel vm)
             {
-                if (string.IsNullOrWhiteSpace(TxtCodigoProduto?.Text))
+                string codigoDigitado = TxtCodigoProduto?.Text?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(codigoDigitado))
                 {
                     vm.AbrirConsultaProduto();
                 }
                 else
                 {
+                    vm.CodigoProdutoInput = codigoDigitado;
                     await vm.BuscarProdutoRapidoAsync();
                     if (vm.ProdutoSelecionado != null)
                     {
@@ -129,6 +134,10 @@ public partial class PedidoCadastroView : UserControl
         if (e.Key == Windows.System.VirtualKey.Enter)
         {
             e.Handled = true;
+            if (this.DataContext is PedidoViewModel vm)
+            {
+                vm.QuantidadeTexto = TxtQuantidade?.Text?.Trim() ?? "1";
+            }
             FocarDescontoItem();
         }
     }
@@ -138,6 +147,10 @@ public partial class PedidoCadastroView : UserControl
         if (e.Key == Windows.System.VirtualKey.Enter)
         {
             e.Handled = true;
+            if (this.DataContext is PedidoViewModel vm)
+            {
+                vm.DescontoItemTexto = TxtDescontoItem?.Text?.Trim() ?? "0";
+            }
             FocarBotaoInserir();
         }
     }
@@ -147,11 +160,22 @@ public partial class PedidoCadastroView : UserControl
         if (e.Key == Windows.System.VirtualKey.Enter)
         {
             e.Handled = true;
-            if (this.DataContext is PedidoViewModel vm && vm.HasProdutoSelecionado)
-            {
-                vm.AdicionarItem();
-                FocarCodigoProduto();
-            }
+            ExecutarInserirItem();
+        }
+    }
+
+    private void BtnInserirItem_Click(object sender, RoutedEventArgs e)
+    {
+        ExecutarInserirItem();
+    }
+
+    private void ExecutarInserirItem()
+    {
+        if (this.DataContext is PedidoViewModel vm && vm.HasProdutoSelecionado)
+        {
+            vm.QuantidadeTexto = TxtQuantidade?.Text?.Trim() ?? "1";
+            vm.DescontoItemTexto = TxtDescontoItem?.Text?.Trim() ?? "0";
+            vm.AdicionarItem();
         }
     }
 

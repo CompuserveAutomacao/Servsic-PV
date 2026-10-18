@@ -29,8 +29,10 @@ public class PedidoViewModel : ViewModelBase
     // Campos de inserção de itens rápidos
     private string _codigoProdutoInput = string.Empty;
     private decimal _quantidadeInput = 1m;
+    private string _quantidadeTexto = "1";
     private decimal _vlUnitarioInput = 0m;
     private decimal _descontoItemInput = 0m;
+    private string _descontoItemTexto = "0";
     private Produto? _produtoSelecionado;
 
     private Usuario? _usuarioLogado;
@@ -155,10 +157,33 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _codigoProdutoInput, value);
     }
 
+    public string QuantidadeTexto
+    {
+        get => _quantidadeTexto;
+        set
+        {
+            if (SetProperty(ref _quantidadeTexto, value))
+            {
+                if (decimal.TryParse(value.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var qtd))
+                {
+                    _quantidadeInput = qtd;
+                    OnPropertyChanged(nameof(QuantidadeInput));
+                }
+            }
+        }
+    }
+
     public decimal QuantidadeInput
     {
         get => _quantidadeInput;
-        set => SetProperty(ref _quantidadeInput, value);
+        set
+        {
+            if (SetProperty(ref _quantidadeInput, value))
+            {
+                _quantidadeTexto = value.ToString("G29", System.Globalization.CultureInfo.InvariantCulture);
+                OnPropertyChanged(nameof(QuantidadeTexto));
+            }
+        }
     }
 
     public decimal VlUnitarioInput
@@ -167,10 +192,33 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _vlUnitarioInput, value);
     }
 
+    public string DescontoItemTexto
+    {
+        get => _descontoItemTexto;
+        set
+        {
+            if (SetProperty(ref _descontoItemTexto, value))
+            {
+                if (decimal.TryParse(value.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var desc))
+                {
+                    _descontoItemInput = desc;
+                    OnPropertyChanged(nameof(DescontoItemInput));
+                }
+            }
+        }
+    }
+
     public decimal DescontoItemInput
     {
         get => _descontoItemInput;
-        set => SetProperty(ref _descontoItemInput, value);
+        set
+        {
+            if (SetProperty(ref _descontoItemInput, value))
+            {
+                _descontoItemTexto = value.ToString("G29", System.Globalization.CultureInfo.InvariantCulture);
+                OnPropertyChanged(nameof(DescontoItemTexto));
+            }
+        }
     }
 
     public Produto? ProdutoSelecionado
@@ -184,7 +232,9 @@ public class PedidoViewModel : ViewModelBase
                 {
                     VlUnitarioInput = value.PrVenda;
                     QuantidadeInput = 1m;
+                    QuantidadeTexto = "1";
                     DescontoItemInput = 0m;
+                    DescontoItemTexto = "0";
                 }
                 OnPropertyChanged(nameof(HasProdutoSelecionado));
             }
@@ -219,6 +269,7 @@ public class PedidoViewModel : ViewModelBase
     public Action? OnClienteDefinido { get; set; }
     public Action? OnProdutoDefinido { get; set; }
     public Action? OnItemAdicionado { get; set; }
+    public Action? OnItemAdicaoFalhou { get; set; }
     public Action<string>? OnSolicitarConsultaCliente { get; set; }
     public Action<string>? OnSolicitarConsultaProduto { get; set; }
 
@@ -938,7 +989,9 @@ public class PedidoViewModel : ViewModelBase
             : (!string.IsNullOrWhiteSpace(produto.Codigo) ? produto.Codigo : produto.Controle.ToString());
         VlUnitarioInput = produto.PrVenda;
         QuantidadeInput = 1m;
+        QuantidadeTexto = "1";
         DescontoItemInput = 0m;
+        DescontoItemTexto = "0";
         ExibirMensagem($"Produto '{produto.Descricao}' selecionado ({produto.PrVenda:C2})", true, 3000);
         OnProdutoDefinido?.Invoke();
     }
@@ -987,18 +1040,62 @@ public class PedidoViewModel : ViewModelBase
 
     public void AdicionarItem()
     {
+        if (!string.IsNullOrWhiteSpace(QuantidadeTexto) &&
+            decimal.TryParse(QuantidadeTexto.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var qtdInformada))
+        {
+            _quantidadeInput = qtdInformada;
+            OnPropertyChanged(nameof(QuantidadeInput));
+        }
+
+        if (string.IsNullOrWhiteSpace(DescontoItemTexto))
+        {
+            _descontoItemInput = 0m;
+            OnPropertyChanged(nameof(DescontoItemInput));
+        }
+        else if (decimal.TryParse(DescontoItemTexto.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var descInformado))
+        {
+            _descontoItemInput = descInformado;
+            OnPropertyChanged(nameof(DescontoItemInput));
+        }
+
         if (ProdutoSelecionado == null)
         {
-            StatusMensagem = "Selecione ou bipe um produto antes de adicionar.";
-            IsSucesso = false;
+            ExibirMensagem("Selecione ou bipe um produto antes de adicionar.", false);
             return;
         }
 
         if (QuantidadeInput <= 0)
         {
-            StatusMensagem = "A quantidade deve ser maior que zero.";
-            IsSucesso = false;
+            ExibirMensagem("A quantidade deve ser maior que zero.", false);
+            OnItemAdicaoFalhou?.Invoke();
             return;
+        }
+
+        if (DescontoItemInput < 0)
+        {
+            ExibirMensagem("O valor do desconto não pode ser negativo.", false);
+            OnItemAdicaoFalhou?.Invoke();
+            return;
+        }
+
+        decimal subtotalItem = Math.Round(QuantidadeInput * ProdutoSelecionado.PrVenda, 2);
+        if (DescontoItemInput > subtotalItem)
+        {
+            ExibirMensagem($"O desconto (R$ {DescontoItemInput:N2}) não pode ser maior que o subtotal do item (R$ {subtotalItem:N2}).", false, 5000);
+            OnItemAdicaoFalhou?.Invoke();
+            return;
+        }
+
+        // Validação da política de desconto máximo (TabEst1.PerDescMax)
+        if (ProdutoSelecionado.PerDescMax > 0 && DescontoItemInput > 0)
+        {
+            decimal maxDescontoPermitido = Math.Round((subtotalItem * ProdutoSelecionado.PerDescMax) / 100m, 2);
+            if (DescontoItemInput > maxDescontoPermitido)
+            {
+                ExibirMensagem($"Desconto não permitido: R$ {DescontoItemInput:N2} ultrapassa o teto máximo de {ProdutoSelecionado.PerDescMax:N2}% (R$ {maxDescontoPermitido:N2}).", false, 6000);
+                OnItemAdicaoFalhou?.Invoke();
+                return;
+            }
         }
 
         var item = new PedidoItem
@@ -1025,8 +1122,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(Pedido));
         OnPropertyChanged(nameof(Itens));
         LimparEntradaItem();
-        StatusMensagem = $"Item '{item.Produto}' adicionado.";
-        IsSucesso = true;
+        ExibirMensagem($"Item '{item.Produto}' adicionado com sucesso.", true, 3000);
         OnItemAdicionado?.Invoke();
     }
 
@@ -1037,8 +1133,7 @@ public class PedidoViewModel : ViewModelBase
             Pedido.Itens.Remove(item);
             Pedido.RecalcularTotais();
             OnPropertyChanged(nameof(Pedido));
-            StatusMensagem = "Item removido do pedido.";
-            IsSucesso = true;
+            ExibirMensagem("Item removido do pedido.", true, 2500);
         }
     }
 
@@ -1046,9 +1141,16 @@ public class PedidoViewModel : ViewModelBase
     {
         CodigoProdutoInput = string.Empty;
         ProdutoSelecionado = null;
-        QuantidadeInput = 1m;
-        DescontoItemInput = 0m;
-        VlUnitarioInput = 0m;
+        _quantidadeInput = 1m;
+        _quantidadeTexto = "1";
+        _descontoItemInput = 0m;
+        _descontoItemTexto = "0";
+        _vlUnitarioInput = 0m;
+        OnPropertyChanged(nameof(QuantidadeInput));
+        OnPropertyChanged(nameof(QuantidadeTexto));
+        OnPropertyChanged(nameof(DescontoItemInput));
+        OnPropertyChanged(nameof(DescontoItemTexto));
+        OnPropertyChanged(nameof(VlUnitarioInput));
     }
 
     public async Task SalvarPedidoAsync()
