@@ -613,7 +613,7 @@ public class PedidoViewModel : ViewModelBase
 
     public bool IsOrcamento => Pedido.Status == "O";
     public bool IsVenda => Pedido.Status == "V" || Pedido.Status == "P";
-    public string TituloTela => IsOrcamento ? "Orçamento de Venda" : "Pedido de Venda (Balcão)";
+    public string TituloTela => "Pedido de Venda";
     public string TextoBotaoSalvar => "Totalizar (F6)";
 
     public Microsoft.UI.Xaml.Media.Brush BrushOrcamentoBackground => IsOrcamento
