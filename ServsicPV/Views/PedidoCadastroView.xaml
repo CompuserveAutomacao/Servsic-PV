@@ -97,23 +97,24 @@
                                 </Button>
                             </Grid>
 
-                            <!-- ESTADO B: Cliente Selecionado (Exibição Elegante dos Dados + Botão Trocar) -->
-                            <Grid Visibility="{Binding HasClienteSelecionado, Converter={StaticResource BoolToVisibilityConverter}}" ColumnSpacing="12">
+                            <!-- ESTADO B: Cliente Selecionado (Exibição Elegante dos Dados + Crédito + Botão Trocar) -->
+                            <Grid Visibility="{Binding HasClienteSelecionado, Converter={StaticResource BoolToVisibilityConverter}}" ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
                                 <!-- Ícone do Cliente -->
-                                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="19" Background="{StaticResource BrushServsicBlueSoft}" VerticalAlignment="Center">
-                                    <ic:SymbolIcon Symbol="Person" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="20" Background="{StaticResource BrushServsicBlueSoft}" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="Person" FontSize="20" Foreground="{StaticResource BrushServsicBlue}"/>
                                 </Border>
 
-                                <!-- Dados do Cliente -->
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <!-- Dados Cadastrais do Cliente -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{Binding Pedido.Cliente}" FontSize="14" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                        <TextBlock Text="{Binding Pedido.Cliente}" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                                         <Border Background="#F1F5F9" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
                                             <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}">
                                                 <Run Text="Cód: "/><Run Text="{Binding Pedido.LkCliente}"/>
@@ -127,8 +128,55 @@
                                     </StackPanel>
                                 </StackPanel>
 
+                                <!-- DADOS DE CRÉDITO E STATUS A PRAZO (Como no ERP Legado) -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                                    <!-- Limite de Crédito a Prazo -->
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="1">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                                            <TextBlock Text="LIMITE A PRAZO:" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SelectedCliente.LimiteFormatado}" FontSize="13.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Se tiver dívida aberta, mostra saldo devedor/disponível -->
+                                        <TextBlock FontSize="10.5" HorizontalAlignment="Right"
+                                                   Visibility="{Binding SelectedCliente.HasDividaAberta, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <Run Text="Devedor: "/><Run Text="{Binding SelectedCliente.SaldoDevedorFormatado}" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            <Run Text=" | Disp: "/><Run Text="{Binding SelectedCliente.DisponivelFormatado}" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        </TextBlock>
+
+                                        <!-- Alerta se houver títulos vencidos em atraso -->
+                                        <TextBlock FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource BrushDanger}" HorizontalAlignment="Right"
+                                                   Visibility="{Binding SelectedCliente.HasTitulosVencidos, Converter={StaticResource BoolToVisibilityConverter}}">
+                                            <Run Text="Vencido: "/><Run Text="{Binding SelectedCliente.TotalVencidoFormatado}"/>
+                                            <Run Text=" ("/><Run Text="{Binding SelectedCliente.TitulosVencidos}"/><Run Text=" tit.)"/>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!-- Badge de Situação a Prazo: DESBLOQUEADO / LIBERADO -->
+                                    <Border CornerRadius="6" Padding="10,6" VerticalAlignment="Center"
+                                            Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1"
+                                            Visibility="{Binding SelectedCliente.IsBloqueado, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                                            ToolTipService.ToolTip="{Binding SelectedCliente.StatusCreditoDescricao}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <TextBlock Text="DESBLOQUEADO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Badge de Situação a Prazo: BLOQUEADO -->
+                                    <Border CornerRadius="6" Padding="10,6" VerticalAlignment="Center"
+                                            Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
+                                            Visibility="{Binding SelectedCliente.IsBloqueado, Converter={StaticResource BoolToVisibilityConverter}}"
+                                            ToolTipService.ToolTip="{Binding SelectedCliente.StatusCreditoDescricao}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="LockClosed" FontSize="15" Foreground="{StaticResource BrushDanger}"/>
+                                            <TextBlock Text="BLOQUEADO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushDanger}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
                                 <!-- Botões de Ação para Cliente Selecionado -->
-                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <Button Command="{Binding AbrirConsultaClienteCommand}" Style="{StaticResource BtnSecondary}" Height="34" Padding="10,0" ToolTipService.ToolTip="Trocar Cliente">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <ic:SymbolIcon Symbol="ArrowSync" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
@@ -484,35 +532,51 @@
                                 <DataTemplate>
                                     <Grid Background="#F1F5F9" Padding="12,8" CornerRadius="4">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="65"/>
                                             <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="1.1*"/>
+                                            <ColumnDefinition Width="105"/>
                                             <ColumnDefinition Width="110"/>
-                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="125"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                                         <TextBlock Grid.Column="1" Text="NOME / RAZÃO SOCIAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                                         <TextBlock Grid.Column="2" Text="CPF / CNPJ" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                                         <TextBlock Grid.Column="3" Text="TELEFONE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                                         <TextBlock Grid.Column="4" Text="CIDADE/UF" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        <TextBlock Grid.Column="5" Text="CRÉDITO A PRAZO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" TextAlignment="Right"/>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.HeaderTemplate>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Padding="12,9" BorderBrush="#F1F5F9" BorderThickness="0,0,0,1">
+                                    <Grid Padding="12,8" BorderBrush="#F1F5F9" BorderThickness="0,0,0,1">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="65"/>
                                             <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="1.1*"/>
+                                            <ColumnDefinition Width="105"/>
                                             <ColumnDefinition Width="110"/>
-                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="125"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Grid.Column="0" Text="{Binding Controle}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Nome}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Column="2" Text="{Binding DocumentoFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="3" Text="{Binding Telefone}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="4" Text="{Binding CidadeUF}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Grid.Column="5" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding LimiteFormatado}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right"/>
+                                            <Border CornerRadius="3" Padding="5,1" HorizontalAlignment="Right"
+                                                    Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
+                                                    Visibility="{Binding IsBloqueado, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <TextBlock Text="BLOQUEADO" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource BrushDanger}"/>
+                                            </Border>
+                                            <Border CornerRadius="3" Padding="5,1" HorizontalAlignment="Right"
+                                                    Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1"
+                                                    Visibility="{Binding IsBloqueado, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                                <TextBlock Text="LIBERADO" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            </Border>
+                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>

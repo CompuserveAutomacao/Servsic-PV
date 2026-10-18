@@ -18,7 +18,7 @@ public class ClienteService
 
         if (string.IsNullOrWhiteSpace(termo))
         {
-            whereClause = "WHERE (Inativo IS NULL OR Inativo = 'N' OR Inativo = '0')";
+            whereClause = string.Empty;
         }
         else
         {
@@ -34,37 +34,49 @@ public class ClienteService
                 parameters.Add("likeTerm", $"%{termo}%");
 
                 whereClause = @"
-                    WHERE (Inativo IS NULL OR Inativo = 'N' OR Inativo = '0')
-                      AND (Codigo = @codigo OR Codigo = @codigoPad6 OR Codigo = @codigoPad5 OR Codigo = @codigoPad4 OR Nome LIKE @likeTerm OR Cpf LIKE @likeTerm OR CGC LIKE @likeTerm OR Telefone LIKE @likeTerm)";
+                    WHERE (c.Codigo = @codigo OR c.Codigo = @codigoPad6 OR c.Codigo = @codigoPad5 OR c.Codigo = @codigoPad4 OR c.Nome LIKE @likeTerm OR c.Cpf LIKE @likeTerm OR c.CGC LIKE @likeTerm OR c.Telefone LIKE @likeTerm)";
             }
             else
             {
                 parameters.Add("likeTerm", $"%{termo}%");
                 whereClause = @"
-                    WHERE (Inativo IS NULL OR Inativo = 'N' OR Inativo = '0')
-                      AND (Nome LIKE @likeTerm OR Cpf LIKE @likeTerm OR CGC LIKE @likeTerm OR Telefone LIKE @likeTerm OR Celular LIKE @likeTerm)";
+                    WHERE (c.Nome LIKE @likeTerm OR c.Cpf LIKE @likeTerm OR c.CGC LIKE @likeTerm OR c.Telefone LIKE @likeTerm OR c.Celular LIKE @likeTerm)";
             }
         }
 
         string sql = $@"
             SELECT TOP (@limite)
-                Controle,
-                Codigo,
-                Nome,
-                Cpf,
-                CGC,
-                Endereco,
-                Numero,
-                Bairro,
-                Cidade,
-                Estado,
-                CEP,
-                Telefone,
-                Celular,
-                eMail as Email
-            FROM TABCLI
+                c.Controle,
+                c.Codigo,
+                c.Nome,
+                c.FANTASIA_APELIDO as Fantasia,
+                c.Cpf,
+                c.CGC,
+                c.Endereco,
+                c.Numero,
+                c.Bairro,
+                c.Cidade,
+                c.Estado,
+                c.CEP,
+                c.Telefone,
+                c.Celular,
+                c.eMail as Email,
+                ISNULL(c.LimiteCred, 0) as LimiteCred,
+                ISNULL(c.Inativo, 'N') as Inativo,
+                ISNULL(cr.SaldoDevedor, 0) as SaldoDevedor,
+                ISNULL(cr.TotalVencido, 0) as TotalVencido,
+                ISNULL(cr.TitulosVencidos, 0) as TitulosVencidos
+            FROM TABCLI c
+            OUTER APPLY (
+                SELECT 
+                    SUM(DIVIDA) as SaldoDevedor,
+                    SUM(CASE WHEN Vencimento < CAST(GETDATE() AS DATE) THEN DIVIDA ELSE 0 END) as TotalVencido,
+                    COUNT(CASE WHEN Vencimento < CAST(GETDATE() AS DATE) THEN 1 ELSE NULL END) as TitulosVencidos
+                FROM TabCr1
+                WHERE LkCliente = c.Controle AND DIVIDA > 0
+            ) cr
             {whereClause}
-            ORDER BY Nome";
+            ORDER BY c.Nome";
 
         var list = await conn.QueryAsync<Cliente>(sql, parameters);
         return list.ToList();
@@ -75,22 +87,36 @@ public class ClienteService
         using var conn = DbConnectionFactory.CreateConnection();
         const string sql = @"
             SELECT TOP 1
-                Controle,
-                Codigo,
-                Nome,
-                Cpf,
-                CGC,
-                Endereco,
-                Numero,
-                Bairro,
-                Cidade,
-                Estado,
-                CEP,
-                Telefone,
-                Celular,
-                eMail as Email
-            FROM TABCLI
-            WHERE Controle = @controle";
+                c.Controle,
+                c.Codigo,
+                c.Nome,
+                c.FANTASIA_APELIDO as Fantasia,
+                c.Cpf,
+                c.CGC,
+                c.Endereco,
+                c.Numero,
+                c.Bairro,
+                c.Cidade,
+                c.Estado,
+                c.CEP,
+                c.Telefone,
+                c.Celular,
+                c.eMail as Email,
+                ISNULL(c.LimiteCred, 0) as LimiteCred,
+                ISNULL(c.Inativo, 'N') as Inativo,
+                ISNULL(cr.SaldoDevedor, 0) as SaldoDevedor,
+                ISNULL(cr.TotalVencido, 0) as TotalVencido,
+                ISNULL(cr.TitulosVencidos, 0) as TitulosVencidos
+            FROM TABCLI c
+            OUTER APPLY (
+                SELECT 
+                    SUM(DIVIDA) as SaldoDevedor,
+                    SUM(CASE WHEN Vencimento < CAST(GETDATE() AS DATE) THEN DIVIDA ELSE 0 END) as TotalVencido,
+                    COUNT(CASE WHEN Vencimento < CAST(GETDATE() AS DATE) THEN 1 ELSE NULL END) as TitulosVencidos
+                FROM TabCr1
+                WHERE LkCliente = c.Controle AND DIVIDA > 0
+            ) cr
+            WHERE c.Controle = @controle";
 
         return await conn.QueryFirstOrDefaultAsync<Cliente>(sql, new { controle });
     }

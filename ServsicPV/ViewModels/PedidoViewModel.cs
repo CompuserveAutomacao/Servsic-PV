@@ -644,13 +644,36 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
-    public void SelecionarCliente(Cliente cliente)
+    public async void SelecionarCliente(Cliente cliente)
     {
         SelectedCliente = cliente;
         AtribuirClienteAoPedido(cliente);
         OnPropertyChanged(nameof(Pedido));
+        OnPropertyChanged(nameof(SelectedCliente));
         OnPropertyChanged(nameof(HasClienteSelecionado));
-        ExibirMensagem($"Cliente '{cliente.Nome}' selecionado.", true, 3000);
+
+        if (cliente.IsBloqueado)
+        {
+            ExibirMensagem($"Atenção: Cliente '{cliente.Nome}' está {cliente.StatusCredito} para compras a prazo ({cliente.StatusCreditoDescricao}).", false, 6000);
+        }
+        else
+        {
+            string infoCred = cliente.LimiteCred > 0 ? $"Limite: {cliente.LimiteFormatado}" : "Sem limite pré-fixado";
+            ExibirMensagem($"Cliente '{cliente.Nome}' selecionado ({infoCred} - Liberado a Prazo).", true, 3500);
+        }
+
+        try
+        {
+            var atualizado = await _clienteService.ObterPorIdAsync(cliente.Controle);
+            if (atualizado != null && SelectedCliente?.Controle == atualizado.Controle)
+            {
+                SelectedCliente = atualizado;
+                OnPropertyChanged(nameof(SelectedCliente));
+            }
+        }
+        catch
+        {
+        }
     }
 
     private void AtribuirClienteAoPedido(Cliente cliente)
