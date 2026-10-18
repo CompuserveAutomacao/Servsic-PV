@@ -107,7 +107,10 @@ public class Produto
     public string EstoqueBadgeDotColor => HasEstoque ? "#059669" : "#DC2626";
 
     public string FabricanteFormatado => !string.IsNullOrWhiteSpace(Fabricante) ? Fabricante.Trim() : "Sem marca/fabricante";
+    public bool HasFabricante => !string.IsNullOrWhiteSpace(Fabricante);
     public string GrupoFormatado => !string.IsNullOrWhiteSpace(Grupo) ? Grupo.Trim() : "Sem grupo";
+    public bool HasGrupo => !string.IsNullOrWhiteSpace(Grupo);
+    public bool HasAtacado => PrAtacado > 0 || PrAtacado1 > 0;
     public string PerDescMaxFormatado => PerDescMax > 0 ? $"{PerDescMax:N2}%" : "Sem limite fixado";
 
     public bool HasFoto => (FotoBytes != null && FotoBytes.Length > 0) || !string.IsNullOrWhiteSpace(FotoPath);
