@@ -88,12 +88,16 @@ public class ProdutoConsultaViewModel : ViewModelBase
     public ICommand VoltarAoPedidoCommand { get; }
     public ICommand LimparFiltroCommand { get; }
 
+    private int _searchIdCounter;
+    private string _ultimoFiltroPesquisado = string.Empty;
+    public string UltimoFiltroPesquisado => _ultimoFiltroPesquisado;
+
     public ProdutoConsultaViewModel(ProdutoService? produtoService = null)
     {
         _produtoService = produtoService ?? new ProdutoService();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
-        PesquisarCommand = new RelayCommand(async _ => await PesquisarAsync());
+        PesquisarCommand = new RelayCommand(async _ => await PesquisarImediatoAsync());
         ConfirmarSelecaoCommand = new RelayCommand(_ => ConfirmarSelecao());
         VoltarAoPedidoCommand = new RelayCommand(_ => OnVoltarAoPedido?.Invoke());
         LimparFiltroCommand = new RelayCommand(_ => FiltroTexto = string.Empty);
@@ -103,7 +107,7 @@ public class ProdutoConsultaViewModel : ViewModelBase
     {
         _filtroTexto = filtroInicial ?? string.Empty;
         OnPropertyChanged(nameof(FiltroTexto));
-        _ = PesquisarAsync();
+        _ = PesquisarImediatoAsync();
     }
 
     private async Task DispararPesquisaAutomaticaAsync()
@@ -115,23 +119,43 @@ public class ProdutoConsultaViewModel : ViewModelBase
 
         try
         {
-            await Task.Delay(250, token);
+            await Task.Delay(200, token);
             if (token.IsCancellationRequested) return;
 
-            await PesquisarAsync();
+            await ExecutarPesquisaAsync(FiltroTexto, token);
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException)
         {
         }
     }
 
+    public async Task PesquisarImediatoAsync()
+    {
+        _pesquisaCts?.Cancel();
+        _pesquisaCts?.Dispose();
+        _pesquisaCts = new CancellationTokenSource();
+        await ExecutarPesquisaAsync(FiltroTexto, _pesquisaCts.Token);
+    }
+
     public async Task PesquisarAsync()
     {
+        await PesquisarImediatoAsync();
+    }
+
+    private async Task ExecutarPesquisaAsync(string termo, CancellationToken token)
+    {
+        int searchId = Interlocked.Increment(ref _searchIdCounter);
+
         try
         {
             IsBusy = true;
             Mensagem = string.Empty;
-            var list = await _produtoService.BuscarAsync(FiltroTexto, 120);
+
+            var list = await _produtoService.BuscarAsync(termo, 100, token);
+
+            if (token.IsCancellationRequested || searchId != _searchIdCounter) return;
+
+            _ultimoFiltroPesquisado = termo;
 
             Produtos.Clear();
             foreach (var p in list)
@@ -153,20 +177,29 @@ public class ProdutoConsultaViewModel : ViewModelBase
 
             OnPesquisaConcluida?.Invoke();
         }
+        catch (OperationCanceledException)
+        {
+        }
         catch (Exception ex)
         {
-            Mensagem = $"Erro ao pesquisar produtos: {ex.Message}";
-            TotalEncontrados = string.Empty;
+            if (searchId == _searchIdCounter)
+            {
+                Mensagem = $"Erro ao pesquisar produtos: {ex.Message}";
+                TotalEncontrados = string.Empty;
+            }
         }
         finally
         {
-            IsBusy = false;
+            if (searchId == _searchIdCounter)
+            {
+                IsBusy = false;
+            }
         }
     }
 
     private async Task CarregarFotoProdutoAsync(Produto? produto)
     {
-        if (produto == null || (!produto.HasFoto))
+        if (produto == null)
         {
             FotoBitmap = null;
             return;
@@ -174,11 +207,20 @@ public class ProdutoConsultaViewModel : ViewModelBase
 
         try
         {
-            if (produto.FotoBytes != null && produto.FotoBytes.Length > 0)
+            if (!string.IsNullOrWhiteSpace(produto.FotoPath) && File.Exists(produto.FotoPath))
             {
+                var bitmap = new BitmapImage(new Uri(produto.FotoPath));
+                _dispatcherQueue.TryEnqueue(() => FotoBitmap = bitmap);
+                return;
+            }
+
+            byte[]? bytes = produto.FotoBytes ?? await _produtoService.ObterFotoBytesAsync(produto.Controle);
+            if (bytes != null && bytes.Length > 0)
+            {
+                produto.FotoBytes = bytes;
                 using var stream = new InMemoryRandomAccessStream();
                 using var writer = new DataWriter(stream);
-                writer.WriteBytes(produto.FotoBytes);
+                writer.WriteBytes(bytes);
                 await writer.StoreAsync();
                 await writer.FlushAsync();
                 stream.Seek(0);
@@ -186,13 +228,6 @@ public class ProdutoConsultaViewModel : ViewModelBase
                 var bitmap = new BitmapImage();
                 await bitmap.SetSourceAsync(stream);
 
-                _dispatcherQueue.TryEnqueue(() => FotoBitmap = bitmap);
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(produto.FotoPath) && File.Exists(produto.FotoPath))
-            {
-                var bitmap = new BitmapImage(new Uri(produto.FotoPath));
                 _dispatcherQueue.TryEnqueue(() => FotoBitmap = bitmap);
                 return;
             }

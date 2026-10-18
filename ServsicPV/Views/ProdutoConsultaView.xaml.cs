@@ -76,7 +76,19 @@ public partial class ProdutoConsultaView : UserControl
         }
         else if (e.Key == Windows.System.VirtualKey.Enter)
         {
-            if (vm.ProdutoSelecionado != null)
+            e.Handled = true;
+            if (vm.FiltroTexto != vm.UltimoFiltroPesquisado)
+            {
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    await vm.PesquisarImediatoAsync();
+                    if (vm.Produtos.Count == 1)
+                    {
+                        vm.ConfirmarSelecao();
+                    }
+                });
+            }
+            else if (vm.ProdutoSelecionado != null)
             {
                 vm.ConfirmarSelecao();
             }
@@ -85,7 +97,6 @@ public partial class ProdutoConsultaView : UserControl
                 ListaProdutos.SelectedIndex = 0;
                 vm.ConfirmarSelecao();
             }
-            e.Handled = true;
         }
         else if (e.Key == Windows.System.VirtualKey.Escape)
         {

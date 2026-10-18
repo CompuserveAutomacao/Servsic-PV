@@ -46,20 +46,19 @@ public class ProdutoService
             ISNULL(sub.Descricao, '') as SubGrupo,
             ISNULL(e.PerDescMax, 0) as PerDescMax,
             ISNULL(e.Inativo, 0) as Inativo,
-            img.Imagem as FotoBytes,
             img.pathArquivo as FotoPath
         FROM TabEst1 e
         LEFT JOIN TabEst8 grp ON grp.Controle = e.LkSetor
         LEFT JOIN TabEst8b sub ON sub.Controle = e.LkSubGrupo
         LEFT JOIN TabEst12 fab ON fab.Controle = e.LkFabricante
         OUTER APPLY (
-            SELECT TOP 1 Imagem, pathArquivo 
+            SELECT TOP 1 pathArquivo 
             FROM TabEst1Img 
             WHERE LkCadastro = e.Controle
             ORDER BY idControle ASC
         ) img";
 
-    public async Task<IReadOnlyList<Produto>> BuscarAsync(string termo, int limite = 100)
+    public async Task<IReadOnlyList<Produto>> BuscarAsync(string termo, int limite = 100, CancellationToken cancellationToken = default)
     {
         using var conn = DbConnectionFactory.CreateConnection();
         var parameters = new DynamicParameters();
@@ -67,6 +66,7 @@ public class ProdutoService
 
         var sbWhere = new StringBuilder();
         sbWhere.Append("WHERE (e.Inativo IS NULL OR e.Inativo = 0)");
+        string orderBy = "ORDER BY e.Produto";
 
         if (!string.IsNullOrWhiteSpace(termo))
         {
@@ -78,6 +78,7 @@ public class ProdutoService
                 bool isNumeric = int.TryParse(termoLimpo, out int controleNum);
                 parameters.Add("exactTerm", termoLimpo);
                 parameters.Add("likeTerm", $"%{termoLimpo}%");
+                parameters.Add("startsTerm", $"{termoLimpo}%");
                 parameters.Add("controleNum", isNumeric ? controleNum : -1);
 
                 sbWhere.Append(@"
@@ -106,10 +107,22 @@ public class ProdutoService
                         OR e.CodFornecedor LIKE @likeTerm
                         OR e.NCM LIKE @likeTerm
                     )");
+
+                orderBy = @"
+                    ORDER BY 
+                        CASE 
+                            WHEN e.Controle = @controleNum THEN 0
+                            WHEN e.CodInterno = @exactTerm OR e.CodBarra = @exactTerm OR e.CodORIGEM = @exactTerm THEN 1
+                            WHEN e.Produto LIKE @startsTerm THEN 2
+                            WHEN e.Produto LIKE @likeTerm THEN 3
+                            WHEN fab.Nome LIKE @likeTerm OR e.Fabricante LIKE @likeTerm THEN 4
+                            ELSE 5
+                        END,
+                        e.Produto ASC";
             }
             else
             {
-                // Pesquisa inteligente multi-termo (combina palavras entre descrição, códigos, marca, grupo, etc.)
+                // Pesquisa inteligente multi-termo
                 for (int i = 0; i < tokens.Length; i++)
                 {
                     string paramName = $"token_{i}";
@@ -134,12 +147,37 @@ public class ProdutoService
                             OR e.CEST LIKE @{paramName}
                         )");
                 }
+
+                parameters.Add("firstTokenLike", $"%{tokens[0]}%");
+                orderBy = @"
+                    ORDER BY 
+                        CASE 
+                            WHEN e.Produto LIKE @firstTokenLike THEN 1
+                            ELSE 2
+                        END,
+                        e.Produto ASC";
             }
         }
 
-        string sql = string.Format(BaseSelect, "TOP (@limite)") + "\n" + sbWhere + "\nORDER BY e.Produto";
-        var list = await conn.QueryAsync<Produto>(sql, parameters);
+        string sql = string.Format(BaseSelect, "TOP (@limite)") + "\n" + sbWhere + "\n" + orderBy;
+        var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
+        var list = await conn.QueryAsync<Produto>(cmd);
         return list.ToList();
+    }
+
+    public async Task<byte[]?> ObterFotoBytesAsync(int controle)
+    {
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<byte[]?>(
+                "SELECT TOP 1 Imagem FROM TabEst1Img WHERE LkCadastro = @controle ORDER BY idControle ASC",
+                new { controle });
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<Produto?> ObterPorIdAsync(int controle)
