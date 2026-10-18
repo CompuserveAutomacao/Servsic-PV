@@ -135,135 +135,148 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid RowSpacing="5">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/> <!-- Linha 1: Códigos + Metadados Centrais + Estoque/Preço -->
-                                            <RowDefinition Height="Auto"/> <!-- Linha 2: Descrição Completa -->
-                                        </Grid.RowDefinitions>
+                                    <!-- Card Separado em Colunas Modernas com Divisórias e Informações Balanceadas -->
+                                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/> <!-- 0. Códigos (CÓD e EAN) -->
+                                            <ColumnDefinition Width="Auto"/> <!-- 1. Divisória Vertical -->
+                                            <ColumnDefinition Width="*"/>    <!-- 2. Produto (Nome em destaque + Categoria/Marca) -->
+                                            <ColumnDefinition Width="Auto"/> <!-- 3. Divisória Vertical -->
+                                            <ColumnDefinition Width="Auto"/> <!-- 4. Centro (UN, Localização, Atacado, Depósito) -->
+                                            <ColumnDefinition Width="Auto"/> <!-- 5. Divisória Vertical -->
+                                            <ColumnDefinition Width="Auto"/> <!-- 6. Bloco Comercial (Estoque & Preço) -->
+                                        </Grid.ColumnDefinitions>
 
-                                        <!-- Linha 1: 3 Colunas com Códigos à Esquerda, Informações com Borda no Centro e Estoque/Preço à Direita -->
-                                        <Grid Grid.Row="0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/> <!-- CÓD e EAN -->
-                                                <ColumnDefinition Width="*"/>    <!-- Centro com Metadados em caixas/bordas elegantes -->
-                                                <ColumnDefinition Width="Auto"/> <!-- Estoque e Preço -->
-                                            </Grid.ColumnDefinitions>
+                                        <!-- 0. Coluna de Códigos de Identificação -->
+                                        <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center" MinWidth="90">
+                                            <!-- Badge CÓD (Controle do Produto) -->
+                                            <Border Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left">
+                                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                                    <TextBlock Text="CÓD" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                    <TextBlock Text="{Binding CodigoFormatado}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                            <!-- Lado Esquerdo: Identificação (CÓD e EAN) -->
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <!-- Badge CÓD (Controle do Produto) -->
-                                                <Border Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="3">
-                                                        <TextBlock Text="CÓD" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                                        <TextBlock Text="{Binding CodigoFormatado}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                                    </StackPanel>
-                                                </Border>
+                                            <!-- Badge EAN / Código de Barras Principal -->
+                                            <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="5,1.5" HorizontalAlignment="Left"
+                                                    Visibility="{Binding HasEan, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <ic:SymbolIcon Symbol="BarcodeScanner" FontSize="11" Foreground="#64748B"/>
+                                                    <TextBlock Text="{Binding Ean}" FontSize="10" FontWeight="SemiBold" Foreground="#334155"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
 
-                                                <!-- Badge EAN / Código de Barras Principal (CodInterno no banco de dados) -->
-                                                <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding HasEan, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <ic:SymbolIcon Symbol="BarcodeScanner" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                        <TextBlock Text="{Binding Ean}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                                    </StackPanel>
-                                                </Border>
+                                        <!-- 1. Divisória 1 -->
+                                        <Border Grid.Column="1" Width="1" Background="#E2E8F0" Height="34" VerticalAlignment="Center"/>
+
+                                        <!-- 2. Coluna Principal do Produto: Descrição e Subtítulo -->
+                                        <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
+                                            <!-- Nome do Produto em Destaque -->
+                                            <TextBlock Text="{Binding Descricao}" FontSize="13.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                                            
+                                            <!-- Subtítulo: Grupo e Marca -->
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="3" Visibility="{Binding HasGrupo, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                    <ic:SymbolIcon Symbol="Folder" FontSize="11" Foreground="#64748B"/>
+                                                    <TextBlock Text="{Binding Grupo}" FontSize="10.5" Foreground="#64748B"/>
+                                                </StackPanel>
+
+                                                <TextBlock Text="•" FontSize="10" Foreground="#CBD5E1" 
+                                                           Visibility="{Binding HasFabricante, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                                                <StackPanel Orientation="Horizontal" Spacing="3" Visibility="{Binding HasFabricante, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                    <ic:SymbolIcon Symbol="Tag" FontSize="11" Foreground="#64748B"/>
+                                                    <TextBlock Text="{Binding Fabricante}" FontSize="10.5" FontWeight="SemiBold" Foreground="#475569"/>
+                                                </StackPanel>
                                             </StackPanel>
+                                        </StackPanel>
 
-                                            <!-- Centro do Card: Informações Complementares com Bordas e Caixas Elegantes -->
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="10,0">
-                                                <!-- Grupo / Setor -->
-                                                <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding HasGrupo, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <ic:SymbolIcon Symbol="Folder" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                        <TextBlock Text="{Binding Grupo}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                                    </StackPanel>
-                                                </Border>
+                                        <!-- 3. Divisória 2 -->
+                                        <Border Grid.Column="3" Width="1" Background="#E2E8F0" Height="34" VerticalAlignment="Center"/>
 
+                                        <!-- 4. Coluna Central: Dados Operacionais & Atacado -->
+                                        <StackPanel Grid.Column="4" Spacing="4" VerticalAlignment="Center" MinWidth="130">
+                                            <!-- Linha Superior do Centro: UN e Localização -->
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
                                                 <!-- Unidade -->
-                                                <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                                        <TextBlock Text="UN:" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                        <TextBlock Text="{Binding Unidade}" FontSize="10" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Marca / Fabricante -->
-                                                <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding HasFabricante, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <ic:SymbolIcon Symbol="Tag" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                        <TextBlock Text="{Binding Fabricante}" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                                <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" Padding="5,1.5">
+                                                    <StackPanel Orientation="Horizontal" Spacing="2">
+                                                        <TextBlock Text="UN:" FontSize="8.5" FontWeight="Bold" Foreground="#64748B"/>
+                                                        <TextBlock Text="{Binding Unidade}" FontSize="9.5" FontWeight="Bold" Foreground="#1E293B"/>
                                                     </StackPanel>
                                                 </Border>
 
                                                 <!-- Localização no Estoque (Moeda) -->
-                                                <Border Background="#FFFBEB" BorderBrush="#FCD34D" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                <Border Background="#FFFBEB" BorderBrush="#FCD34D" BorderThickness="1" CornerRadius="4" Padding="5,1.5"
                                                         Visibility="{Binding HasLocalizacao, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                        <ic:SymbolIcon Symbol="Location" FontSize="11" Foreground="#D97706"/>
-                                                        <TextBlock Text="LOC:" FontSize="8.5" FontWeight="Bold" Foreground="#B45309"/>
-                                                        <TextBlock Text="{Binding Localizacao}" FontSize="10" FontWeight="Bold" Foreground="#78350F"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="3">
+                                                        <ic:SymbolIcon Symbol="Location" FontSize="10" Foreground="#D97706"/>
+                                                        <TextBlock Text="LOC:" FontSize="8" FontWeight="Bold" Foreground="#B45309"/>
+                                                        <TextBlock Text="{Binding Localizacao}" FontSize="9" FontWeight="Bold" Foreground="#78350F"/>
                                                     </StackPanel>
                                                 </Border>
+                                            </StackPanel>
 
+                                            <!-- Linha Inferior do Centro: Preço de Atacado e Depósito -->
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
                                                 <!-- Preço Atacado -->
-                                                <Border Background="#FEF9C3" BorderBrush="#FDE047" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                <Border Background="#FEF9C3" BorderBrush="#FDE047" BorderThickness="1" CornerRadius="4" Padding="5,1.5"
                                                         Visibility="{Binding HasAtacado, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                                        <TextBlock Text="ATACADO:" FontSize="8" FontWeight="Bold" Foreground="#854D0E"/>
-                                                        <TextBlock Text="{Binding PrAtacadoFormatado}" FontSize="10" FontWeight="Bold" Foreground="#713F12"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="3">
+                                                        <TextBlock Text="ATACADO:" FontSize="7.5" FontWeight="Bold" Foreground="#854D0E"/>
+                                                        <TextBlock Text="{Binding PrAtacadoFormatado}" FontSize="9" FontWeight="Bold" Foreground="#713F12"/>
                                                     </StackPanel>
                                                 </Border>
 
                                                 <!-- Estoque Depósito -->
-                                                <Border Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                <Border Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="4" Padding="5,1.5"
                                                         Visibility="{Binding HasEstoqueDeposito, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                                                        <TextBlock Text="DEPÓSITO:" FontSize="8" FontWeight="Bold" Foreground="#15803D"/>
-                                                        <TextBlock Text="{Binding EstoqueDepositoFormatado}" FontSize="10" FontWeight="Bold" Foreground="#166534"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="3">
+                                                        <TextBlock Text="DEP:" FontSize="7.5" FontWeight="Bold" Foreground="#15803D"/>
+                                                        <TextBlock Text="{Binding EstoqueDepositoFormatado}" FontSize="9" FontWeight="Bold" Foreground="#166534"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
+                                        </StackPanel>
 
-                                            <!-- Lado Direito: Badges com Título para ESTOQUE e PREÇO -->
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                                <!-- Badge Estoque com Título: DISPONÍVEL -->
-                                                <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="5" Padding="8,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding HasEstoque, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                        <!-- 5. Divisória 3 -->
+                                        <Border Grid.Column="5" Width="1" Background="#E2E8F0" Height="34" VerticalAlignment="Center"/>
+
+                                        <!-- 6. Coluna Direita: Valores Comerciais (Estoque & Preço) -->
+                                        <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <!-- Badge Estoque com Título: DISPONÍVEL -->
+                                            <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="5" Padding="7,3" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasEstoque, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <StackPanel Spacing="0" HorizontalAlignment="Right">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
                                                         <Ellipse Width="6" Height="6" Fill="#059669" VerticalAlignment="Center"/>
-                                                        <StackPanel Spacing="0">
-                                                            <TextBlock Text="ESTOQUE" FontSize="7.5" FontWeight="Bold" Foreground="#047857" CharacterSpacing="30"/>
-                                                            <TextBlock Text="{Binding EstoqueFormatado}" FontSize="11" FontWeight="Bold" Foreground="#065F46"/>
-                                                        </StackPanel>
+                                                        <TextBlock Text="ESTOQUE" FontSize="7.5" FontWeight="Bold" Foreground="#047857" CharacterSpacing="30"/>
                                                     </StackPanel>
-                                                </Border>
+                                                    <TextBlock Text="{Binding EstoqueFormatado}" FontSize="11" FontWeight="Bold" Foreground="#065F46" HorizontalAlignment="Right"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                                <!-- Badge Estoque com Título: SEM ESTOQUE -->
-                                                <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="5" Padding="8,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding HasEstoque, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                            <!-- Badge Estoque com Título: SEM ESTOQUE -->
+                                            <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="5" Padding="7,3" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasEstoque, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                                <StackPanel Spacing="0" HorizontalAlignment="Right">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right">
                                                         <Ellipse Width="6" Height="6" Fill="#DC2626" VerticalAlignment="Center"/>
-                                                        <StackPanel Spacing="0">
-                                                            <TextBlock Text="ESTOQUE" FontSize="7.5" FontWeight="Bold" Foreground="#B91C1C" CharacterSpacing="30"/>
-                                                            <TextBlock Text="0 UN (Esgotado)" FontSize="10.5" FontWeight="Bold" Foreground="#991B1B"/>
-                                                        </StackPanel>
+                                                        <TextBlock Text="ESTOQUE" FontSize="7.5" FontWeight="Bold" Foreground="#B91C1C" CharacterSpacing="30"/>
                                                     </StackPanel>
-                                                </Border>
+                                                    <TextBlock Text="0 UN (Esgotado)" FontSize="10" FontWeight="Bold" Foreground="#991B1B" HorizontalAlignment="Right"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                                <!-- Badge Preço com Título -->
-                                                <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="5" Padding="8,2" VerticalAlignment="Center">
-                                                    <StackPanel Spacing="0" HorizontalAlignment="Right">
-                                                        <TextBlock Text="PREÇO" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" CharacterSpacing="30" HorizontalAlignment="Right"/>
-                                                        <TextBlock Text="{Binding PrVendaFormatado}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                                    </StackPanel>
-                                                </Border>
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <!-- Linha 2: Descrição Completa do Produto -->
-                                        <TextBlock Grid.Row="1" Text="{Binding Descricao}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                                            <!-- Badge Preço com Título -->
+                                            <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="5" Padding="8,3" VerticalAlignment="Center">
+                                                <StackPanel Spacing="0" HorizontalAlignment="Right">
+                                                    <TextBlock Text="PREÇO" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" CharacterSpacing="30" HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="{Binding PrVendaFormatado}" FontSize="13.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
                                     </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
