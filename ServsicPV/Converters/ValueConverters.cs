@@ -32,6 +32,34 @@ public class BoolToVisibilityConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }
 
+public class NullToVisibilityConverter : IValueConverter
+{
+    public bool Invert { get; set; } = false;
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool isNull = value == null;
+        if (Invert) isNull = !isNull;
+        return isNull ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
+public class BoolToColorConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        bool b = value is bool val && val;
+        // True => Verde suave ou Azul escuro, False => Vermelho perigo
+        return b
+            ? new SolidColorBrush(Color.FromArgb(255, 15, 23, 42))     // #0F172A
+            : new SolidColorBrush(Color.FromArgb(255, 239, 68, 68));    // #EF4444
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
 public class CurrencyConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)

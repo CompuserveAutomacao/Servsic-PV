@@ -45,6 +45,14 @@ public partial class PedidoCadastroView : UserControl
                 e.Handled = true;
             }
         }
+        else if (e.Key == Windows.System.VirtualKey.F4)
+        {
+            if (this.DataContext is PedidoViewModel vm && vm.AbrirConsultaProdutoCommand.CanExecute(null))
+            {
+                vm.AbrirConsultaProdutoCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
         else if (e.Key == Windows.System.VirtualKey.F2)
         {
             if (this.DataContext is PedidoViewModel vm && vm.NovoCommand.CanExecute(null))
@@ -57,7 +65,15 @@ public partial class PedidoCadastroView : UserControl
 
     private void CodigoProduto_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.Enter)
+        if (e.Key == Windows.System.VirtualKey.F4)
+        {
+            if (this.DataContext is PedidoViewModel vm && vm.AbrirConsultaProdutoCommand.CanExecute(null))
+            {
+                vm.AbrirConsultaProdutoCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Enter)
         {
             if (this.DataContext is PedidoViewModel vm && vm.BuscarProdutoRapidoCommand.CanExecute(null))
             {

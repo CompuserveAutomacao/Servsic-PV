@@ -7,6 +7,9 @@
     <conv:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
     <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" Invert="True" />
+    <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+    <conv:NullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" Invert="True" />
+    <conv:BoolToColorConverter x:Key="BoolToColorConverter" />
     <conv:CurrencyConverter x:Key="CurrencyConverter" />
     <conv:StatusColorConverter x:Key="StatusColorConverter" />
 

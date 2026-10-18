@@ -201,11 +201,25 @@
                             <RowDefinition Height="*"/>    <!-- 2. ListView de Itens -->
                         </Grid.RowDefinitions>
 
-                        <!-- Cabeçalho do Card de Produtos -->
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <ic:SymbolIcon Symbol="Box" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
-                            <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                        </StackPanel>
+                        <!-- Cabeçalho do Card de Produtos com Botão F4 - ITENS -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Box" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            </StackPanel>
+
+                            <!-- Botão F4 - ITENS idêntico ao ERP Legado -->
+                            <Button Grid.Column="1" Command="{Binding AbrirConsultaProdutoCommand}" Style="{StaticResource BtnSecondary}" Height="32" Padding="12,0" ToolTipService.ToolTip="Consultar Produtos em Tela Cheia (F4)">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Search" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text="F4 - ITENS" FontWeight="Bold" FontSize="12" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
 
                         <!-- Barra de Inserção de Produto -->
                         <Grid Grid.Row="1" ColumnSpacing="10" RowSpacing="6">

@@ -15,6 +15,8 @@ public partial class MainView : Window
     private readonly PedidoConsultaViewModel _consultaViewModel;
     private readonly ClienteConsultaView _clienteConsultaView;
     private readonly ClienteConsultaViewModel _clienteConsultaViewModel;
+    private readonly ProdutoConsultaView _produtoConsultaView;
+    private readonly ProdutoConsultaViewModel _produtoConsultaViewModel;
     private readonly PedidoService _pedidoService;
 
     public MainView(Usuario usuario)
@@ -48,7 +50,9 @@ public partial class MainView : Window
         _pedidoViewModel.UsuarioLogado = usuario;
         _pedidoViewModel.OnTipoDocumentoAlterado = () =>
         {
-            if (ReferenceEquals(ContentArea.Content, _consultaView) || ReferenceEquals(ContentArea.Content, _clienteConsultaView))
+            if (ReferenceEquals(ContentArea.Content, _consultaView) 
+                || ReferenceEquals(ContentArea.Content, _clienteConsultaView)
+                || ReferenceEquals(ContentArea.Content, _produtoConsultaView))
             {
                 MostrarCadastro();
             }
@@ -64,7 +68,7 @@ public partial class MainView : Window
         _consultaView = new PedidoConsultaView { DataContext = _consultaViewModel };
         _consultaView.OnVoltarAoPedido = () => MostrarCadastro();
 
-        // Tela Cheia Dedicada de Consulta de Clientes
+        // Tela Cheia Dedicada de Consulta de Clientes (F3)
         _clienteConsultaViewModel = new ClienteConsultaViewModel(new ClienteService());
         _clienteConsultaViewModel.OnClienteSelecionado = (cliente) =>
         {
@@ -90,6 +94,27 @@ public partial class MainView : Window
             MostrarConsultaCliente(filtro);
         };
 
+        // Tela Cheia Dedicada de Consulta de Produtos (F4 - ITENS)
+        _produtoConsultaViewModel = new ProdutoConsultaViewModel(new ProdutoService());
+        _produtoConsultaViewModel.OnProdutoSelecionado = (produto) =>
+        {
+            _pedidoViewModel.SelecionarProdutoDaConsulta(produto);
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+        };
+        _produtoConsultaViewModel.OnVoltarAoPedido = () =>
+        {
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+        };
+
+        _produtoConsultaView = new ProdutoConsultaView { DataContext = _produtoConsultaViewModel };
+
+        _pedidoViewModel.OnSolicitarConsultaProduto = (filtro) =>
+        {
+            MostrarConsultaProduto(filtro);
+        };
+
         // Exibe tela de cadastro inicialmente
         MostrarCadastro();
     }
@@ -110,6 +135,13 @@ public partial class MainView : Window
         ContentArea.Content = _clienteConsultaView;
         _clienteConsultaViewModel.Abrir(filtro);
         _clienteConsultaView.FocarBarraPesquisa();
+    }
+
+    private void MostrarConsultaProduto(string? filtro = null)
+    {
+        ContentArea.Content = _produtoConsultaView;
+        _produtoConsultaViewModel.Abrir(filtro);
+        _produtoConsultaView.FocarBarraPesquisa();
     }
 
     private async void CarregarPedidoParaEdicao(int controle)
@@ -139,6 +171,19 @@ public partial class MainView : Window
         }
 
         MostrarConsultaCliente(_pedidoViewModel.FiltroCliente);
+        args.Handled = true;
+    }
+
+    private void OnF4GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ReferenceEquals(ContentArea.Content, _produtoConsultaView))
+        {
+            _produtoConsultaView.FocarBarraPesquisa();
+            args.Handled = true;
+            return;
+        }
+
+        MostrarConsultaProduto(_pedidoViewModel.CodigoProdutoInput);
         args.Handled = true;
     }
 

@@ -211,6 +211,7 @@ public class PedidoViewModel : ViewModelBase
     public Action? OnConsultaClienteAberta { get; set; }
     public Action? OnClienteDefinido { get; set; }
     public Action<string>? OnSolicitarConsultaCliente { get; set; }
+    public Action<string>? OnSolicitarConsultaProduto { get; set; }
 
     // --- Propriedades do Modal de Consulta ---
     public bool IsConsultaClienteOpen
@@ -375,6 +376,7 @@ public class PedidoViewModel : ViewModelBase
     public ICommand AdicionarItemCommand { get; }
     public ICommand RemoverItemCommand { get; }
     public ICommand BuscarProdutoRapidoCommand { get; }
+    public ICommand AbrirConsultaProdutoCommand { get; }
     public ICommand BuscarClienteRapidoCommand { get; }
     public ICommand LimparClienteCommand { get; }
     public ICommand AlternarTipoCommand { get; }
@@ -467,6 +469,7 @@ public class PedidoViewModel : ViewModelBase
         AdicionarItemCommand = new RelayCommand(_ => AdicionarItem());
         RemoverItemCommand = new RelayCommand<PedidoItem>(item => RemoverItem(item));
         BuscarProdutoRapidoCommand = new RelayCommand(async _ => await BuscarProdutoRapidoAsync());
+        AbrirConsultaProdutoCommand = new RelayCommand(_ => AbrirConsultaProduto());
         BuscarClienteRapidoCommand = new RelayCommand(async _ => await BuscarClienteRapidoAsync());
         LimparClienteCommand = new RelayCommand(_ => LimparCliente());
         AlternarTipoCommand = new RelayCommand(AlternarTipo);
@@ -913,9 +916,30 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
+    public void AbrirConsultaProduto(string? filtro = null)
+    {
+        OnSolicitarConsultaProduto?.Invoke(filtro ?? CodigoProdutoInput);
+    }
+
+    public void SelecionarProdutoDaConsulta(Produto produto)
+    {
+        ProdutoSelecionado = produto;
+        CodigoProdutoInput = !string.IsNullOrWhiteSpace(produto.CodInterno) 
+            ? produto.CodInterno 
+            : (!string.IsNullOrWhiteSpace(produto.Codigo) ? produto.Codigo : produto.Controle.ToString());
+        VlUnitarioInput = produto.PrVenda;
+        QuantidadeInput = 1m;
+        DescontoItemInput = 0m;
+        ExibirMensagem($"Produto '{produto.Descricao}' selecionado ({produto.PrVenda:C2})", true, 3000);
+    }
+
     public async Task BuscarProdutoRapidoAsync()
     {
-        if (string.IsNullOrWhiteSpace(CodigoProdutoInput)) return;
+        if (string.IsNullOrWhiteSpace(CodigoProdutoInput))
+        {
+            AbrirConsultaProduto();
+            return;
+        }
 
         try
         {
@@ -928,16 +952,13 @@ public class PedidoViewModel : ViewModelBase
             else
             {
                 var lista = await _produtoService.BuscarAsync(CodigoProdutoInput, 10);
-                ProdutosFiltrados.Clear();
-                foreach (var p in lista) ProdutosFiltrados.Add(p);
-                if (ProdutosFiltrados.Count > 0)
+                if (lista.Count == 1)
                 {
-                    ProdutoSelecionado = ProdutosFiltrados[0];
+                    ProdutoSelecionado = lista[0];
                 }
                 else
                 {
-                    StatusMensagem = "Produto não localizado.";
-                    IsSucesso = false;
+                    AbrirConsultaProduto(CodigoProdutoInput);
                 }
             }
         }
