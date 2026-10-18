@@ -474,7 +474,9 @@
                         <ListView x:Name="ListaClientesConsulta"
                                   ItemsSource="{Binding ClientesConsulta}" 
                                   SelectedItem="{Binding ClienteConsultaSelecionado, Mode=TwoWay}"
-                                  KeyDown="ListaClientesConsulta_KeyDown"
+                                  SingleSelectionFollowsFocus="True"
+                                  IsItemClickEnabled="True"
+                                  ItemClick="ListaClientesConsulta_ItemClick"
                                   DoubleTapped="ListaClientesConsulta_DoubleTapped"
                                   BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6"
                                   SelectionMode="Single">
@@ -527,10 +529,20 @@
                         <TextBlock Grid.Column="0" Text="* Dê duplo clique no cliente ou clique em 'Selecionar' para confirmar." FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                            <Button Command="{Binding FecharConsultaClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="18,0">
+                            <Button x:Name="BtnCancelarConsulta"
+                                    Command="{Binding FecharConsultaClienteCommand}" 
+                                    KeyDown="BotoesRodape_KeyDown"
+                                    Style="{StaticResource BtnSecondary}" 
+                                    Height="38" 
+                                    Padding="18,0">
                                 <TextBlock Text="Cancelar" FontWeight="SemiBold"/>
                             </Button>
-                            <Button Command="{Binding ConfirmarSelecaoClienteCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="20,0">
+                            <Button x:Name="BtnSelecionarCliente"
+                                    Command="{Binding ConfirmarSelecaoClienteCommand}" 
+                                    KeyDown="BotoesRodape_KeyDown"
+                                    Style="{StaticResource BtnPrimary}" 
+                                    Height="38" 
+                                    Padding="20,0">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <ic:SymbolIcon Symbol="Checkmark" FontSize="16"/>
                                     <TextBlock Text="Selecionar Cliente" FontWeight="Bold"/>

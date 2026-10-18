@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -15,29 +16,39 @@ public partial class PedidoCadastroView : UserControl
         this.InitializeComponent();
         this.DataContextChanged += PedidoCadastroView_DataContextChanged;
         this.KeyDown += PedidoCadastroView_KeyDown;
+
+        // Registra AddHandler com handledEventsToo: true para garantir captura de Enter e Escape na lista
+        ListaClientesConsulta.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(ListaClientesConsulta_KeyDown), handledEventsToo: true);
     }
 
     private void PedidoCadastroView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
     {
         if (args.NewValue is PedidoViewModel vm)
         {
-            vm.OnConsultaClienteAberta = () => FocarGradeOuPesquisa();
-            vm.OnClienteDefinido = () =>
-            {
-                DispatcherQueue.TryEnqueue(() =>
-                {
-                    TxtCodigoProduto?.Focus(FocusState.Programmatic);
-                    TxtCodigoProduto?.SelectAll();
-                });
-            };
+            // Ao abrir a janela modal de consulta, o foco DEVE ficar na barra de pesquisa
+            vm.OnConsultaClienteAberta = () => FocarBarraPesquisaModal();
+            vm.OnClienteDefinido = () => FocarCodigoProduto();
         }
     }
 
-    private void FocarGradeOuPesquisa()
+    private void FocarBarraPesquisaModal()
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(80);
+            await Task.Delay(60);
+            if (TxtFiltroConsulta != null)
+            {
+                TxtFiltroConsulta.Focus(FocusState.Programmatic);
+                TxtFiltroConsulta.SelectAll();
+            }
+        });
+    }
+
+    private void FocarGradeClientes()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            await Task.Delay(40);
             if (ListaClientesConsulta != null && ListaClientesConsulta.Items.Count > 0)
             {
                 if (ListaClientesConsulta.SelectedIndex < 0)
@@ -46,11 +57,15 @@ public partial class PedidoCadastroView : UserControl
                 }
                 ListaClientesConsulta.Focus(FocusState.Programmatic);
             }
-            else if (TxtFiltroConsulta != null)
-            {
-                TxtFiltroConsulta.Focus(FocusState.Programmatic);
-                TxtFiltroConsulta.SelectAll();
-            }
+        });
+    }
+
+    private void FocarCodigoProduto()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            TxtCodigoProduto?.Focus(FocusState.Programmatic);
+            TxtCodigoProduto?.SelectAll();
         });
     }
 
@@ -104,12 +119,13 @@ public partial class PedidoCadastroView : UserControl
             if (this.DataContext is PedidoViewModel vm)
             {
                 await vm.PesquisarClientesConsultaAsync();
-                FocarGradeOuPesquisa();
+                FocarGradeClientes();
             }
             e.Handled = true;
         }
         else if (e.Key == Windows.System.VirtualKey.Down)
         {
+            // Seta para baixo na barra de pesquisa desce o foco direto para a grade
             if (ListaClientesConsulta != null && ListaClientesConsulta.Items.Count > 0)
             {
                 if (ListaClientesConsulta.SelectedIndex < 0)
@@ -122,43 +138,61 @@ public partial class PedidoCadastroView : UserControl
         }
         else if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            if (this.DataContext is PedidoViewModel vm && vm.FecharConsultaClienteCommand.CanExecute(null))
+            if (this.DataContext is PedidoViewModel vm)
             {
-                vm.FecharConsultaClienteCommand.Execute(null);
+                vm.IsConsultaClienteOpen = false;
                 e.Handled = true;
             }
         }
     }
 
+    private void ListaClientesConsulta_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is Cliente c && this.DataContext is PedidoViewModel vm)
+        {
+            vm.SelecionarCliente(c);
+            vm.IsConsultaClienteOpen = false;
+            vm.FiltroCliente = string.Empty;
+            FocarCodigoProduto();
+        }
+    }
+
     private void ListaClientesConsulta_KeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (this.DataContext is not PedidoViewModel vm) return;
+
         if (e.Key == Windows.System.VirtualKey.Enter)
         {
-            if (this.DataContext is PedidoViewModel vm)
-            {
-                if (ListaClientesConsulta.SelectedItem is Cliente c)
-                {
-                    vm.ClienteConsultaSelecionado = c;
-                }
-                else if (vm.ClienteConsultaSelecionado == null && vm.ClientesConsulta.Count > 0)
-                {
-                    vm.ClienteConsultaSelecionado = vm.ClientesConsulta[0];
-                }
+            var cliente = (ListaClientesConsulta.SelectedItem as Cliente)
+                ?? (ListaClientesConsulta.SelectedIndex >= 0 && ListaClientesConsulta.SelectedIndex < vm.ClientesConsulta.Count
+                    ? vm.ClientesConsulta[ListaClientesConsulta.SelectedIndex]
+                    : vm.ClienteConsultaSelecionado)
+                ?? vm.ClientesConsulta.FirstOrDefault();
 
-                if (vm.ConfirmarSelecaoClienteCommand.CanExecute(null))
-                {
-                    vm.ConfirmarSelecaoClienteCommand.Execute(null);
-                    e.Handled = true;
-                }
+            if (cliente != null)
+            {
+                vm.SelecionarCliente(cliente);
+                vm.IsConsultaClienteOpen = false;
+                vm.FiltroCliente = string.Empty;
+                FocarCodigoProduto();
+                e.Handled = true;
+            }
+            else
+            {
+                // Alternativa: transfere o foco para o botão Selecionar Cliente
+                BtnSelecionarCliente?.Focus(FocusState.Programmatic);
+                e.Handled = true;
             }
         }
         else if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            if (this.DataContext is PedidoViewModel vm && vm.FecharConsultaClienteCommand.CanExecute(null))
-            {
-                vm.FecharConsultaClienteCommand.Execute(null);
-                e.Handled = true;
-            }
+            vm.IsConsultaClienteOpen = false;
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Tab)
+        {
+            BtnSelecionarCliente?.Focus(FocusState.Programmatic);
+            e.Handled = true;
         }
     }
 
@@ -166,14 +200,56 @@ public partial class PedidoCadastroView : UserControl
     {
         if (this.DataContext is PedidoViewModel vm)
         {
-            if (ListaClientesConsulta.SelectedItem is Cliente c)
+            var cliente = (ListaClientesConsulta.SelectedItem as Cliente)
+                ?? vm.ClienteConsultaSelecionado
+                ?? vm.ClientesConsulta.FirstOrDefault();
+
+            if (cliente != null)
             {
-                vm.ClienteConsultaSelecionado = c;
+                vm.SelecionarCliente(cliente);
+                vm.IsConsultaClienteOpen = false;
+                vm.FiltroCliente = string.Empty;
+                FocarCodigoProduto();
             }
-            if (vm.ConfirmarSelecaoClienteCommand.CanExecute(null))
+        }
+    }
+
+    private void BotoesRodape_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is not PedidoViewModel vm) return;
+
+        if (e.Key == Windows.System.VirtualKey.Left)
+        {
+            BtnCancelarConsulta?.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Right)
+        {
+            BtnSelecionarCliente?.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Up)
+        {
+            ListaClientesConsulta?.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            if (ReferenceEquals(sender, BtnSelecionarCliente))
             {
-                vm.ConfirmarSelecaoClienteCommand.Execute(null);
+                vm.ConfirmarClienteConsulta();
+                FocarCodigoProduto();
             }
+            else if (ReferenceEquals(sender, BtnCancelarConsulta))
+            {
+                vm.IsConsultaClienteOpen = false;
+            }
+            e.Handled = true;
+        }
+        else if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            vm.IsConsultaClienteOpen = false;
+            e.Handled = true;
         }
     }
 
@@ -181,9 +257,9 @@ public partial class PedidoCadastroView : UserControl
     {
         if (e.Key == Windows.System.VirtualKey.Escape)
         {
-            if (this.DataContext is PedidoViewModel vm && vm.FecharConsultaClienteCommand.CanExecute(null))
+            if (this.DataContext is PedidoViewModel vm)
             {
-                vm.FecharConsultaClienteCommand.Execute(null);
+                vm.IsConsultaClienteOpen = false;
                 e.Handled = true;
             }
         }
