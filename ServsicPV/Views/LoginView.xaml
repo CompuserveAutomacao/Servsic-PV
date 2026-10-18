@@ -8,243 +8,211 @@
     mc:Ignorable="d"
     Title="ServsicPV - Autenticação">
 
-    <Grid x:Name="RootGrid" Background="{StaticResource BrushServsicDark}">
-        <!-- Elementos de Iluminação e Profundidade no Fundo Escuro -->
-        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
-            <!-- Brilho Ambiente Azul Superior Esquerdo -->
-            <Ellipse Width="480" Height="480" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-140,-160,0,0" Opacity="0.07">
-                <Ellipse.Fill>
-                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
-                        <GradientStop Color="#0284C7" Offset="0.0"/>
-                        <GradientStop Color="#00000000" Offset="1.0"/>
-                    </RadialGradientBrush>
-                </Ellipse.Fill>
-            </Ellipse>
+    <Grid x:Name="RootGrid" Background="{StaticResource BrushCardBackground}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho Executivo Navy -->
+            <RowDefinition Height="*"/>    <!-- 1. Corpo de Autenticação -->
+            <RowDefinition Height="Auto"/> <!-- 2. Rodapé de Status e Conexão -->
+        </Grid.RowDefinitions>
 
-            <!-- Brilho Ambiente Azul Inferior Direito -->
-            <Ellipse Width="520" Height="520" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-160,-180" Opacity="0.08">
-                <Ellipse.Fill>
-                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
-                        <GradientStop Color="#0284C7" Offset="0.0"/>
-                        <GradientStop Color="#00000000" Offset="1.0"/>
-                    </RadialGradientBrush>
-                </Ellipse.Fill>
-            </Ellipse>
-        </Grid>
+        <!-- ============================================================== -->
+        <!-- 0. CABEÇALHO EXECUTIVO (Navy Oficial ServSic)                   -->
+        <!-- ============================================================== -->
+        <Border Grid.Row="0" Background="{StaticResource BrushServsicDark}" Padding="24,20,24,18">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <!-- Conteúdo Principal Centralizado -->
-        <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24">
-            <StackPanel Spacing="16" HorizontalAlignment="Center">
-                
-                <!-- ============================================================== -->
-                <!-- CARD CENTRAL FLUTUANTE PREMIUM                                 -->
-                <!-- ============================================================== -->
-                <Border Width="430"
-                        Background="#FFFFFF"
-                        BorderBrush="#1E293B"
-                        BorderThickness="1"
-                        CornerRadius="16"
-                        Padding="34,28,34,24">
-                    <StackPanel Spacing="18">
-
-                        <!-- 1. Cabeçalho do Card: Identidade CompuServe + ServSic PV -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Logotipo Oficial Compacto -->
-                            <Border Grid.Column="0" 
-                                    Width="46" Height="46" 
-                                    Background="{StaticResource BrushServsicBlueSoft}" 
-                                    BorderBrush="#BAE6FD" 
-                                    BorderThickness="1" 
-                                    CornerRadius="12" 
-                                    VerticalAlignment="Center">
-                                <Image Source="ms-appx:///Assets/logo.png" Width="30" Height="30" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                            </Border>
-
-                            <!-- Marca Tipográfica Oficial e Subtítulo -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0" Spacing="1">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="Compu" FontSize="20" FontFamily="Segoe UI" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                                    <TextBlock Text="serve" FontSize="20" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#EF4444"/>
-                                </StackPanel>
-                                <TextBlock Text="SERVSIC PV • PONTO DE VENDA" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="60"/>
-                            </StackPanel>
-
-                            <!-- Botão Engrenagem Integrado no Card -->
-                            <Button Grid.Column="2"
-                                    x:Name="BtnConfig"
-                                    Click="BtnConfig_Click"
-                                    IsTabStop="False"
-                                    VerticalAlignment="Top"
-                                    Background="#F8FAFC"
-                                    BorderBrush="{StaticResource BrushBorder}"
-                                    BorderThickness="1"
-                                    Padding="7"
-                                    CornerRadius="8"
-                                    ToolTipService.ToolTip="Configurações de Conexão com o Banco de Dados">
-                                <ic:SymbolIcon Symbol="Settings" FontSize="16" Foreground="{StaticResource BrushTextSubtle}"/>
-                            </Button>
-                        </Grid>
-
-                        <!-- Divisor Sutil -->
-                        <Border Height="1" Background="#F1F5F9" Margin="0,-4,0,2"/>
-
-                        <!-- Título de Boas-Vindas da Sessão -->
-                        <StackPanel Spacing="3">
-                            <TextBlock Text="Acesso ao Sistema" FontSize="17" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                            <TextBlock Text="Selecione seu usuário e insira sua senha para iniciar o turno." FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                        </StackPanel>
-
-                        <!-- 2. Formulário de Autenticação -->
-                        <StackPanel Spacing="14">
-                            
-                            <!-- Campo 1: Seleção do Operador / Usuário -->
-                            <StackPanel Spacing="6">
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <ic:SymbolIcon Symbol="Person" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    <TextBlock Text="Operador / Usuário" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                </StackPanel>
-                                <ComboBox x:Name="CboUsuario"
-                                          ItemsSource="{Binding ActiveUsers}"
-                                          SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
-                                          DisplayMemberPath="Nome"
-                                          KeyDown="CboUsuario_KeyDown"
-                                          PlaceholderText="Selecione o operador..."
-                                          HorizontalAlignment="Stretch"
-                                          Height="42"
-                                          FontSize="13.5"
-                                          CornerRadius="8"/>
-                            </StackPanel>
-
-                            <!-- Campo 2: Senha de Acesso -->
-                            <StackPanel Spacing="6">
-                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <ic:SymbolIcon Symbol="Key" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    <TextBlock Text="Senha de Acesso" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                </StackPanel>
-                                <PasswordBox x:Name="TxtPassword"
-                                             Password="{Binding Password, Mode=TwoWay}"
-                                             KeyDown="TxtPassword_KeyDown"
-                                             PlaceholderText="Digite sua senha de operador"
-                                             Height="42"
-                                             FontSize="13.5"
-                                             CornerRadius="8"
-                                             VerticalContentAlignment="Center"/>
-                            </StackPanel>
-
-                            <!-- Mensagem de Erro de Autenticação -->
-                            <Border Background="#FEE2E2" 
-                                    BorderBrush="#FCA5A5" 
-                                    BorderThickness="1" 
-                                    CornerRadius="8" 
-                                    Padding="12,8"
-                                    Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
-                                <Grid ColumnSpacing="8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ic:SymbolIcon Grid.Column="0" Symbol="DismissCircle" FontSize="16" Foreground="{StaticResource BrushDanger}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="{StaticResource BrushDanger}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-
-                            <!-- Botão de Acesso Principal (Sem foco branco, alto contraste permanente) -->
-                            <Button x:Name="BtnAcessar"
-                                    Command="{Binding LoginCommand}"
-                                    Height="44"
-                                    CornerRadius="8"
-                                    HorizontalAlignment="Stretch"
-                                    Margin="0,4,0,0"
-                                    BorderThickness="0"
-                                    Background="{StaticResource BrushServsicBlue}"
-                                    Foreground="#FFFFFF">
-                                <Button.Resources>
-                                    <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
-                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
-                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0B192C"/>
-                                    <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
-                                    <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
-                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
-                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
-                                    <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
-                                </Button.Resources>
-                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                                    <TextBlock Text="Entrar no Sistema" FontFamily="Segoe UI Semibold" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
-                                    <ic:SymbolIcon Symbol="ArrowRight" FontSize="16" Foreground="#FFFFFF"/>
-                                </StackPanel>
-                            </Button>
-
-                            <!-- Indicador de Carregamento -->
-                            <ProgressRing IsActive="{Binding IsBusy}" 
-                                          HorizontalAlignment="Center" 
-                                          Width="26" Height="26"
-                                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
-
-                        </StackPanel>
-
-                        <!-- 3. Rodapé do Card: Status da Conexão com o Banco -->
-                        <Border Background="#F8FAFC" 
-                                BorderBrush="{StaticResource BrushBorder}" 
-                                BorderThickness="1" 
-                                CornerRadius="8" 
-                                Padding="10,7" 
-                                Margin="0,2,0,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <Border Grid.Column="0" 
-                                        Width="8" Height="8" 
-                                        CornerRadius="4" 
-                                        Background="{Binding IsConnected, Converter={StaticResource StatusColorConverter}}" 
-                                        VerticalAlignment="Center" 
-                                        Margin="0,0,8,0"/>
-
-                                <TextBlock Grid.Column="1" 
-                                           Text="{Binding ConnectionStatus}" 
-                                           FontSize="11" 
-                                           Foreground="{StaticResource BrushTextSubtle}" 
-                                           VerticalAlignment="Center" 
-                                           TextTrimming="CharacterEllipsis"/>
-                            </Grid>
-                        </Border>
-
-                    </StackPanel>
+                <!-- Logotipo Oficial Compacto -->
+                <Border Grid.Column="0" 
+                        Width="44" Height="44" 
+                        Background="#1E293B" 
+                        BorderBrush="#334155" 
+                        BorderThickness="1" 
+                        CornerRadius="10" 
+                        VerticalAlignment="Center">
+                    <Image Source="ms-appx:///Assets/logo.png" Width="28" Height="28" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Border>
 
-                <!-- Rodapé da Janela Externa -->
-                <TextBlock Text="CompuServe Soluções em Tecnologia Comercial • Versão 2026" 
-                           FontSize="11" 
-                           Foreground="#64748B" 
-                           HorizontalAlignment="Center"/>
+                <!-- Marca Tipográfica Oficial e Subtítulo -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0" Spacing="1">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Compu" FontSize="21" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        <TextBlock Text="serve" FontSize="21" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#EF4444"/>
+                    </StackPanel>
+                    <TextBlock Text="SERVSIC PV • PONTO DE VENDA" FontSize="9.5" FontWeight="Bold" Foreground="#94A3B8" CharacterSpacing="60"/>
+                </StackPanel>
+
+                <!-- Botão de Configuração de Banco -->
+                <Button Grid.Column="2"
+                        x:Name="BtnConfig"
+                        Click="BtnConfig_Click"
+                        IsTabStop="False"
+                        VerticalAlignment="Center"
+                        Background="#1E293B"
+                        BorderBrush="#334155"
+                        BorderThickness="1"
+                        Padding="8"
+                        CornerRadius="8"
+                        ToolTipService.ToolTip="Configurações de Conexão com o Banco de Dados">
+                    <ic:SymbolIcon Symbol="Settings" FontSize="16" Foreground="#CBD5E1"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================== -->
+        <!-- 1. CORPO DE AUTENTICAÇÃO (Branco Puro com Design Moderno)       -->
+        <!-- ============================================================== -->
+        <Grid Grid.Row="1" Padding="28,22,28,20">
+            <StackPanel Spacing="16" VerticalAlignment="Center">
+                
+                <!-- Título e Subtítulo -->
+                <StackPanel Spacing="3">
+                    <TextBlock Text="Identificação do Operador" FontSize="17" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                    <TextBlock Text="Selecione seu usuário e digite sua senha de caixa." FontSize="12.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                </StackPanel>
+
+                <!-- Campo 1: Seleção do Usuário -->
+                <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ic:SymbolIcon Symbol="Person" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                        <TextBlock Text="Operador / Usuário" FontSize="12.5" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                    </StackPanel>
+                    <ComboBox x:Name="CboUsuario"
+                              ItemsSource="{Binding ActiveUsers}"
+                              SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
+                              DisplayMemberPath="Nome"
+                              KeyDown="CboUsuario_KeyDown"
+                              PlaceholderText="Selecione o operador..."
+                              HorizontalAlignment="Stretch"
+                              Height="42"
+                              FontSize="13.5"
+                              CornerRadius="8"/>
+                </StackPanel>
+
+                <!-- Campo 2: Senha de Acesso -->
+                <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <ic:SymbolIcon Symbol="Key" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                        <TextBlock Text="Senha de Acesso" FontSize="12.5" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                    </StackPanel>
+                    <PasswordBox x:Name="TxtPassword"
+                                 Password="{Binding Password, Mode=TwoWay}"
+                                 KeyDown="TxtPassword_KeyDown"
+                                 PlaceholderText="Digite sua senha"
+                                 Height="42"
+                                 FontSize="13.5"
+                                 CornerRadius="8"
+                                 VerticalContentAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Mensagem de Erro de Autenticação -->
+                <Border Background="#FEE2E2" 
+                        BorderBrush="#FCA5A5" 
+                        BorderThickness="1" 
+                        CornerRadius="8" 
+                        Padding="12,8"
+                        Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <ic:SymbolIcon Grid.Column="0" Symbol="DismissCircle" FontSize="16" Foreground="{StaticResource BrushDanger}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="{StaticResource BrushDanger}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Botão de Acesso Principal (Sem Foco Branco) -->
+                <Button x:Name="BtnAcessar"
+                        Command="{Binding LoginCommand}"
+                        Height="44"
+                        CornerRadius="8"
+                        HorizontalAlignment="Stretch"
+                        Margin="0,4,0,0"
+                        BorderThickness="0"
+                        Background="{StaticResource BrushServsicBlue}"
+                        Foreground="#FFFFFF">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="Acessar o Sistema" FontFamily="Segoe UI Semibold" FontWeight="Bold" FontSize="14" Foreground="#FFFFFF"/>
+                        <ic:SymbolIcon Symbol="ArrowRight" FontSize="16" Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Indicador de Carregamento -->
+                <ProgressRing IsActive="{Binding IsBusy}" 
+                              HorizontalAlignment="Center" 
+                              Width="26" Height="26"
+                              Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
             </StackPanel>
         </Grid>
 
         <!-- ============================================================== -->
+        <!-- 2. RODAPÉ DE STATUS E CONEXÃO                                   -->
+        <!-- ============================================================== -->
+        <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="18,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Indicador de Status com Ponto Colorido -->
+                <Border Grid.Column="0" 
+                        Width="8" Height="8" 
+                        CornerRadius="4" 
+                        Background="{Binding IsConnected, Converter={StaticResource StatusColorConverter}}" 
+                        VerticalAlignment="Center" 
+                        Margin="0,0,8,0"/>
+
+                <TextBlock Grid.Column="1" 
+                           Text="{Binding ConnectionStatus}" 
+                           FontSize="11" 
+                           Foreground="{StaticResource BrushTextSubtle}" 
+                           VerticalAlignment="Center" 
+                           TextTrimming="CharacterEllipsis"/>
+
+                <TextBlock Grid.Column="2" 
+                           Text="v2026" 
+                           FontSize="10.5" 
+                           FontWeight="SemiBold"
+                           Foreground="#94A3B8" 
+                           VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- ============================================================== -->
         <!-- MODAL DE CONFIGURAÇÃO MANUAL DO BANCO DE DADOS (Servcom.dll)    -->
         <!-- ============================================================== -->
         <Grid x:Name="ConfigOverlay" 
+              Grid.RowSpan="3"
               Canvas.ZIndex="999"
-              Background="#90000000"
+              Background="#950B192C"
               Visibility="{Binding IsConfigOpen, Converter={StaticResource BoolToVisibilityConverter}}">
-            <Border Width="480" 
+            <Border Width="400" 
                     HorizontalAlignment="Center" 
                     VerticalAlignment="Center" 
                     Background="#FFFFFF" 
-                    CornerRadius="14" 
+                    CornerRadius="12" 
                     BorderBrush="{StaticResource BrushBorder}" 
                     BorderThickness="1" 
-                    Padding="26">
-                <StackPanel Spacing="16">
+                    Padding="22">
+                <StackPanel Spacing="14">
                     <!-- Cabeçalho do Modal -->
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -252,15 +220,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                            <Border Background="{StaticResource BrushServsicBlueSoft}" CornerRadius="8" Padding="7">
-                                <ic:SymbolIcon Symbol="Database" FontSize="22" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <Border Background="{StaticResource BrushServsicBlueSoft}" CornerRadius="8" Padding="6">
+                                <ic:SymbolIcon Symbol="Database" FontSize="20" Foreground="{StaticResource BrushServsicBlue}"/>
                             </Border>
-                            <StackPanel VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="Conectar ao Banco de Dados" FontSize="16" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                                <TextBlock Text="Configuração e leitura do arquivo Servcom.dll" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <StackPanel VerticalAlignment="Center" Spacing="1">
+                                <TextBlock Text="Conectar ao Banco" FontSize="15" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBlock Text="Configuração do Servcom.dll" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
                             </StackPanel>
                         </StackPanel>
-                        <Button Grid.Column="1" Click="BtnFecharConfig_Click" Background="Transparent" BorderThickness="0" Padding="6" CornerRadius="6">
+                        <Button Grid.Column="1" Click="BtnFecharConfig_Click" Background="Transparent" BorderThickness="0" Padding="4" CornerRadius="6">
                             <ic:SymbolIcon Symbol="Dismiss" FontSize="16" Foreground="{StaticResource BrushTextSubtle}"/>
                         </Button>
                     </Grid>
@@ -268,40 +236,40 @@
                     <Border Height="1" Background="{StaticResource BrushBorder}"/>
 
                     <!-- Campos de Conexão -->
-                    <StackPanel Spacing="12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Servidor / Instância (Host ou IP)" Style="{StaticResource TextLabel}"/>
+                    <StackPanel Spacing="10">
+                        <StackPanel Spacing="3">
+                            <TextBlock Text="Servidor / Instância" Style="{StaticResource TextLabel}"/>
                             <TextBox Text="{Binding ConfigServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                     PlaceholderText="Ex: .\qg ou localhost ou 192.168.1.10\SERVSIC" 
-                                     Height="38"
+                                     PlaceholderText="Ex: .\qg ou 192.168.1.10" 
+                                     Height="36"
                                      CornerRadius="6"/>
                         </StackPanel>
 
-                        <StackPanel Spacing="4">
+                        <StackPanel Spacing="3">
                             <TextBlock Text="Nome do Banco de Dados" Style="{StaticResource TextLabel}"/>
                             <TextBox Text="{Binding ConfigDatabase, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                                      PlaceholderText="Ex: prod silcon" 
-                                     Height="38"
+                                     Height="36"
                                      CornerRadius="6"/>
                         </StackPanel>
 
-                        <Grid ColumnSpacing="12">
+                        <Grid ColumnSpacing="10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Spacing="4">
+                            <StackPanel Grid.Column="0" Spacing="3">
                                 <TextBlock Text="Usuário SQL" Style="{StaticResource TextLabel}"/>
                                 <TextBox Text="{Binding ConfigUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                                          PlaceholderText="Ex: sa" 
-                                         Height="38"
+                                         Height="36"
                                          CornerRadius="6"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="1" Spacing="4">
+                            <StackPanel Grid.Column="1" Spacing="3">
                                 <TextBlock Text="Senha SQL" Style="{StaticResource TextLabel}"/>
                                 <PasswordBox x:Name="TxtConfigPassword" 
-                                             PlaceholderText="Senha do banco" 
-                                             Height="38"
+                                             PlaceholderText="Senha" 
+                                             Height="36"
                                              CornerRadius="6"/>
                             </StackPanel>
                         </Grid>
@@ -310,31 +278,31 @@
                     <!-- Mensagem de Retorno do Teste / Gravação -->
                     <Border Visibility="{Binding ConfigStatusMessage, Converter={StaticResource StringToVisibilityConverter}}"
                             Background="{Binding IsConfigSuccess, Converter={StaticResource StatusColorConverter}}"
-                            CornerRadius="8" Padding="12,8">
-                        <TextBlock Text="{Binding ConfigStatusMessage}" Foreground="#FFFFFF" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                            CornerRadius="6" Padding="10,6">
+                        <TextBlock Text="{Binding ConfigStatusMessage}" Foreground="#FFFFFF" FontSize="11.5" FontWeight="SemiBold" TextWrapping="Wrap"/>
                     </Border>
 
                     <!-- Barra de Ações -->
-                    <Grid Margin="0,8,0,0">
+                    <Grid Margin="0,4,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Button Grid.Column="0" Click="BtnTestarConexao_Click" Style="{StaticResource BtnSecondary}" Height="38">
+                        <Button Grid.Column="0" Click="BtnTestarConexao_Click" Style="{StaticResource BtnSecondary}" Height="36">
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="16"/>
-                                <TextBlock Text="Testar Conexão" FontWeight="SemiBold"/>
+                                <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="15"/>
+                                <TextBlock Text="Testar" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Button>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-                            <Button Content="Cancelar" Click="BtnFecharConfig_Click" Style="{StaticResource BtnSecondary}" Height="38"/>
-                            <Button Click="BtnSalvarConfig_Click" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0">
+                            <Button Content="Cancelar" Click="BtnFecharConfig_Click" Style="{StaticResource BtnSecondary}" Height="36"/>
+                            <Button Click="BtnSalvarConfig_Click" Style="{StaticResource BtnPrimary}" Height="36" Padding="14,0">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <ic:SymbolIcon Symbol="Save" FontSize="16"/>
-                                    <TextBlock Text="Salvar e Conectar" FontWeight="Bold"/>
+                                    <ic:SymbolIcon Symbol="Save" FontSize="15"/>
+                                    <TextBlock Text="Salvar" FontWeight="Bold"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>

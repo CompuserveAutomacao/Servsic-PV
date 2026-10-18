@@ -16,7 +16,7 @@ public partial class LoginView : Window
 
         // Configura tamanho e ícone da janela
         this.AppWindow.SetIcon("Assets/icoservsicpv.ico");
-        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(820, 620));
+        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(430, 560));
 
         // Centraliza na tela
         var displayArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
