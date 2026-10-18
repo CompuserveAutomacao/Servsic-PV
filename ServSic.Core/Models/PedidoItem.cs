@@ -118,6 +118,8 @@ public class PedidoItem : INotifyPropertyChanged
     public decimal PercentualDesconto => SubtotalBruto > 0 ? Math.Round((Desconto / SubtotalBruto) * 100m, 2) : 0m;
     public string PercentualDescontoFormatado => $"{PercentualDesconto:N2}%";
     public string PerDescMaxFormatado => $"{PerDescMax:N2}%";
+    public decimal MaxDescontoValor => Math.Round((SubtotalBruto * PerDescMax) / 100m, 2);
+    public string MaxDescontoValorFormatado => $"{MaxDescontoValor:C2}";
     public string DescontoFormatado => $"{Desconto:C2}";
     public string TotalFormatado => $"{Total:C2}";
 

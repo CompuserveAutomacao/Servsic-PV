@@ -35,8 +35,16 @@ public class PedidoViewModel : ViewModelBase
     private string _descontoItemTexto = "0";
     private decimal _descontoItemPercentualInput = 0m;
     private string _descontoItemPercentualTexto = "0";
+    private string _tipoDescontoItem = "P"; // "P" = %, "V" = R$
+    private string _descontoItemInputTexto = "0";
     private bool _isUpdatingDesconto;
     private Produto? _produtoSelecionado;
+
+    // Resumo Financeiro: Modos de Desconto Geral e Acréscimo / Frete
+    private string _tipoDescontoGeral = "P";
+    private string _descontoGeralInputTexto = "0";
+    private string _tipoAcrescimoGeral = "P";
+    private string _acrescimoGeralInputTexto = "0";
 
     private Usuario? _usuarioLogado;
 
@@ -184,6 +192,11 @@ public class PedidoViewModel : ViewModelBase
                             decimal valorReais = Math.Round((subtotal * _descontoItemPercentualInput) / 100m, 2);
                             _descontoItemInput = valorReais;
                             _descontoItemTexto = valorReais.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                            if (TipoDescontoItem == "V")
+                            {
+                                _descontoItemInputTexto = _descontoItemTexto;
+                                OnPropertyChanged(nameof(DescontoItemInputTexto));
+                            }
                             OnPropertyChanged(nameof(DescontoItemInput));
                             OnPropertyChanged(nameof(DescontoItemTexto));
                         }
@@ -216,6 +229,93 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _vlUnitarioInput, value);
     }
 
+    public string TipoDescontoItem
+    {
+        get => _tipoDescontoItem;
+        set
+        {
+            if (SetProperty(ref _tipoDescontoItem, value))
+            {
+                OnPropertyChanged(nameof(TipoDescontoItemSimbolo));
+                OnPropertyChanged(nameof(LabelDescontoItem));
+            }
+        }
+    }
+
+    public string TipoDescontoItemSimbolo => TipoDescontoItem == "P" ? "%" : "R$";
+    public string LabelDescontoItem => $"Desc ({TipoDescontoItemSimbolo})";
+
+    public string DescontoItemInputTexto
+    {
+        get => _descontoItemInputTexto;
+        set
+        {
+            if (SetProperty(ref _descontoItemInputTexto, value))
+            {
+                if (_isUpdatingDesconto) return;
+                _isUpdatingDesconto = true;
+                try
+                {
+                    decimal subtotal = Math.Round(QuantidadeInput * (ProdutoSelecionado?.PrVenda ?? 0m), 2);
+                    if (decimal.TryParse(value?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var num))
+                    {
+                        if (TipoDescontoItem == "P")
+                        {
+                            _descontoItemPercentualInput = num;
+                            _descontoItemInput = Math.Round((subtotal * num) / 100m, 2);
+                            _descontoItemTexto = _descontoItemInput.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                            _descontoItemPercentualTexto = num.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            _descontoItemInput = num;
+                            _descontoItemPercentualInput = subtotal > 0 ? Math.Round((num / subtotal) * 100m, 2) : 0m;
+                            _descontoItemTexto = num.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                            _descontoItemPercentualTexto = _descontoItemPercentualInput.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                    }
+                    else
+                    {
+                        _descontoItemInput = 0m;
+                        _descontoItemPercentualInput = 0m;
+                        _descontoItemTexto = "0";
+                        _descontoItemPercentualTexto = "0";
+                    }
+                    OnPropertyChanged(nameof(DescontoItemInput));
+                    OnPropertyChanged(nameof(DescontoItemTexto));
+                    OnPropertyChanged(nameof(DescontoItemPercentualTexto));
+                }
+                finally
+                {
+                    _isUpdatingDesconto = false;
+                }
+            }
+        }
+    }
+
+    public void AlternarTipoDescontoItem()
+    {
+        _isUpdatingDesconto = true;
+        try
+        {
+            if (TipoDescontoItem == "P")
+            {
+                TipoDescontoItem = "V";
+                _descontoItemInputTexto = _descontoItemInput > 0 ? _descontoItemInput.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
+            }
+            else
+            {
+                TipoDescontoItem = "P";
+                _descontoItemInputTexto = _descontoItemPercentualInput > 0 ? _descontoItemPercentualInput.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
+            }
+            OnPropertyChanged(nameof(DescontoItemInputTexto));
+        }
+        finally
+        {
+            _isUpdatingDesconto = false;
+        }
+    }
+
     public string DescontoItemPercentualTexto
     {
         get => _descontoItemPercentualTexto;
@@ -234,6 +334,11 @@ public class PedidoViewModel : ViewModelBase
                         decimal valorReais = Math.Round((subtotal * perc) / 100m, 2);
                         _descontoItemInput = valorReais;
                         _descontoItemTexto = valorReais.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                        if (TipoDescontoItem == "P")
+                        {
+                            _descontoItemInputTexto = _descontoItemPercentualTexto;
+                            OnPropertyChanged(nameof(DescontoItemInputTexto));
+                        }
                         OnPropertyChanged(nameof(DescontoItemInput));
                         OnPropertyChanged(nameof(DescontoItemTexto));
                     }
@@ -242,6 +347,11 @@ public class PedidoViewModel : ViewModelBase
                         _descontoItemPercentualInput = 0m;
                         _descontoItemInput = 0m;
                         _descontoItemTexto = "0";
+                        if (TipoDescontoItem == "P")
+                        {
+                            _descontoItemInputTexto = "0";
+                            OnPropertyChanged(nameof(DescontoItemInputTexto));
+                        }
                         OnPropertyChanged(nameof(DescontoItemInput));
                         OnPropertyChanged(nameof(DescontoItemTexto));
                     }
@@ -272,6 +382,11 @@ public class PedidoViewModel : ViewModelBase
                         decimal perc = subtotal > 0 ? Math.Round((desc / subtotal) * 100m, 2) : 0m;
                         _descontoItemPercentualInput = perc;
                         _descontoItemPercentualTexto = perc.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                        if (TipoDescontoItem == "V")
+                        {
+                            _descontoItemInputTexto = _descontoItemTexto;
+                            OnPropertyChanged(nameof(DescontoItemInputTexto));
+                        }
                         OnPropertyChanged(nameof(DescontoItemInput));
                         OnPropertyChanged(nameof(DescontoItemPercentualTexto));
                     }
@@ -280,6 +395,11 @@ public class PedidoViewModel : ViewModelBase
                         _descontoItemInput = 0m;
                         _descontoItemPercentualInput = 0m;
                         _descontoItemPercentualTexto = "0";
+                        if (TipoDescontoItem == "V")
+                        {
+                            _descontoItemInputTexto = "0";
+                            OnPropertyChanged(nameof(DescontoItemInputTexto));
+                        }
                         OnPropertyChanged(nameof(DescontoItemInput));
                         OnPropertyChanged(nameof(DescontoItemPercentualTexto));
                     }
@@ -305,6 +425,123 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
+    // --- Resumo Financeiro: Desconto Geral e Acréscimo / Frete ---
+    public string TipoDescontoGeral
+    {
+        get => _tipoDescontoGeral;
+        set
+        {
+            if (SetProperty(ref _tipoDescontoGeral, value))
+            {
+                OnPropertyChanged(nameof(TipoDescontoGeralSimbolo));
+            }
+        }
+    }
+
+    public string TipoDescontoGeralSimbolo => TipoDescontoGeral == "P" ? "%" : "R$";
+
+    public string DescontoGeralInputTexto
+    {
+        get => _descontoGeralInputTexto;
+        set
+        {
+            if (SetProperty(ref _descontoGeralInputTexto, value))
+            {
+                if (decimal.TryParse(value?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var num))
+                {
+                    if (TipoDescontoGeral == "P")
+                    {
+                        Pedido.Desconto = Math.Round((Pedido.Subtotal * num) / 100m, 2);
+                    }
+                    else
+                    {
+                        Pedido.Desconto = num;
+                    }
+                }
+                else
+                {
+                    Pedido.Desconto = 0m;
+                }
+                Pedido.RecalcularTotais();
+                OnPropertyChanged(nameof(Pedido));
+            }
+        }
+    }
+
+    public void AlternarTipoDescontoGeral()
+    {
+        if (TipoDescontoGeral == "P")
+        {
+            TipoDescontoGeral = "V";
+            _descontoGeralInputTexto = Pedido.Desconto > 0 ? Pedido.Desconto.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
+        }
+        else
+        {
+            TipoDescontoGeral = "P";
+            decimal perc = Pedido.Subtotal > 0 ? Math.Round((Pedido.Desconto / Pedido.Subtotal) * 100m, 2) : 0m;
+            _descontoGeralInputTexto = perc > 0 ? perc.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
+        }
+        OnPropertyChanged(nameof(DescontoGeralInputTexto));
+    }
+
+    public string TipoAcrescimoGeral
+    {
+        get => _tipoAcrescimoGeral;
+        set
+        {
+            if (SetProperty(ref _tipoAcrescimoGeral, value))
+            {
+                OnPropertyChanged(nameof(TipoAcrescimoGeralSimbolo));
+            }
+        }
+    }
+
+    public string TipoAcrescimoGeralSimbolo => TipoAcrescimoGeral == "P" ? "%" : "R$";
+
+    public string AcrescimoGeralInputTexto
+    {
+        get => _acrescimoGeralInputTexto;
+        set
+        {
+            if (SetProperty(ref _acrescimoGeralInputTexto, value))
+            {
+                if (decimal.TryParse(value?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var num))
+                {
+                    if (TipoAcrescimoGeral == "P")
+                    {
+                        Pedido.Acrescimo = Math.Round((Pedido.Subtotal * num) / 100m, 2);
+                    }
+                    else
+                    {
+                        Pedido.Acrescimo = num;
+                    }
+                }
+                else
+                {
+                    Pedido.Acrescimo = 0m;
+                }
+                Pedido.RecalcularTotais();
+                OnPropertyChanged(nameof(Pedido));
+            }
+        }
+    }
+
+    public void AlternarTipoAcrescimoGeral()
+    {
+        if (TipoAcrescimoGeral == "P")
+        {
+            TipoAcrescimoGeral = "V";
+            _acrescimoGeralInputTexto = Pedido.Acrescimo > 0 ? Pedido.Acrescimo.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
+        }
+        else
+        {
+            TipoAcrescimoGeral = "P";
+            decimal perc = Pedido.Subtotal > 0 ? Math.Round((Pedido.Acrescimo / Pedido.Subtotal) * 100m, 2) : 0m;
+            _acrescimoGeralInputTexto = perc > 0 ? perc.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
+        }
+        OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
+    }
+
     public Produto? ProdutoSelecionado
     {
         get => _produtoSelecionado;
@@ -321,12 +558,17 @@ public class PedidoViewModel : ViewModelBase
                     _descontoItemTexto = "0";
                     _descontoItemPercentualInput = 0m;
                     _descontoItemPercentualTexto = "0";
+                    _tipoDescontoItem = "P";
+                    _descontoItemInputTexto = "0";
                     OnPropertyChanged(nameof(PrecoUnitarioTexto));
                     OnPropertyChanged(nameof(QuantidadeInput));
                     OnPropertyChanged(nameof(QuantidadeTexto));
                     OnPropertyChanged(nameof(DescontoItemInput));
                     OnPropertyChanged(nameof(DescontoItemTexto));
                     OnPropertyChanged(nameof(DescontoItemPercentualTexto));
+                    OnPropertyChanged(nameof(TipoDescontoItem));
+                    OnPropertyChanged(nameof(TipoDescontoItemSimbolo));
+                    OnPropertyChanged(nameof(DescontoItemInputTexto));
                 }
                 else
                 {
@@ -539,6 +781,9 @@ public class PedidoViewModel : ViewModelBase
     public ICommand SelecionarOrcamentoCommand { get; }
     public ICommand SelecionarVendaCommand { get; }
     public ICommand ConverterEmVendaCommand { get; }
+    public ICommand AlternarTipoDescontoItemCommand { get; }
+    public ICommand AlternarTipoDescontoGeralCommand { get; }
+    public ICommand AlternarTipoAcrescimoGeralCommand { get; }
 
     // Comandos de Consulta de Clientes
     public ICommand AbrirConsultaClienteCommand { get; }
@@ -632,6 +877,9 @@ public class PedidoViewModel : ViewModelBase
         SelecionarOrcamentoCommand = new RelayCommand(_ => DefinirTipo("O"));
         SelecionarVendaCommand = new RelayCommand(_ => DefinirTipo("V"));
         ConverterEmVendaCommand = new RelayCommand(async _ => await ConverterEmVendaAsync());
+        AlternarTipoDescontoItemCommand = new RelayCommand(_ => AlternarTipoDescontoItem());
+        AlternarTipoDescontoGeralCommand = new RelayCommand(_ => AlternarTipoDescontoGeral());
+        AlternarTipoAcrescimoGeralCommand = new RelayCommand(_ => AlternarTipoAcrescimoGeral());
 
         // Modais de Cliente
         AbrirConsultaClienteCommand = new RelayCommand(async _ => await AbrirConsultaClienteAsync());
@@ -687,6 +935,16 @@ public class PedidoViewModel : ViewModelBase
             LkVendedor = UsuarioLogado?.LkVendedor,
             Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) ? UsuarioLogado.NomeVendedor : UsuarioLogado?.Nome
         };
+        _tipoDescontoGeral = "P";
+        _descontoGeralInputTexto = "0";
+        _tipoAcrescimoGeral = "P";
+        _acrescimoGeralInputTexto = "0";
+        OnPropertyChanged(nameof(TipoDescontoGeral));
+        OnPropertyChanged(nameof(TipoDescontoGeralSimbolo));
+        OnPropertyChanged(nameof(DescontoGeralInputTexto));
+        OnPropertyChanged(nameof(TipoAcrescimoGeral));
+        OnPropertyChanged(nameof(TipoAcrescimoGeralSimbolo));
+        OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
         LimparEntradaItem();
         StatusMensagem = string.Empty;
         NotificarAlteracaoTipo();
@@ -1143,14 +1401,25 @@ public class PedidoViewModel : ViewModelBase
             OnPropertyChanged(nameof(QuantidadeInput));
         }
 
-        if (string.IsNullOrWhiteSpace(DescontoItemTexto))
+        if (decimal.TryParse(DescontoItemInputTexto?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var descInformado))
         {
-            _descontoItemInput = 0m;
+            decimal subtotalCalc = Math.Round(QuantidadeInput * (ProdutoSelecionado?.PrVenda ?? 0m), 2);
+            if (TipoDescontoItem == "P")
+            {
+                _descontoItemPercentualInput = descInformado;
+                _descontoItemInput = Math.Round((subtotalCalc * descInformado) / 100m, 2);
+            }
+            else
+            {
+                _descontoItemInput = descInformado;
+                _descontoItemPercentualInput = subtotalCalc > 0 ? Math.Round((descInformado / subtotalCalc) * 100m, 2) : 0m;
+            }
             OnPropertyChanged(nameof(DescontoItemInput));
         }
-        else if (decimal.TryParse(DescontoItemTexto.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var descInformado))
+        else
         {
-            _descontoItemInput = descInformado;
+            _descontoItemInput = 0m;
+            _descontoItemPercentualInput = 0m;
             OnPropertyChanged(nameof(DescontoItemInput));
         }
 
@@ -1288,6 +1557,8 @@ public class PedidoViewModel : ViewModelBase
         _descontoItemTexto = "0";
         _descontoItemPercentualInput = 0m;
         _descontoItemPercentualTexto = "0";
+        _tipoDescontoItem = "P";
+        _descontoItemInputTexto = "0";
         _vlUnitarioInput = 0m;
         OnPropertyChanged(nameof(PrecoUnitarioTexto));
         OnPropertyChanged(nameof(QuantidadeInput));
@@ -1295,6 +1566,9 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(DescontoItemInput));
         OnPropertyChanged(nameof(DescontoItemTexto));
         OnPropertyChanged(nameof(DescontoItemPercentualTexto));
+        OnPropertyChanged(nameof(TipoDescontoItem));
+        OnPropertyChanged(nameof(TipoDescontoItemSimbolo));
+        OnPropertyChanged(nameof(DescontoItemInputTexto));
         OnPropertyChanged(nameof(VlUnitarioInput));
     }
 

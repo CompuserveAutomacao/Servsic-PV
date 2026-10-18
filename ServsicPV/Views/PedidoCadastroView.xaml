@@ -227,10 +227,9 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="130"/> <!-- Código / Barra -->
                                 <ColumnDefinition Width="*"/>   <!-- Descrição do Produto -->
-                                <ColumnDefinition Width="105"/> <!-- Preço Unitário -->
+                                <ColumnDefinition Width="100"/> <!-- Preço Unitário -->
                                 <ColumnDefinition Width="75"/>  <!-- Qtd -->
-                                <ColumnDefinition Width="80"/>  <!-- Desc (%) -->
-                                <ColumnDefinition Width="95"/>  <!-- Desc (R$) -->
+                                <ColumnDefinition Width="130"/> <!-- Desconto (% / R$) -->
                                 <ColumnDefinition Width="Auto"/><!-- Inserir -->
                             </Grid.ColumnDefinitions>
 
@@ -273,25 +272,43 @@
                                          Height="36"/>
                             </StackPanel>
 
+                            <!-- Desconto Unificado com Alternância % e R$ -->
                             <StackPanel Grid.Column="4" Spacing="4">
-                                <TextBlock Text="Desc (%)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                <TextBox x:Name="TxtDescontoItemPercentual"
-                                         Text="{Binding DescontoItemPercentualTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         KeyDown="DescontoItemPercentual_KeyDown"
-                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
-                                         Height="36"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="Desconto (" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                    <TextBlock Text="{Binding TipoDescontoItemSimbolo}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text=")" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+                                <Grid ColumnSpacing="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="38"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="TxtDescontoItem"
+                                             Grid.Column="0"
+                                             Text="{Binding DescontoItemInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             KeyDown="DescontoItem_KeyDown"
+                                             BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                             PlaceholderText="0,00"
+                                             Height="36"/>
+                                    <Button x:Name="BtnToggleTipoDescontoItem"
+                                            Grid.Column="1"
+                                            Command="{Binding AlternarTipoDescontoItemCommand}"
+                                            Content="{Binding TipoDescontoItemSimbolo}"
+                                            FontWeight="Bold"
+                                            FontSize="11.5"
+                                            Height="36"
+                                            Width="38"
+                                            Padding="0"
+                                            Background="{StaticResource BrushServsicBlueSoft}"
+                                            Foreground="{StaticResource BrushServsicBlue}"
+                                            BorderBrush="{StaticResource BrushServsicBlue}"
+                                            BorderThickness="1"
+                                            ToolTipService.ToolTip="Alternar Desconto entre % e R$"/>
+                                </Grid>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="5" Spacing="4">
-                                <TextBlock Text="Desc (R$)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                <TextBox x:Name="TxtDescontoItem"
-                                         Text="{Binding DescontoItemTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         KeyDown="DescontoItem_KeyDown"
-                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
-                                         Height="36"/>
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="6" VerticalAlignment="Bottom">
+                            <StackPanel Grid.Column="5" VerticalAlignment="Bottom">
                                 <Button x:Name="BtnInserirItem"
                                         IsEnabled="{Binding HasProdutoSelecionado}"
                                         Click="BtnInserirItem_Click"
@@ -307,129 +324,167 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Cabeçalho Fixo da Tabela de Itens -->
-                        <Grid Grid.Row="2" Background="#F1F5F9" Padding="12,8" CornerRadius="4" Margin="0,4,0,2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="90"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="65"/>
-                                <ColumnDefinition Width="95"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="40"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="1" Text="DESCRIÇÃO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="2" Text="UN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="3" Text="QTD" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="4" Text="UNITÁRIO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="5" Text="DESC. (R$)" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="6" Text="TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="7" Text="" FontSize="11"/>
-                        </Grid>
+                        <!-- Cabeçalho Superior Imitando Título de Grid (Card Header) -->
+                        <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,4,0,2">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="75"/>  <!-- CÓDIGO -->
+                                    <ColumnDefinition Width="*"/>   <!-- DESCRIÇÃO -->
+                                    <ColumnDefinition Width="45"/>  <!-- UN -->
+                                    <ColumnDefinition Width="55"/>  <!-- QTD -->
+                                    <ColumnDefinition Width="90"/>  <!-- UNITÁRIO -->
+                                    <ColumnDefinition Width="105"/> <!-- DESCONTO -->
+                                    <ColumnDefinition Width="95"/>  <!-- TOTAL -->
+                                    <ColumnDefinition Width="38"/>  <!-- AÇÕES -->
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="DESCRIÇÃO DO PRODUTO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="UN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="QTD" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="4" Text="UNITÁRIO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="5" Text="DESCONTO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="6" Text="TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="7" Text="" FontSize="11"/>
+                            </Grid>
+                        </Border>
 
-                        <!-- Lista de Itens do Pedido (ObservableCollection com Renderização Imediata) -->
-                        <ListView Grid.Row="3" ItemsSource="{Binding Pedido.Itens}" SelectionMode="None">
+                        <!-- Lista de Cards Virtuais de Itens (Alta Performance com Virtualização de Containers) -->
+                        <ListView x:Name="ListaItens"
+                                  Grid.Row="3"
+                                  ItemsSource="{Binding Pedido.Itens}"
+                                  SelectionMode="None"
+                                  IsItemClickEnabled="False"
+                                  ShowsScrollingPlaceholders="False"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ItemsStackPanel Orientation="Vertical" CacheLength="4"/>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                     <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="MinHeight" Value="40"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="MinHeight" Value="44"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Padding="12,8" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="90"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="50"/>
-                                            <ColumnDefinition Width="65"/>
-                                            <ColumnDefinition Width="95"/>
-                                            <ColumnDefinition Width="110"/>
-                                            <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="40"/>
-                                        </Grid.ColumnDefinitions>
+                                    <Border Background="#FFFFFF" 
+                                            BorderBrush="#E2E8F0" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            Padding="12,8" 
+                                            Margin="0,0,0,6">
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="75"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="45"/>
+                                                <ColumnDefinition Width="55"/>
+                                                <ColumnDefinition Width="90"/>
+                                                <ColumnDefinition Width="105"/>
+                                                <ColumnDefinition Width="95"/>
+                                                <ColumnDefinition Width="38"/>
+                                            </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Column="0" Text="{Binding CodigoExibicao}" FontSize="12" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Produto}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding Unidade}" FontSize="12" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding Quantidade}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}" FontSize="12" VerticalAlignment="Center"/>
-                                        
-                                        <!-- Desconto com Botão Interativo e Flyout de Edição -->
-                                        <Button Grid.Column="5" 
-                                                Click="BtnAbrirEdicaoDesconto_Click"
-                                                Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
-                                                CornerRadius="4" Padding="6,2" Height="30"
-                                                VerticalAlignment="Center" HorizontalAlignment="Stretch"
-                                                ToolTipService.ToolTip="Clique para alterar o desconto deste item">
-                                            <Grid ColumnSpacing="4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" 
-                                                           Text="{Binding DescontoFormatado}" 
-                                                           FontSize="11.5" FontWeight="SemiBold" 
-                                                           Foreground="{StaticResource BrushDanger}" 
-                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                                                <ic:SymbolIcon Grid.Column="1" Symbol="Edit" FontSize="11" Foreground="#DC2626" VerticalAlignment="Center"/>
-                                            </Grid>
-                                            <Button.Flyout>
-                                                <Flyout x:Name="FlyoutEdicaoDesconto">
-                                                    <StackPanel Width="240" Spacing="10" Padding="4">
-                                                        <TextBlock Text="Alterar Desconto do Item" FontWeight="Bold" FontSize="13" Foreground="{StaticResource BrushTextDark}"/>
-                                                        
-                                                        <TextBlock FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}" TextWrapping="Wrap">
-                                                            <Run Text="Produto: "/><Run Text="{Binding Produto}" FontWeight="SemiBold"/>
-                                                            <LineBreak/>
-                                                            <Run Text="Subtotal: "/><Run Text="{Binding SubtotalBruto, Converter={StaticResource CurrencyConverter}}" FontWeight="SemiBold"/>
-                                                            <Run Text=" | Teto: "/><Run Text="{Binding PerDescMaxFormatado}" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                                        </TextBlock>
+                                            <!-- 0. Código -->
+                                            <Border Grid.Column="0" Background="#F8FAFC" CornerRadius="4" Padding="5,2" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding CodigoExibicao}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </Border>
 
-                                                        <Grid ColumnSpacing="8">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="*"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <StackPanel Grid.Column="0" Spacing="4">
-                                                                <TextBlock Text="Desc (%)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                                                <TextBox x:Name="TxtModalDescPerc" 
+                                            <!-- 1. Descrição do Produto -->
+                                            <TextBlock Grid.Column="1" Text="{Binding Produto}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                            <!-- 2. Unidade -->
+                                            <TextBlock Grid.Column="2" Text="{Binding Unidade}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                                            <!-- 3. Quantidade -->
+                                            <Border Grid.Column="3" Background="#F1F5F9" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Quantidade}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </Border>
+
+                                            <!-- 4. Preço Unitário -->
+                                            <TextBlock Grid.Column="4" Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}" FontSize="12" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                            <!-- 5. Desconto com Badge Interativo e Flyout -->
+                                            <Button Grid.Column="5" 
+                                                    Click="BtnAbrirEdicaoDesconto_Click"
+                                                    Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
+                                                    CornerRadius="4" Padding="6,2" Height="30"
+                                                    VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                                    ToolTipService.ToolTip="Clique para alterar o desconto deste item">
+                                                <Grid ColumnSpacing="4">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" 
+                                                               Text="{Binding DescontoFormatado}" 
+                                                               FontSize="11.5" FontWeight="SemiBold" 
+                                                               Foreground="{StaticResource BrushDanger}" 
+                                                               VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                                    <ic:SymbolIcon Grid.Column="1" Symbol="Edit" FontSize="11" Foreground="#DC2626" VerticalAlignment="Center"/>
+                                                </Grid>
+                                                <Button.Flyout>
+                                                    <Flyout x:Name="FlyoutEdicaoDesconto">
+                                                        <StackPanel Width="260" Spacing="10" Padding="4">
+                                                            <TextBlock Text="Alterar Desconto do Item" FontWeight="Bold" FontSize="13" Foreground="{StaticResource BrushTextDark}"/>
+                                                            
+                                                            <TextBlock FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}" TextWrapping="Wrap">
+                                                                <Run Text="Produto: "/><Run Text="{Binding Produto}" FontWeight="SemiBold"/>
+                                                                <LineBreak/>
+                                                                <Run Text="Subtotal: "/><Run Text="{Binding SubtotalBruto, Converter={StaticResource CurrencyConverter}}" FontWeight="SemiBold"/>
+                                                                <Run Text=" | Teto: "/><Run Text="{Binding PerDescMaxFormatado}" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                                <Run Text=" ("/><Run Text="{Binding MaxDescontoValorFormatado}" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/><Run Text=")"/>
+                                                            </TextBlock>
+
+                                                            <Grid ColumnSpacing="6">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="48"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBox x:Name="TxtModalDesconto" 
                                                                          BeforeTextChanging="DecimalOnly_BeforeTextChanging"
-                                                                         TextChanged="ModalDescPerc_TextChanged"
                                                                          KeyDown="ModalDesc_KeyDown"
-                                                                         Height="32" FontSize="12"/>
-                                                            </StackPanel>
-                                                            <StackPanel Grid.Column="1" Spacing="4">
-                                                                <TextBlock Text="Desc (R$)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                                                <TextBox x:Name="TxtModalDescReais" 
-                                                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
-                                                                         TextChanged="ModalDescReais_TextChanged"
-                                                                         KeyDown="ModalDesc_KeyDown"
-                                                                         Height="32" FontSize="12"/>
-                                                            </StackPanel>
-                                                        </Grid>
+                                                                         Height="34" FontSize="12.5"/>
+                                                                <Button x:Name="BtnModalToggleTipo"
+                                                                        Grid.Column="1"
+                                                                        Content="%"
+                                                                        Click="BtnModalToggleTipo_Click"
+                                                                        Height="34" Width="48"
+                                                                        FontWeight="Bold" FontSize="12"
+                                                                        Background="{StaticResource BrushServsicBlueSoft}"
+                                                                        Foreground="{StaticResource BrushServsicBlue}"
+                                                                        BorderBrush="{StaticResource BrushServsicBlue}"
+                                                                        BorderThickness="1"
+                                                                        ToolTipService.ToolTip="Alternar entre % e R$"/>
+                                                            </Grid>
 
-                                                        <Button Content="Salvar Desconto" 
-                                                                Click="BtnSalvarDescontoItem_Click"
-                                                                Style="{StaticResource BtnPrimary}" 
-                                                                HorizontalAlignment="Stretch" Height="34" FontWeight="Bold"/>
-                                                    </StackPanel>
-                                                </Flyout>
-                                            </Button.Flyout>
-                                        </Button>
+                                                            <Button Content="Salvar Desconto" 
+                                                                    Click="BtnSalvarDescontoItem_Click"
+                                                                    Style="{StaticResource BtnPrimary}" 
+                                                                    HorizontalAlignment="Stretch" Height="34" FontWeight="Bold"/>
+                                                        </StackPanel>
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
 
-                                        <TextBlock Grid.Column="6" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
-                                        
-                                        <Button Grid.Column="7" 
-                                                Click="BtnRemoverItem_Click"
-                                                Background="Transparent" BorderThickness="0" Padding="0" Width="30" Height="30"
-                                                ToolTipService.ToolTip="Remover Item">
-                                            <ic:SymbolIcon Symbol="Delete" FontSize="16" Foreground="{StaticResource BrushDanger}"/>
-                                        </Button>
-                                    </Grid>
+                                            <!-- 6. Total -->
+                                            <TextBlock Grid.Column="6" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                            <!-- 7. Botão Remover -->
+                                            <Button Grid.Column="7" 
+                                                    Click="BtnRemoverItem_Click"
+                                                    Background="Transparent" BorderThickness="0" Padding="0" Width="30" Height="30"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    ToolTipService.ToolTip="Remover Item">
+                                                <ic:SymbolIcon Symbol="Delete" FontSize="16" Foreground="{StaticResource BrushDanger}"/>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>
@@ -529,14 +584,60 @@
                                 <TextBlock Text="{Binding Pedido.Subtotal, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
                             </Grid>
 
-                            <Grid>
-                                <TextBlock Text="Desconto Geral (R$):" Foreground="{StaticResource BrushTextSubtle}" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Pedido.Desconto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" HorizontalAlignment="Right" Height="32"/>
+                            <!-- Desconto Geral com alternância % / R$ -->
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="38"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="Desconto Geral (" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                    <TextBlock Text="{Binding TipoDescontoGeralSimbolo}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" FontSize="12.5"/>
+                                    <TextBlock Text="):" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding DescontoGeralInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                         Height="32"/>
+                                <Button Grid.Column="2"
+                                        Command="{Binding AlternarTipoDescontoGeralCommand}"
+                                        Content="{Binding TipoDescontoGeralSimbolo}"
+                                        FontWeight="Bold" FontSize="11"
+                                        Height="32" Width="38" Padding="0"
+                                        Background="{StaticResource BrushServsicBlueSoft}"
+                                        Foreground="{StaticResource BrushServsicBlue}"
+                                        BorderBrush="{StaticResource BrushServsicBlue}"
+                                        BorderThickness="1"
+                                        ToolTipService.ToolTip="Alternar Desconto Geral entre % e R$"/>
                             </Grid>
 
-                            <Grid>
-                                <TextBlock Text="Acréscimo / Frete (R$):" Foreground="{StaticResource BrushTextSubtle}" FontSize="13" VerticalAlignment="Center"/>
-                                <TextBox Text="{Binding Pedido.Acrescimo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="110" HorizontalAlignment="Right" Height="32"/>
+                            <!-- Acréscimo / Frete com alternância % / R$ -->
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="38"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="Acrésc./Frete (" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                    <TextBlock Text="{Binding TipoAcrescimoGeralSimbolo}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" FontSize="12.5"/>
+                                    <TextBlock Text="):" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AcrescimoGeralInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                         Height="32"/>
+                                <Button Grid.Column="2"
+                                        Command="{Binding AlternarTipoAcrescimoGeralCommand}"
+                                        Content="{Binding TipoAcrescimoGeralSimbolo}"
+                                        FontWeight="Bold" FontSize="11"
+                                        Height="32" Width="38" Padding="0"
+                                        Background="{StaticResource BrushServsicBlueSoft}"
+                                        Foreground="{StaticResource BrushServsicBlue}"
+                                        BorderBrush="{StaticResource BrushServsicBlue}"
+                                        BorderThickness="1"
+                                        ToolTipService.ToolTip="Alternar Acréscimo entre % e R$"/>
                             </Grid>
 
                             <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,4"/>
