@@ -223,13 +223,15 @@
                         </Grid>
 
                         <!-- Barra de Inserção de Produto -->
-                        <Grid Grid.Row="1" ColumnSpacing="10" RowSpacing="6">
+                        <Grid Grid.Row="1" ColumnSpacing="8" RowSpacing="6">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="80"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="130"/> <!-- Código / Barra -->
+                                <ColumnDefinition Width="*"/>   <!-- Descrição do Produto -->
+                                <ColumnDefinition Width="105"/> <!-- Preço Unitário -->
+                                <ColumnDefinition Width="75"/>  <!-- Qtd -->
+                                <ColumnDefinition Width="80"/>  <!-- Desc (%) -->
+                                <ColumnDefinition Width="95"/>  <!-- Desc (R$) -->
+                                <ColumnDefinition Width="Auto"/><!-- Inserir -->
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="4">
@@ -245,27 +247,51 @@
                                 <TextBlock Text="Descrição do Produto" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
                                 <TextBox Text="{Binding ProdutoSelecionado.Descricao, Mode=OneWay}"
                                          IsReadOnly="True"
+                                         IsTabStop="False"
                                          PlaceholderText="Produto localizado..."
                                          Height="36"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="2" Spacing="4">
-                                <TextBlock Text="Qtd" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                <TextBox x:Name="TxtQuantidade"
-                                         Text="{Binding QuantidadeTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         KeyDown="Quantidade_KeyDown"
+                                <TextBlock Text="Unitário" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox Text="{Binding PrecoUnitarioTexto, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         IsTabStop="False"
+                                         Background="#F8FAFC"
+                                         FontWeight="SemiBold"
+                                         Foreground="{StaticResource BrushTextDark}"
+                                         PlaceholderText="R$ 0,00"
                                          Height="36"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="3" Spacing="4">
+                                <TextBlock Text="Qtd" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox x:Name="TxtQuantidade"
+                                         Text="{Binding QuantidadeTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="Quantidade_KeyDown"
+                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                         Height="36"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="4" Spacing="4">
+                                <TextBlock Text="Desc (%)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBox x:Name="TxtDescontoItemPercentual"
+                                         Text="{Binding DescontoItemPercentualTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="DescontoItemPercentual_KeyDown"
+                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                         Height="36"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="5" Spacing="4">
                                 <TextBlock Text="Desc (R$)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
                                 <TextBox x:Name="TxtDescontoItem"
                                          Text="{Binding DescontoItemTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          KeyDown="DescontoItem_KeyDown"
+                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
                                          Height="36"/>
                             </StackPanel>
 
-                            <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
+                            <StackPanel Grid.Column="6" VerticalAlignment="Bottom">
                                 <Button x:Name="BtnInserirItem"
                                         IsEnabled="{Binding HasProdutoSelecionado}"
                                         Click="BtnInserirItem_Click"
@@ -286,10 +312,10 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="90"/>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition Width="65"/>
                                 <ColumnDefinition Width="95"/>
-                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="110"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="40"/>
                             </Grid.ColumnDefinitions>
@@ -298,7 +324,7 @@
                             <TextBlock Grid.Column="2" Text="UN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                             <TextBlock Grid.Column="3" Text="QTD" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                             <TextBlock Grid.Column="4" Text="UNITÁRIO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="5" Text="DESC." FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="5" Text="DESC. (R$)" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                             <TextBlock Grid.Column="6" Text="TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
                             <TextBlock Grid.Column="7" Text="" FontSize="11"/>
                         </Grid>
@@ -314,14 +340,14 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Padding="12,10" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
+                                    <Grid Padding="12,8" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="90"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="60"/>
-                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="50"/>
+                                            <ColumnDefinition Width="65"/>
                                             <ColumnDefinition Width="95"/>
-                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="110"/>
                                             <ColumnDefinition Width="100"/>
                                             <ColumnDefinition Width="40"/>
                                         </Grid.ColumnDefinitions>
@@ -331,7 +357,70 @@
                                         <TextBlock Grid.Column="2" Text="{Binding Unidade}" FontSize="12" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="3" Text="{Binding Quantidade}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="4" Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}" FontSize="12" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="5" Text="{Binding Desconto, Converter={StaticResource CurrencyConverter}}" FontSize="12" Foreground="{StaticResource BrushDanger}" VerticalAlignment="Center"/>
+                                        
+                                        <!-- Desconto com Botão Interativo e Flyout de Edição -->
+                                        <Button Grid.Column="5" 
+                                                Click="BtnAbrirEdicaoDesconto_Click"
+                                                Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
+                                                CornerRadius="4" Padding="6,2" Height="30"
+                                                VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                                ToolTipService.ToolTip="Clique para alterar o desconto deste item">
+                                            <Grid ColumnSpacing="4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" 
+                                                           Text="{Binding DescontoFormatado}" 
+                                                           FontSize="11.5" FontWeight="SemiBold" 
+                                                           Foreground="{StaticResource BrushDanger}" 
+                                                           VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                                <ic:SymbolIcon Grid.Column="1" Symbol="Edit" FontSize="11" Foreground="#DC2626" VerticalAlignment="Center"/>
+                                            </Grid>
+                                            <Button.Flyout>
+                                                <Flyout x:Name="FlyoutEdicaoDesconto">
+                                                    <StackPanel Width="240" Spacing="10" Padding="4">
+                                                        <TextBlock Text="Alterar Desconto do Item" FontWeight="Bold" FontSize="13" Foreground="{StaticResource BrushTextDark}"/>
+                                                        
+                                                        <TextBlock FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}" TextWrapping="Wrap">
+                                                            <Run Text="Produto: "/><Run Text="{Binding Produto}" FontWeight="SemiBold"/>
+                                                            <LineBreak/>
+                                                            <Run Text="Subtotal: "/><Run Text="{Binding SubtotalBruto, Converter={StaticResource CurrencyConverter}}" FontWeight="SemiBold"/>
+                                                            <Run Text=" | Teto: "/><Run Text="{Binding PerDescMaxFormatado}" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                        </TextBlock>
+
+                                                        <Grid ColumnSpacing="8">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <StackPanel Grid.Column="0" Spacing="4">
+                                                                <TextBlock Text="Desc (%)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                                                <TextBox x:Name="TxtModalDescPerc" 
+                                                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                                                         TextChanged="ModalDescPerc_TextChanged"
+                                                                         KeyDown="ModalDesc_KeyDown"
+                                                                         Height="32" FontSize="12"/>
+                                                            </StackPanel>
+                                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                                <TextBlock Text="Desc (R$)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                                                <TextBox x:Name="TxtModalDescReais" 
+                                                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                                                         TextChanged="ModalDescReais_TextChanged"
+                                                                         KeyDown="ModalDesc_KeyDown"
+                                                                         Height="32" FontSize="12"/>
+                                                            </StackPanel>
+                                                        </Grid>
+
+                                                        <Button Content="Salvar Desconto" 
+                                                                Click="BtnSalvarDescontoItem_Click"
+                                                                Style="{StaticResource BtnPrimary}" 
+                                                                HorizontalAlignment="Stretch" Height="34" FontWeight="Bold"/>
+                                                    </StackPanel>
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+
                                         <TextBlock Grid.Column="6" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
                                         
                                         <Button Grid.Column="7" 

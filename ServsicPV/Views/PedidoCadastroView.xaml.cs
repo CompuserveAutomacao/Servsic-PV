@@ -49,6 +49,16 @@ public partial class PedidoCadastroView : UserControl
         });
     }
 
+    public void FocarDescontoItemPercentual()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            await Task.Delay(60);
+            TxtDescontoItemPercentual?.Focus(FocusState.Programmatic);
+            TxtDescontoItemPercentual?.SelectAll();
+        });
+    }
+
     public void FocarDescontoItem()
     {
         DispatcherQueue.TryEnqueue(async () =>
@@ -66,6 +76,18 @@ public partial class PedidoCadastroView : UserControl
             await Task.Delay(60);
             BtnInserirItem?.Focus(FocusState.Programmatic);
         });
+    }
+
+    private void DecimalOnly_BeforeTextChanging(TextBox sender, TextBoxBeforeTextChangingEventArgs args)
+    {
+        if (string.IsNullOrEmpty(args.NewText))
+            return;
+
+        // Permite apenas números e no máximo uma vírgula ou ponto decimal
+        if (!System.Text.RegularExpressions.Regex.IsMatch(args.NewText, @"^[0-9]*[,\.]?[0-9]*$"))
+        {
+            args.Cancel = true;
+        }
     }
 
     private void PedidoCadastroView_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -138,6 +160,24 @@ public partial class PedidoCadastroView : UserControl
             {
                 vm.QuantidadeTexto = TxtQuantidade?.Text?.Trim() ?? "1";
             }
+            FocarDescontoItemPercentual();
+        }
+    }
+
+    private void DescontoItemPercentual_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            if (this.DataContext is PedidoViewModel vm)
+            {
+                vm.DescontoItemPercentualTexto = TxtDescontoItemPercentual?.Text?.Trim() ?? "0";
+                if (decimal.TryParse(vm.DescontoItemPercentualTexto.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var p) && p > 0)
+                {
+                    FocarBotaoInserir();
+                    return;
+                }
+            }
             FocarDescontoItem();
         }
     }
@@ -175,7 +215,128 @@ public partial class PedidoCadastroView : UserControl
         {
             vm.QuantidadeTexto = TxtQuantidade?.Text?.Trim() ?? "1";
             vm.DescontoItemTexto = TxtDescontoItem?.Text?.Trim() ?? "0";
+            vm.DescontoItemPercentualTexto = TxtDescontoItemPercentual?.Text?.Trim() ?? "0";
             vm.AdicionarItem();
+        }
+    }
+
+    // --- Edição de Desconto do Item já Lançado ---
+    private Flyout? _activeItemFlyout;
+    private bool _isSyncingModalDesconto;
+
+    private void BtnAbrirEdicaoDesconto_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Flyout is Flyout flyout)
+        {
+            _activeItemFlyout = flyout;
+            if (btn.DataContext is PedidoItem item)
+            {
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    await Task.Delay(50);
+                    if (flyout.Content is StackPanel panel)
+                    {
+                        var txtPerc = panel.FindName("TxtModalDescPerc") as TextBox;
+                        var txtReais = panel.FindName("TxtModalDescReais") as TextBox;
+                        _isSyncingModalDesconto = true;
+                        try
+                        {
+                            if (txtPerc != null) txtPerc.Text = item.PercentualDesconto.ToString("N2");
+                            if (txtReais != null) txtReais.Text = item.Desconto.ToString("N2");
+                        }
+                        finally
+                        {
+                            _isSyncingModalDesconto = false;
+                        }
+                        txtPerc?.Focus(FocusState.Programmatic);
+                        txtPerc?.SelectAll();
+                    }
+                });
+            }
+        }
+    }
+
+    private void ModalDescPerc_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isSyncingModalDesconto) return;
+        if (sender is TextBox txtPerc && txtPerc.DataContext is PedidoItem item && txtPerc.Parent is StackPanel p1 && p1.Parent is Grid grid)
+        {
+            var txtReais = grid.FindName("TxtModalDescReais") as TextBox;
+            if (txtReais != null && decimal.TryParse(txtPerc.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var perc))
+            {
+                _isSyncingModalDesconto = true;
+                try
+                {
+                    decimal valorReais = Math.Round((item.SubtotalBruto * perc) / 100m, 2);
+                    txtReais.Text = valorReais.ToString("N2");
+                }
+                finally
+                {
+                    _isSyncingModalDesconto = false;
+                }
+            }
+        }
+    }
+
+    private void ModalDescReais_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isSyncingModalDesconto) return;
+        if (sender is TextBox txtReais && txtReais.DataContext is PedidoItem item && txtReais.Parent is StackPanel p1 && p1.Parent is Grid grid)
+        {
+            var txtPerc = grid.FindName("TxtModalDescPerc") as TextBox;
+            if (txtPerc != null && decimal.TryParse(txtReais.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var desc))
+            {
+                _isSyncingModalDesconto = true;
+                try
+                {
+                    decimal perc = item.SubtotalBruto > 0 ? Math.Round((desc / item.SubtotalBruto) * 100m, 2) : 0m;
+                    txtPerc.Text = perc.ToString("N2");
+                }
+                finally
+                {
+                    _isSyncingModalDesconto = false;
+                }
+            }
+        }
+    }
+
+    private void ModalDesc_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            if (sender is TextBox tb && tb.DataContext is PedidoItem item && this.DataContext is PedidoViewModel vm)
+            {
+                SalvarDescontoModal(tb, item, vm);
+            }
+        }
+    }
+
+    private void BtnSalvarDescontoItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is PedidoItem item && this.DataContext is PedidoViewModel vm)
+        {
+            SalvarDescontoModal(btn, item, vm);
+        }
+    }
+
+    private void SalvarDescontoModal(FrameworkElement sender, PedidoItem item, PedidoViewModel vm)
+    {
+        StackPanel? panel = sender as StackPanel;
+        if (panel == null && sender.Parent is StackPanel p1) panel = p1;
+        if (panel == null && sender.Parent is Grid g && g.Parent is StackPanel p2) panel = p2;
+
+        if (panel != null)
+        {
+            var txtReais = panel.FindName("TxtModalDescReais") as TextBox;
+            if (txtReais != null && decimal.TryParse(txtReais.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var novoDesc))
+            {
+                bool ok = vm.AtualizarDescontoItem(item, novoDesc);
+                if (ok)
+                {
+                    _activeItemFlyout?.Hide();
+                }
+            }
         }
     }
 

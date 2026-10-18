@@ -144,7 +144,15 @@ public class PedidoCabService
 
             if (pedido.Pedido <= 0)
             {
-                const string sqlNextPedido = "SELECT ISNULL(MAX(Pedido), 0) + 1 FROM TabEst3A;";
+                const string sqlNextPedido = @"
+                    DECLARE @NumPed INT;
+                    BEGIN TRY
+                        EXEC NumeroPedido @NumPed OUTPUT;
+                    END TRY
+                    BEGIN CATCH
+                        SELECT @NumPed = ISNULL(MAX(Pedido), 0) + 1 FROM TabEst3A;
+                    END CATCH
+                    SELECT @NumPed;";
                 pedido.Pedido = await conn.ExecuteScalarAsync<int>(sqlNextPedido, transaction: trans);
             }
 
