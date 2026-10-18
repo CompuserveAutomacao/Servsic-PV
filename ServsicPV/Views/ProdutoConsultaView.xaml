@@ -89,108 +89,224 @@
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Padding" Value="0,3"/>
-                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,3"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListViewItem">
+                                            <Grid x:Name="RootGrid">
+                                                <VisualStateManager.VisualStateGroups>
+                                                    <VisualStateGroup x:Name="CommonStates">
+                                                        <VisualState x:Name="Normal"/>
+                                                        <VisualState x:Name="PointerOver">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="CardBorder.BorderBrush" Value="#0284C7"/>
+                                                                <Setter Target="CardBorder.Background" Value="#F8FAFC"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="Pressed">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="CardBorder.Background" Value="#F1F5F9"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                    </VisualStateGroup>
+                                                    <VisualStateGroup x:Name="SelectionStates">
+                                                        <VisualState x:Name="Unselected"/>
+                                                        <VisualState x:Name="Selected">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="CardBorder.BorderBrush" Value="#0284C7"/>
+                                                                <Setter Target="CardBorder.BorderThickness" Value="2"/>
+                                                                <Setter Target="CardBorder.Background" Value="#F0F9FF"/>
+                                                                <Setter Target="SelectionPill.Visibility" Value="Visible"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="SelectedUnfocused">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="CardBorder.BorderBrush" Value="#0284C7"/>
+                                                                <Setter Target="CardBorder.BorderThickness" Value="2"/>
+                                                                <Setter Target="CardBorder.Background" Value="#F0F9FF"/>
+                                                                <Setter Target="SelectionPill.Visibility" Value="Visible"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="SelectedPointerOver">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="CardBorder.BorderBrush" Value="#0284C7"/>
+                                                                <Setter Target="CardBorder.BorderThickness" Value="2"/>
+                                                                <Setter Target="CardBorder.Background" Value="#E0F2FE"/>
+                                                                <Setter Target="SelectionPill.Visibility" Value="Visible"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                        <VisualState x:Name="SelectedPressed">
+                                                            <VisualState.Setters>
+                                                                <Setter Target="CardBorder.BorderBrush" Value="#0369A1"/>
+                                                                <Setter Target="CardBorder.BorderThickness" Value="2"/>
+                                                                <Setter Target="CardBorder.Background" Value="#BAE6FD"/>
+                                                                <Setter Target="SelectionPill.Visibility" Value="Visible"/>
+                                                            </VisualState.Setters>
+                                                        </VisualState>
+                                                    </VisualStateGroup>
+                                                </VisualStateManager.VisualStateGroups>
+
+                                                <Border x:Name="CardBorder"
+                                                        Background="#FFFFFF"
+                                                        BorderBrush="#E2E8F0"
+                                                        BorderThickness="1"
+                                                        CornerRadius="8"
+                                                        Padding="12,10">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <!-- Indicador lateral ativo (Selection Pill) -->
+                                                        <Border x:Name="SelectionPill"
+                                                                Grid.Column="0"
+                                                                Width="4"
+                                                                CornerRadius="2"
+                                                                Background="#0284C7"
+                                                                Margin="0,0,10,0"
+                                                                Visibility="Collapsed"/>
+
+                                                        <ContentPresenter Grid.Column="1"
+                                                                          Content="{TemplateBinding Content}"
+                                                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                                          HorizontalAlignment="Stretch"
+                                                                          VerticalAlignment="Stretch"/>
+                                                    </Grid>
+                                                </Border>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource BrushCardBackground}"
-                                        BorderBrush="{StaticResource BrushBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="14,10">
-                                    <Grid RowSpacing="6">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/> <!-- Badges Superiores e Preço -->
-                                            <RowDefinition Height="Auto"/> <!-- Descrição Completa -->
-                                            <RowDefinition Height="Auto"/> <!-- Metadados (Marca, Setor, Unidade) -->
-                                        </Grid.RowDefinitions>
+                                <Grid RowSpacing="6">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/> <!-- Badges Superiores e Preço -->
+                                        <RowDefinition Height="Auto"/> <!-- Descrição Completa -->
+                                        <RowDefinition Height="Auto"/> <!-- Metadados (Marca, Setor, Unidade) -->
+                                    </Grid.RowDefinitions>
 
-                                        <!-- Linha 1: Badges à Esquerda + Preço e Estoque à Direita -->
-                                        <Grid Grid.Row="0">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                    <!-- Linha 1: Badges de Códigos à Esquerda + Badges Modernos de Estoque e Preço à Direita -->
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                                            <!-- Badges de Identificação -->
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                <!-- Badge Código Interno / Código -->
-                                                <Border Background="#E0F2FE" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <TextBlock Text="CÓD" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                                        <TextBlock Text="{Binding CodigoFormatado}" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Badge Código de Barras (se houver) -->
-                                                <Border Background="#F1F5F9" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding CodBarra, Converter={StaticResource StringToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <ic:SymbolIcon Symbol="BarcodeScanner" FontSize="13" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                        <TextBlock Text="{Binding CodBarra}" FontSize="11" Foreground="{StaticResource BrushTextDark}"/>
-                                                    </StackPanel>
-                                                </Border>
-
-                                                <!-- Badge Localização no Estoque (campo Moeda) -->
-                                                <Border Background="#FEF3C7" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
-                                                        Visibility="{Binding Localizacao, Converter={StaticResource StringToVisibilityConverter}}">
-                                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                                        <ic:SymbolIcon Symbol="Location" FontSize="11" Foreground="#B45309"/>
-                                                        <TextBlock Text="{Binding Localizacao}" FontSize="11" FontWeight="SemiBold" Foreground="#92400E"/>
-                                                    </StackPanel>
-                                                </Border>
-                                            </StackPanel>
-
-                                            <!-- Destaque à Direita: Preço e Estoque -->
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                                                <!-- Estoque -->
-                                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                                    <TextBlock Text="Estoque:" FontSize="11" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding EstoqueFormatado}" FontSize="12.5" FontWeight="Bold"
-                                                               Foreground="{Binding HasEstoque, Converter={StaticResource BoolToColorConverter}}" VerticalAlignment="Center"/>
+                                        <!-- Badges de Identificação -->
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <!-- Badge CÓD (Controle do Produto) -->
+                                            <Border Background="#E0F2FE" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="CÓD" FontSize="9.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                    <TextBlock Text="{Binding CodigoFormatado}" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
                                                 </StackPanel>
+                                            </Border>
 
-                                                <!-- Preço de Venda -->
-                                                <TextBlock Text="{Binding PrVendaFormatado}" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Grid>
+                                            <!-- Badge EAN / Código de Barras Principal (CodInterno no banco de dados) -->
+                                            <Border Background="#F1F5F9" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasEan, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <ic:SymbolIcon Symbol="BarcodeScanner" FontSize="13" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                    <TextBlock Text="{Binding Ean}" FontSize="11" Foreground="{StaticResource BrushTextDark}"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                        <!-- Linha 2: Descrição Completa do Produto -->
-                                        <TextBlock Grid.Row="1" Text="{Binding Descricao}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap"/>
+                                            <!-- Badge Cód. Barras Adicional (se houver e for diferente) -->
+                                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasCodBarraAdicional, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="ADIC:" FontSize="9.5" FontWeight="Bold" Foreground="#64748B"/>
+                                                    <TextBlock Text="{Binding CodBarraAdicional}" FontSize="11" Foreground="{StaticResource BrushTextDark}"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                        <!-- Linha 3: Metadados (Marca/Fabricante, Grupo/Setor, Subgrupo, Unidade) -->
-                                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                                            <!-- Marca / Fabricante -->
-                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
-                                                        Visibility="{Binding Fabricante, Converter={StaticResource StringToVisibilityConverter}}">
-                                                <ic:SymbolIcon Symbol="Tag" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                <TextBlock Text="{Binding Fabricante}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
-                                            </StackPanel>
+                                            <!-- Badge Cód. Origem / Atacado (se houver) -->
+                                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasCodOrigem, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <TextBlock Text="ORIGEM:" FontSize="9.5" FontWeight="Bold" Foreground="#64748B"/>
+                                                    <TextBlock Text="{Binding CodOrigemFormatado}" FontSize="11" Foreground="{StaticResource BrushTextDark}"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                            <!-- Grupo / Setor -->
-                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
-                                                        Visibility="{Binding Grupo, Converter={StaticResource StringToVisibilityConverter}}">
-                                                <ic:SymbolIcon Symbol="Folder" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                <TextBlock Text="{Binding Grupo}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
-                                            </StackPanel>
+                                            <!-- Badge Localização no Estoque (campo Moeda) -->
+                                            <Border Background="#FEF3C7" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                                                    Visibility="{Binding Localizacao, Converter={StaticResource StringToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <ic:SymbolIcon Symbol="Location" FontSize="11" Foreground="#B45309"/>
+                                                    <TextBlock Text="{Binding Localizacao}" FontSize="11" FontWeight="SemiBold" Foreground="#92400E"/>
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
 
-                                            <!-- Subgrupo -->
-                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
-                                                        Visibility="{Binding SubGrupo, Converter={StaticResource StringToVisibilityConverter}}">
-                                                <ic:SymbolIcon Symbol="BranchFork" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                <TextBlock Text="{Binding SubGrupo}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
-                                            </StackPanel>
+                                        <!-- Destaque à Direita: Badges Modernos de Estoque e Preço -->
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                            <!-- Badge Estoque se DISPONÍVEL -->
+                                            <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="6" Padding="8,3" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasEstoque, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                    <Ellipse Width="6" Height="6" Fill="#059669" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding EstoqueFormatado}" FontSize="11.5" FontWeight="SemiBold" Foreground="#065F46" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
 
-                                            <!-- Unidade -->
-                                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="UN:" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
-                                                <TextBlock Text="{Binding Unidade}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                            </StackPanel>
+                                            <!-- Badge Estoque se SEM ESTOQUE -->
+                                            <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="6" Padding="8,3" VerticalAlignment="Center"
+                                                    Visibility="{Binding HasEstoque, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                                <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                    <Ellipse Width="6" Height="6" Fill="#DC2626" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Sem Estoque" FontSize="11.5" FontWeight="SemiBold" Foreground="#991B1B" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
+
+                                            <!-- Badge Preço de Venda Moderno -->
+                                            <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="6" Padding="10,3" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                    <TextBlock Text="R$" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding PrVendaValorFormatado}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Border>
                                         </StackPanel>
                                     </Grid>
-                                </Border>
+
+                                    <!-- Linha 2: Descrição Completa do Produto -->
+                                    <TextBlock Grid.Row="1" Text="{Binding Descricao}" FontSize="13.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap"/>
+
+                                    <!-- Linha 3: Metadados (Marca/Fabricante, Grupo/Setor, Subgrupo, Unidade) -->
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                                        <!-- Marca / Fabricante -->
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
+                                                    Visibility="{Binding Fabricante, Converter={StaticResource StringToVisibilityConverter}}">
+                                            <ic:SymbolIcon Symbol="Tag" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            <TextBlock Text="{Binding Fabricante}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        </StackPanel>
+
+                                        <!-- Grupo / Setor -->
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
+                                                    Visibility="{Binding Grupo, Converter={StaticResource StringToVisibilityConverter}}">
+                                            <ic:SymbolIcon Symbol="Folder" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            <TextBlock Text="{Binding Grupo}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        </StackPanel>
+
+                                        <!-- Subgrupo -->
+                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center"
+                                                    Visibility="{Binding SubGrupo, Converter={StaticResource StringToVisibilityConverter}}">
+                                            <ic:SymbolIcon Symbol="BranchFork" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            <TextBlock Text="{Binding SubGrupo}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        </StackPanel>
+
+                                        <!-- Unidade -->
+                                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                            <TextBlock Text="UN:" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            <TextBlock Text="{Binding Unidade}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
@@ -270,6 +386,112 @@
                                 </Border>
                             </Grid>
 
+                            <!-- SEÇÃO DE CÓDIGOS DE IDENTIFICAÇÃO (ERP LEGADO & FISCAL) -->
+                            <Border Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <ic:SymbolIcon Symbol="BarcodeScanner" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="CÓDIGOS DE IDENTIFICAÇÃO" FontSize="10.5" FontWeight="Bold" Foreground="#475569" CharacterSpacing="50"/>
+                                    </StackPanel>
+
+                                    <!-- Linha 1: Controle (ID) e Código / Cód. Barras (EAN) -->
+                                    <Grid ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Controle (ID) -->
+                                        <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Controle (ID)" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.ControleTexto}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Código / Cód. Barras (EAN) -->
+                                        <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Código / Cód. Barras (EAN)" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.EanFormatado}" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Linha 2: Cód Atacado/Origem e Cód. Barras Adicional -->
+                                    <Grid ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Cód. Atacado / Origem -->
+                                        <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Cód. Atacado / Origem" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.CodOrigemFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Cód. Barras Adicional -->
+                                        <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Cód. Barras Adicional" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.CodBarraAdicionalFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Linha 3: Cód. Caixa/Atacado e Cód. Fornecedor -->
+                                    <Grid ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Cód. Caixa / Atacado -->
+                                        <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Cód. Caixa / Atacado" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.CodBarraCxFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Cód. Fornecedor -->
+                                        <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Cód. Fornecedor" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.CodFornecedorFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Linha 4: NCM e CEST (Fiscal) -->
+                                    <Grid ColumnSpacing="10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- NCM -->
+                                        <Border Grid.Column="0" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="NCM (Classificação Fiscal)" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.NcmFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- CEST -->
+                                        <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="8,6">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="CEST" FontSize="10" FontWeight="SemiBold" Foreground="#64748B"/>
+                                                <TextBlock Text="{Binding ProdutoSelecionado.CestFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
                             <!-- Localização Física (Campo Moeda da TabEst1) -->
                             <Border Background="#FFFBEB" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="12,8">
                                 <Grid>
@@ -285,28 +507,20 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Dados Cadastrais e Ficha Técnica -->
-                            <StackPanel Spacing="8">
-                                <!-- Código e Unidade -->
-                                <Grid ColumnSpacing="10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="Código Interno" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Text="{Binding ProdutoSelecionado.CodigoFormatado}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="2">
-                                        <TextBlock Text="Unidade de Medida" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Text="{Binding ProdutoSelecionado.Unidade}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <!-- Código de Barras -->
+                            <!-- Apresentação / Embalagem -->
+                            <Border Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="12,8">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Código de Barras" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
-                                    <TextBlock Text="{Binding ProdutoSelecionado.CodBarra, FallbackValue='Sem código de barras'}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                    <TextBlock Text="APRESENTAÇÃO / EMBALAGEM" FontSize="9.5" FontWeight="Bold" Foreground="#64748B" CharacterSpacing="50"/>
+                                    <TextBlock Text="{Binding ProdutoSelecionado.ApresentacaoFormatada}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Ficha Técnica e Metadados -->
+                            <StackPanel Spacing="8">
+                                <!-- Unidade de Medida -->
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Unidade de Medida" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                    <TextBlock Text="{Binding ProdutoSelecionado.Unidade}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
                                 </StackPanel>
 
                                 <!-- Marca / Fabricante -->
@@ -319,6 +533,12 @@
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Grupo / Setor" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
                                     <TextBlock Text="{Binding ProdutoSelecionado.GrupoFormatado}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+
+                                <!-- Subgrupo -->
+                                <StackPanel Spacing="2" Visibility="{Binding ProdutoSelecionado.SubGrupo, Converter={StaticResource StringToVisibilityConverter}}">
+                                    <TextBlock Text="Subgrupo" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                    <TextBlock Text="{Binding ProdutoSelecionado.SubGrupo}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
                                 </StackPanel>
 
                                 <!-- Desconto Máximo Permitido -->

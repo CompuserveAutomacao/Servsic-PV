@@ -18,6 +18,11 @@ public class ProdutoService
             e.CodInterno,
             e.CodBarra,
             e.CodBarraCx,
+            e.CodORIGEM as CodOrigem,
+            e.CodFornecedor,
+            e.NCM,
+            e.CEST,
+            ISNULL(e.Apresenta, '') as Apresentacao,
             e.Produto as Descricao,
             e.DESCRICAO as DescricaoDetalhada,
             COALESCE(NULLIF(LTRIM(RTRIM(e.Fabricante)), ''), fab.Nome, '') as Fabricante,
@@ -62,15 +67,22 @@ public class ProdutoService
 
             if (tokens.Length == 1)
             {
+                bool isNumeric = int.TryParse(termoLimpo, out int controleNum);
                 parameters.Add("exactTerm", termoLimpo);
                 parameters.Add("likeTerm", $"%{termoLimpo}%");
+                parameters.Add("controleNum", isNumeric ? controleNum : -1);
 
                 sbWhere.Append(@"
                     AND (
-                        e.CodBarra = @exactTerm 
+                        e.Controle = @controleNum
+                        OR e.CodBarra = @exactTerm 
                         OR e.CodBarraCx = @exactTerm
                         OR e.CodInterno = @exactTerm 
                         OR e.Codigo = @exactTerm
+                        OR e.CodORIGEM = @exactTerm
+                        OR e.CodFornecedor = @exactTerm
+                        OR e.NCM = @exactTerm
+                        OR e.CEST = @exactTerm
                         OR e.Produto LIKE @likeTerm 
                         OR e.DESCRICAO LIKE @likeTerm
                         OR e.Fabricante LIKE @likeTerm
@@ -78,11 +90,18 @@ public class ProdutoService
                         OR grp.Setor LIKE @likeTerm
                         OR sub.Descricao LIKE @likeTerm
                         OR e.Moeda LIKE @likeTerm
+                        OR e.CodBarra LIKE @likeTerm
+                        OR e.CodBarraCx LIKE @likeTerm
+                        OR e.CodInterno LIKE @likeTerm
+                        OR e.Codigo LIKE @likeTerm
+                        OR e.CodORIGEM LIKE @likeTerm
+                        OR e.CodFornecedor LIKE @likeTerm
+                        OR e.NCM LIKE @likeTerm
                     )");
             }
             else
             {
-                // Pesquisa inteligente multi-termo (combina palavras entre descrição, marca, grupo, etc.)
+                // Pesquisa inteligente multi-termo (combina palavras entre descrição, códigos, marca, grupo, etc.)
                 for (int i = 0; i < tokens.Length; i++)
                 {
                     string paramName = $"token_{i}";
@@ -100,6 +119,11 @@ public class ProdutoService
                             OR e.CodInterno LIKE @{paramName}
                             OR e.Codigo LIKE @{paramName}
                             OR e.CodBarra LIKE @{paramName}
+                            OR e.CodBarraCx LIKE @{paramName}
+                            OR e.CodORIGEM LIKE @{paramName}
+                            OR e.CodFornecedor LIKE @{paramName}
+                            OR e.NCM LIKE @{paramName}
+                            OR e.CEST LIKE @{paramName}
                         )");
                 }
             }
@@ -123,16 +147,26 @@ public class ProdutoService
 
         using var conn = DbConnectionFactory.CreateConnection();
         string codigoLimpo = codigo.Trim();
+        bool isNumeric = int.TryParse(codigoLimpo, out int codInt);
+
+        var parameters = new DynamicParameters();
+        parameters.Add("codigo", codigoLimpo);
+        parameters.Add("codInt", isNumeric ? codInt : -1);
 
         string sql = string.Format(BaseSelect, "TOP 1") + @"
             WHERE (e.Inativo IS NULL OR e.Inativo = 0)
               AND (
-                  e.CodBarra = @codigo 
+                  e.Controle = @codInt
+                  OR e.CodBarra = @codigo 
                   OR e.CodBarraCx = @codigo 
                   OR e.CodInterno = @codigo 
                   OR e.Codigo = @codigo
+                  OR e.CodORIGEM = @codigo
+                  OR e.CodFornecedor = @codigo
+                  OR e.NCM = @codigo
+                  OR e.CEST = @codigo
               )";
 
-        return await conn.QueryFirstOrDefaultAsync<Produto>(sql, new { codigo = codigoLimpo });
+        return await conn.QueryFirstOrDefaultAsync<Produto>(sql, parameters);
     }
 }

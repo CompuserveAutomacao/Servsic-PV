@@ -9,6 +9,11 @@ public class Produto
     public string? DescricaoDetalhada { get; set; }
     public string? CodBarra { get; set; }
     public string? CodBarraCx { get; set; }
+    public string? CodOrigem { get; set; }
+    public string? CodFornecedor { get; set; }
+    public string? Ncm { get; set; }
+    public string? Cest { get; set; }
+    public string? Apresentacao { get; set; }
     public string? Fabricante { get; set; }
     public string? Unidade { get; set; } = "UN";
     public decimal PrVenda { get; set; }
@@ -25,21 +30,67 @@ public class Produto
     public byte[]? FotoBytes { get; set; }
     public string? FotoPath { get; set; }
 
-    // Propriedades auxiliares de exibição e formatação
-    public string CodigoFormatado => !string.IsNullOrWhiteSpace(CodInterno) 
-        ? CodInterno 
-        : (!string.IsNullOrWhiteSpace(Codigo) ? Codigo : Controle.ToString());
+    // Identificação:
+    // O usuário instruiu que onde está 'CÓD' deve ser o CONTROLE do produto (ID),
+    // e o CodInterno é o EAN / Código de Barras principal do banco de dados.
+    public string CodigoFormatado => Controle > 0 ? Controle.ToString() : (!string.IsNullOrWhiteSpace(Codigo) ? Codigo : "");
+    public string ControleTexto => Controle.ToString();
 
+    // EAN / Código de barras principal (CodInterno no banco)
+    public string Ean => !string.IsNullOrWhiteSpace(CodInterno) ? CodInterno.Trim() : (!string.IsNullOrWhiteSpace(CodBarra) ? CodBarra.Trim() : "");
+    public string EanFormatado => !string.IsNullOrWhiteSpace(CodInterno) ? CodInterno.Trim() : (!string.IsNullOrWhiteSpace(CodBarra) ? CodBarra.Trim() : "Não informado");
+    public bool HasEan => !string.IsNullOrWhiteSpace(CodInterno);
+
+    // Cód. Barras Adicional (CodBarra)
+    public string CodBarraAdicional => !string.IsNullOrWhiteSpace(CodBarra) ? CodBarra.Trim() : "";
+    public string CodBarraAdicionalFormatado => !string.IsNullOrWhiteSpace(CodBarra) ? CodBarra.Trim() : "Não informado";
+    public bool HasCodBarraAdicional => !string.IsNullOrWhiteSpace(CodBarra) && CodBarra.Trim() != CodInterno?.Trim();
+
+    // Cód. Atacado / Origem (CodORIGEM)
+    public string CodOrigemFormatado => !string.IsNullOrWhiteSpace(CodOrigem) ? CodOrigem.Trim() : "Não informado";
+    public bool HasCodOrigem => !string.IsNullOrWhiteSpace(CodOrigem);
+
+    // Cód. Caixa / Atacado (CodBarraCx)
+    public string CodBarraCxFormatado => !string.IsNullOrWhiteSpace(CodBarraCx) ? CodBarraCx.Trim() : "Não informado";
+    public bool HasCodBarraCx => !string.IsNullOrWhiteSpace(CodBarraCx) && CodBarraCx.Trim() != CodBarra?.Trim() && CodBarraCx.Trim() != CodInterno?.Trim();
+
+    // Cód. Fornecedor (CodFornecedor)
+    public string CodFornecedorFormatado => !string.IsNullOrWhiteSpace(CodFornecedor) ? CodFornecedor.Trim() : "Não informado";
+    public bool HasCodFornecedor => !string.IsNullOrWhiteSpace(CodFornecedor);
+
+    // NCM e CEST (Fiscal)
+    public string NcmFormatado => !string.IsNullOrWhiteSpace(Ncm) ? Ncm.Trim() : "Não informado";
+    public bool HasNcm => !string.IsNullOrWhiteSpace(Ncm);
+    public string CestFormatado => !string.IsNullOrWhiteSpace(Cest) ? Cest.Trim() : "Não informado";
+    public bool HasCest => !string.IsNullOrWhiteSpace(Cest);
+
+    // Apresentação
+    public string ApresentacaoFormatada => !string.IsNullOrWhiteSpace(Apresentacao) ? Apresentacao.Trim() : "Não informada";
+    public bool HasApresentacao => !string.IsNullOrWhiteSpace(Apresentacao);
+
+    // Localização (Moeda)
+    public string LocalizacaoFormatada => !string.IsNullOrWhiteSpace(Localizacao) ? Localizacao.Trim() : "Não informada";
+    public bool HasLocalizacao => !string.IsNullOrWhiteSpace(Localizacao);
+
+    // Preços e Estoque Formatados
     public string PrVendaFormatado => PrVenda.ToString("C2");
+    public string PrVendaValorFormatado => PrVenda.ToString("N2");
     public string PrCustoFormatado => PrCusto.ToString("C2");
     public string EstoqueFormatado => $"{Estoque:N2} {Unidade}";
     public string EstoqueNumeroFormatado => Estoque.ToString("N2");
-    public string LocalizacaoFormatada => !string.IsNullOrWhiteSpace(Localizacao) ? Localizacao.Trim() : "Não informada";
+    public bool HasEstoque => Estoque > 0;
+    public string StatusEstoqueDescricao => HasEstoque ? $"{Estoque:N2} {Unidade}" : "Sem Estoque (0)";
+
+    // Helpers visuais modernos para badges de estoque
+    public string EstoqueBadgeBg => HasEstoque ? "#ECFDF5" : "#FEF2F2";
+    public string EstoqueBadgeBorder => HasEstoque ? "#A7F3D0" : "#FECACA";
+    public string EstoqueBadgeForeground => HasEstoque ? "#065F46" : "#991B1B";
+    public string EstoqueBadgeDotColor => HasEstoque ? "#059669" : "#DC2626";
+
     public string FabricanteFormatado => !string.IsNullOrWhiteSpace(Fabricante) ? Fabricante.Trim() : "Sem marca/fabricante";
     public string GrupoFormatado => !string.IsNullOrWhiteSpace(Grupo) ? Grupo.Trim() : "Sem grupo";
     public string PerDescMaxFormatado => PerDescMax > 0 ? $"{PerDescMax:N2}%" : "Sem limite fixado";
 
-    public bool HasEstoque => Estoque > 0;
     public bool HasFoto => (FotoBytes != null && FotoBytes.Length > 0) || !string.IsNullOrWhiteSpace(FotoPath);
     public string ExibicaoResumida => $"{CodigoFormatado} - {Descricao} | {PrVenda:C2}";
 }
