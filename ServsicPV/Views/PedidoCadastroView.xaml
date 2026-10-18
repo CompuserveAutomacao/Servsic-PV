@@ -1079,10 +1079,28 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Command="{Binding CancelarAlteracaoTipoCommand}" Style="{StaticResource BtnSecondary}" Height="38" HorizontalAlignment="Stretch">
+                        <Button x:Name="BtnCancelarTipo" 
+                                Grid.Column="0" 
+                                Command="{Binding CancelarAlteracaoTipoCommand}" 
+                                Click="BtnCancelarTipo_Click"
+                                Style="{StaticResource BtnSecondary}" 
+                                Height="38" 
+                                HorizontalAlignment="Stretch">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Escape" Invoked="BtnCancelarTipo_Invoked"/>
+                            </Button.KeyboardAccelerators>
                             <TextBlock Text="Cancelar (Esc)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
                         </Button>
-                        <Button Grid.Column="1" Command="{Binding ConfirmarAlteracaoTipoCommand}" Style="{StaticResource BtnPrimary}" Height="38" HorizontalAlignment="Stretch">
+                        <Button x:Name="BtnConfirmarTipo" 
+                                Grid.Column="1" 
+                                Command="{Binding ConfirmarAlteracaoTipoCommand}" 
+                                Click="BtnConfirmarTipo_Click"
+                                Style="{StaticResource BtnPrimary}" 
+                                Height="38" 
+                                HorizontalAlignment="Stretch">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Enter" Invoked="BtnConfirmarTipo_Invoked"/>
+                            </Button.KeyboardAccelerators>
                             <TextBlock Text="Sim, Alterar (Enter)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
                         </Button>
                     </Grid>

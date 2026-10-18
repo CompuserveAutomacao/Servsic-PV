@@ -196,6 +196,40 @@ public partial class MainView : Window
         }
     }
 
+    private void OnEscapeGlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (_pedidoViewModel.IsConfirmarAlteracaoTipoOpen)
+        {
+            _pedidoViewModel.CancelarAlteracaoTipo();
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.IsCadastroRapidoClienteOpen)
+        {
+            _pedidoViewModel.IsCadastroRapidoClienteOpen = false;
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.IsConsultaClienteOpen)
+        {
+            _pedidoViewModel.IsConsultaClienteOpen = false;
+            args.Handled = true;
+            return;
+        }
+
+        if (ReferenceEquals(ContentArea.Content, _consultaView)
+            || ReferenceEquals(ContentArea.Content, _clienteConsultaView)
+            || ReferenceEquals(ContentArea.Content, _produtoConsultaView))
+        {
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+            args.Handled = true;
+            return;
+        }
+    }
+
     private void BtnSair_Click(object sender, RoutedEventArgs e)
     {
         var login = new LoginView();

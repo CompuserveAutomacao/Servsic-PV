@@ -13,6 +13,7 @@
             <KeyboardAccelerator Key="F3" Invoked="OnF3GlobalInvoked"/>
             <KeyboardAccelerator Key="F4" Invoked="OnF4GlobalInvoked"/>
             <KeyboardAccelerator Key="F2" Invoked="OnF2GlobalInvoked"/>
+            <KeyboardAccelerator Key="Escape" Invoked="OnEscapeGlobalInvoked"/>
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="54"/> <!-- Barra de Título / Menu Superior Otimizado -->

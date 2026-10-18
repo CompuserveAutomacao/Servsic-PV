@@ -15,7 +15,7 @@ public partial class PedidoCadastroView : UserControl
     {
         this.InitializeComponent();
         this.DataContextChanged += PedidoCadastroView_DataContextChanged;
-        this.KeyDown += PedidoCadastroView_KeyDown;
+        this.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(PedidoCadastroView_KeyDown), handledEventsToo: true);
     }
 
     private void PedidoCadastroView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -26,6 +26,25 @@ public partial class PedidoCadastroView : UserControl
             vm.OnProdutoDefinido = () => FocarQuantidade();
             vm.OnItemAdicionado = () => FocarCodigoProduto();
             vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
+
+            vm.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(PedidoViewModel.IsConfirmarAlteracaoTipoOpen))
+                {
+                    if (vm.IsConfirmarAlteracaoTipoOpen)
+                    {
+                        DispatcherQueue.TryEnqueue(async () =>
+                        {
+                            await Task.Delay(40);
+                            BtnConfirmarTipo?.Focus(FocusState.Programmatic);
+                        });
+                    }
+                    else
+                    {
+                        FocarCodigoProduto();
+                    }
+                }
+            };
         }
     }
 
@@ -87,36 +106,56 @@ public partial class PedidoCadastroView : UserControl
 
     private void PedidoCadastroView_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.F3)
+        if (this.DataContext is PedidoViewModel vm)
         {
-            if (this.DataContext is PedidoViewModel vm && vm.BuscarClienteRapidoCommand.CanExecute(null))
+            // Se o modal de confirmação de tipo estiver aberto, atalhos prioritários Enter / Esc
+            if (vm.IsConfirmarAlteracaoTipoOpen)
             {
-                vm.BuscarClienteRapidoCommand.Execute(null);
-                e.Handled = true;
+                if (e.Key == Windows.System.VirtualKey.Enter)
+                {
+                    vm.ConfirmarAlteracaoTipo();
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Windows.System.VirtualKey.Escape)
+                {
+                    vm.CancelarAlteracaoTipo();
+                    e.Handled = true;
+                    return;
+                }
             }
-        }
-        else if (e.Key == Windows.System.VirtualKey.F4)
-        {
-            if (this.DataContext is PedidoViewModel vm && vm.AbrirConsultaProdutoCommand.CanExecute(null))
+
+            // Se o modal de cadastro rápido estiver aberto, Esc fecha
+            if (vm.IsCadastroRapidoClienteOpen && e.Key == Windows.System.VirtualKey.Escape)
             {
-                vm.AbrirConsultaProdutoCommand.Execute(null);
+                vm.IsCadastroRapidoClienteOpen = false;
                 e.Handled = true;
+                return;
             }
-        }
-        else if (e.Key == Windows.System.VirtualKey.F2)
-        {
-            if (this.DataContext is PedidoViewModel vm && vm.NovoCommand.CanExecute(null))
+
+            if (e.Key == Windows.System.VirtualKey.F3)
             {
-                vm.NovoCommand.Execute(null);
-                e.Handled = true;
+                if (vm.BuscarClienteRapidoCommand.CanExecute(null))
+                {
+                    vm.BuscarClienteRapidoCommand.Execute(null);
+                    e.Handled = true;
+                }
             }
-        }
-        else if (e.Key == Windows.System.VirtualKey.Escape)
-        {
-            if (this.DataContext is PedidoViewModel vm && vm.IsConfirmarAlteracaoTipoOpen)
+            else if (e.Key == Windows.System.VirtualKey.F4)
             {
-                vm.CancelarAlteracaoTipoCommand.Execute(null);
-                e.Handled = true;
+                if (vm.AbrirConsultaProdutoCommand.CanExecute(null))
+                {
+                    vm.AbrirConsultaProdutoCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Windows.System.VirtualKey.F2)
+            {
+                if (vm.NovoCommand.CanExecute(null))
+                {
+                    vm.NovoCommand.Execute(null);
+                    e.Handled = true;
+                }
             }
         }
     }
@@ -349,20 +388,48 @@ public partial class PedidoCadastroView : UserControl
         {
             if (e.Key == Windows.System.VirtualKey.Enter)
             {
-                if (vm.ConfirmarAlteracaoTipoCommand.CanExecute(null))
-                {
-                    vm.ConfirmarAlteracaoTipoCommand.Execute(null);
-                    e.Handled = true;
-                }
+                vm.ConfirmarAlteracaoTipo();
+                e.Handled = true;
             }
             else if (e.Key == Windows.System.VirtualKey.Escape)
             {
-                if (vm.CancelarAlteracaoTipoCommand.CanExecute(null))
-                {
-                    vm.CancelarAlteracaoTipoCommand.Execute(null);
-                    e.Handled = true;
-                }
+                vm.CancelarAlteracaoTipo();
+                e.Handled = true;
             }
+        }
+    }
+
+    private void BtnCancelarTipo_Click(object sender, RoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            vm.CancelarAlteracaoTipo();
+        }
+    }
+
+    private void BtnCancelarTipo_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (this.DataContext is PedidoViewModel vm && vm.IsConfirmarAlteracaoTipoOpen)
+        {
+            vm.CancelarAlteracaoTipo();
+            args.Handled = true;
+        }
+    }
+
+    private void BtnConfirmarTipo_Click(object sender, RoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            vm.ConfirmarAlteracaoTipo();
+        }
+    }
+
+    private void BtnConfirmarTipo_Invoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (this.DataContext is PedidoViewModel vm && vm.IsConfirmarAlteracaoTipoOpen)
+        {
+            vm.ConfirmarAlteracaoTipo();
+            args.Handled = true;
         }
     }
 
