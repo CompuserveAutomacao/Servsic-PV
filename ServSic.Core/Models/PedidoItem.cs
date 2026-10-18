@@ -21,6 +21,10 @@ public class PedidoItem
     public int? LkVendedor { get; set; }
     public string? Vendedor { get; set; }
 
+    public string CodigoExibicao => !string.IsNullOrWhiteSpace(CodInterno) 
+        ? CodInterno 
+        : (!string.IsNullOrWhiteSpace(CodBarra) ? CodBarra : (LkProduto > 0 ? LkProduto.ToString() : ""));
+
     public decimal SubtotalBruto => Quantidade * VlUnitario;
 
     public void RecalcularTotal()

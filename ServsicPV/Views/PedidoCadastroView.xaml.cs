@@ -23,15 +23,45 @@ public partial class PedidoCadastroView : UserControl
         if (args.NewValue is PedidoViewModel vm)
         {
             vm.OnClienteDefinido = () => FocarCodigoProduto();
+            vm.OnProdutoDefinido = () => FocarQuantidade();
+            vm.OnItemAdicionado = () => FocarCodigoProduto();
         }
     }
 
     public void FocarCodigoProduto()
     {
-        DispatcherQueue.TryEnqueue(() =>
+        DispatcherQueue.TryEnqueue(async () =>
         {
+            await Task.Delay(50);
             TxtCodigoProduto?.Focus(FocusState.Programmatic);
             TxtCodigoProduto?.SelectAll();
+        });
+    }
+
+    public void FocarQuantidade()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            await Task.Delay(80);
+            TxtQuantidade?.Focus(FocusState.Programmatic);
+            TxtQuantidade?.SelectAll();
+        });
+    }
+
+    public void FocarDescontoItem()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            TxtDescontoItem?.Focus(FocusState.Programmatic);
+            TxtDescontoItem?.SelectAll();
+        });
+    }
+
+    public void FocarBotaoInserir()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            BtnInserirItem?.Focus(FocusState.Programmatic);
         });
     }
 
@@ -63,7 +93,7 @@ public partial class PedidoCadastroView : UserControl
         }
     }
 
-    private void CodigoProduto_KeyDown(object sender, KeyRoutedEventArgs e)
+    private async void CodigoProduto_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == Windows.System.VirtualKey.F4)
         {
@@ -75,9 +105,52 @@ public partial class PedidoCadastroView : UserControl
         }
         else if (e.Key == Windows.System.VirtualKey.Enter)
         {
-            if (this.DataContext is PedidoViewModel vm && vm.BuscarProdutoRapidoCommand.CanExecute(null))
+            e.Handled = true;
+            if (this.DataContext is PedidoViewModel vm)
             {
-                vm.BuscarProdutoRapidoCommand.Execute(null);
+                if (string.IsNullOrWhiteSpace(TxtCodigoProduto?.Text))
+                {
+                    vm.AbrirConsultaProduto();
+                }
+                else
+                {
+                    await vm.BuscarProdutoRapidoAsync();
+                    if (vm.ProdutoSelecionado != null)
+                    {
+                        FocarQuantidade();
+                    }
+                }
+            }
+        }
+    }
+
+    private void Quantidade_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            FocarDescontoItem();
+        }
+    }
+
+    private void DescontoItem_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            FocarBotaoInserir();
+        }
+    }
+
+    private void BtnInserirItem_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            if (this.DataContext is PedidoViewModel vm && vm.HasProdutoSelecionado)
+            {
+                vm.AdicionarItem();
+                FocarCodigoProduto();
             }
         }
     }

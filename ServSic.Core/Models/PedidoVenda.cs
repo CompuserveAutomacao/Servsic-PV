@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace ServSic.Core.Models;
@@ -47,7 +48,7 @@ public class PedidoVenda
     public string? ComplEnd { get; set; }
     public string? Obs { get; set; }
 
-    public List<PedidoItem> Itens { get; set; } = new();
+    public ObservableCollection<PedidoItem> Itens { get; set; } = new();
     public List<FormaPagamento> Pagamentos { get; set; } = new();
 
     public bool IsOrcamento => Status == "O";

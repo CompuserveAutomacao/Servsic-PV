@@ -198,7 +198,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho do Card -->
                             <RowDefinition Height="Auto"/> <!-- 1. Barra Rápida de Produto -->
-                            <RowDefinition Height="*"/>    <!-- 2. ListView de Itens -->
+                            <RowDefinition Height="Auto"/> <!-- 2. Cabeçalho Fixo da Grade de Itens -->
+                            <RowDefinition Height="*"/>    <!-- 3. Lista de Itens com Rolagem -->
                         </Grid.RowDefinitions>
 
                         <!-- Cabeçalho do Card de Produtos com Botão F4 - ITENS -->
@@ -250,16 +251,28 @@
 
                             <StackPanel Grid.Column="2" Spacing="4">
                                 <TextBlock Text="Qtd" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                <TextBox Text="{Binding QuantidadeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="36"/>
+                                <TextBox x:Name="TxtQuantidade"
+                                         Text="{Binding QuantidadeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="Quantidade_KeyDown"
+                                         Height="36"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="3" Spacing="4">
                                 <TextBlock Text="Desc (R$)" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                <TextBox Text="{Binding DescontoItemInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="36"/>
+                                <TextBox x:Name="TxtDescontoItem"
+                                         Text="{Binding DescontoItemInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         KeyDown="DescontoItem_KeyDown"
+                                         Height="36"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="4" VerticalAlignment="Bottom">
-                                <Button Command="{Binding AdicionarItemCommand}" Style="{StaticResource BtnPrimary}" Height="36" Padding="16,0" ToolTipService.ToolTip="Adicionar Item">
+                                <Button x:Name="BtnInserirItem"
+                                        Command="{Binding AdicionarItemCommand}"
+                                        IsEnabled="{Binding HasProdutoSelecionado}"
+                                        KeyDown="BtnInserirItem_KeyDown"
+                                        Style="{StaticResource BtnPrimary}"
+                                        Height="36" Padding="16,0"
+                                        ToolTipService.ToolTip="Adicionar Item (Enter)">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <ic:SymbolIcon Symbol="Add" FontSize="16"/>
                                         <TextBlock Text="Inserir" FontWeight="Bold"/>
@@ -268,32 +281,37 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Lista de Itens do Pedido -->
-                        <ListView Grid.Row="2" ItemsSource="{Binding Pedido.Itens}" SelectionMode="None">
-                            <ListView.HeaderTemplate>
-                                <DataTemplate>
-                                    <Grid Background="#F1F5F9" Padding="12,8" CornerRadius="4" Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="90"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="60"/>
-                                            <ColumnDefinition Width="70"/>
-                                            <ColumnDefinition Width="95"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="40"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="1" Text="DESCRIÇÃO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="2" Text="UN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="3" Text="QTD" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="4" Text="UNITÁRIO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="5" Text="DESC." FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="6" Text="TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="7" Text="" FontSize="11"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListView.HeaderTemplate>
+                        <!-- Cabeçalho Fixo da Tabela de Itens -->
+                        <Grid Grid.Row="2" Background="#F1F5F9" Padding="12,8" CornerRadius="4" Margin="0,4,0,2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="95"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="40"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="1" Text="DESCRIÇÃO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="2" Text="UN" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="3" Text="QTD" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="4" Text="UNITÁRIO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="5" Text="DESC." FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="6" Text="TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                            <TextBlock Grid.Column="7" Text="" FontSize="11"/>
+                        </Grid>
+
+                        <!-- Lista de Itens do Pedido (ObservableCollection com Renderização Imediata) -->
+                        <ListView Grid.Row="3" ItemsSource="{Binding Pedido.Itens}" SelectionMode="None">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="MinHeight" Value="40"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Padding="12,10" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
@@ -308,7 +326,7 @@
                                             <ColumnDefinition Width="40"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Column="0" Text="{Binding CodInterno}" FontSize="12" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="0" Text="{Binding CodigoExibicao}" FontSize="12" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding Produto}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Grid.Column="2" Text="{Binding Unidade}" FontSize="12" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="3" Text="{Binding Quantidade}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>

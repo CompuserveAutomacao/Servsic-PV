@@ -100,7 +100,7 @@ public partial class MainView : Window
         {
             _pedidoViewModel.SelecionarProdutoDaConsulta(produto);
             MostrarCadastro();
-            _cadastroView.FocarCodigoProduto();
+            _cadastroView.FocarQuantidade();
         };
         _produtoConsultaViewModel.OnVoltarAoPedido = () =>
         {

@@ -33,6 +33,7 @@
                     <Border Background="#1E293B" CornerRadius="8" Padding="3" BorderBrush="#334155" BorderThickness="1">
                         <StackPanel Orientation="Horizontal" Spacing="3">
                             <Button Command="{Binding SelecionarOrcamentoCommand}"
+                                    IsTabStop="False"
                                     Background="{Binding BrushOrcamentoBackground}"
                                     Foreground="{Binding BrushOrcamentoForeground}"
                                     FontWeight="Bold"
@@ -48,6 +49,7 @@
                             </Button>
 
                             <Button Command="{Binding SelecionarVendaCommand}"
+                                    IsTabStop="False"
                                     Background="{Binding BrushVendaBackground}"
                                     Foreground="{Binding BrushVendaForeground}"
                                     FontWeight="Bold"
@@ -92,7 +94,7 @@
                         <TextBlock x:Name="TxtUsuarioNivel" Text="Operador" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right"/>
                     </StackPanel>
 
-                    <Button Click="BtnSair_Click" Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6" ToolTipService.ToolTip="Encerrar Sessão">
+                    <Button Click="BtnSair_Click" IsTabStop="False" Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6" ToolTipService.ToolTip="Encerrar Sessão">
                         <ic:SymbolIcon Symbol="SignOut" FontSize="20" Foreground="#CBD5E1"/>
                     </Button>
                 </StackPanel>

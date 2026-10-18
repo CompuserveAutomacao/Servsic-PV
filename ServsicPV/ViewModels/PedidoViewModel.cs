@@ -178,14 +178,21 @@ public class PedidoViewModel : ViewModelBase
         get => _produtoSelecionado;
         set
         {
-            if (SetProperty(ref _produtoSelecionado, value) && value != null)
+            if (SetProperty(ref _produtoSelecionado, value))
             {
-                VlUnitarioInput = value.PrVenda;
-                QuantidadeInput = 1m;
-                DescontoItemInput = 0m;
+                if (value != null)
+                {
+                    VlUnitarioInput = value.PrVenda;
+                    QuantidadeInput = 1m;
+                    DescontoItemInput = 0m;
+                }
+                OnPropertyChanged(nameof(HasProdutoSelecionado));
             }
         }
     }
+
+    public bool HasProdutoSelecionado => ProdutoSelecionado != null;
+    public System.Collections.ObjectModel.ObservableCollection<PedidoItem> Itens => Pedido.Itens;
 
     public bool IsOrcamento => Pedido.Status == "O";
     public bool IsVenda => Pedido.Status == "V";
@@ -210,6 +217,8 @@ public class PedidoViewModel : ViewModelBase
     public Action? OnTipoDocumentoAlterado { get; set; }
     public Action? OnConsultaClienteAberta { get; set; }
     public Action? OnClienteDefinido { get; set; }
+    public Action? OnProdutoDefinido { get; set; }
+    public Action? OnItemAdicionado { get; set; }
     public Action<string>? OnSolicitarConsultaCliente { get; set; }
     public Action<string>? OnSolicitarConsultaProduto { get; set; }
 
@@ -931,6 +940,7 @@ public class PedidoViewModel : ViewModelBase
         QuantidadeInput = 1m;
         DescontoItemInput = 0m;
         ExibirMensagem($"Produto '{produto.Descricao}' selecionado ({produto.PrVenda:C2})", true, 3000);
+        OnProdutoDefinido?.Invoke();
     }
 
     public async Task BuscarProdutoRapidoAsync()
@@ -948,6 +958,7 @@ public class PedidoViewModel : ViewModelBase
             if (prod != null)
             {
                 ProdutoSelecionado = prod;
+                OnProdutoDefinido?.Invoke();
             }
             else
             {
@@ -955,6 +966,7 @@ public class PedidoViewModel : ViewModelBase
                 if (lista.Count == 1)
                 {
                     ProdutoSelecionado = lista[0];
+                    OnProdutoDefinido?.Invoke();
                 }
                 else
                 {
@@ -992,7 +1004,9 @@ public class PedidoViewModel : ViewModelBase
         var item = new PedidoItem
         {
             LkProduto = ProdutoSelecionado.Controle,
-            CodInterno = ProdutoSelecionado.CodInterno,
+            CodInterno = !string.IsNullOrWhiteSpace(ProdutoSelecionado.CodInterno) 
+                ? ProdutoSelecionado.CodInterno 
+                : (!string.IsNullOrWhiteSpace(ProdutoSelecionado.Codigo) ? ProdutoSelecionado.Codigo : ProdutoSelecionado.Controle.ToString()),
             CodBarra = ProdutoSelecionado.CodBarra,
             Produto = ProdutoSelecionado.Descricao,
             Quantidade = QuantidadeInput,
@@ -1009,9 +1023,11 @@ public class PedidoViewModel : ViewModelBase
         Pedido.RecalcularTotais();
 
         OnPropertyChanged(nameof(Pedido));
+        OnPropertyChanged(nameof(Itens));
         LimparEntradaItem();
         StatusMensagem = $"Item '{item.Produto}' adicionado.";
         IsSucesso = true;
+        OnItemAdicionado?.Invoke();
     }
 
     public void RemoverItem(PedidoItem? item)

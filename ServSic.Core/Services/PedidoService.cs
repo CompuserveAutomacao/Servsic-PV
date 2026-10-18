@@ -35,7 +35,7 @@ public class PedidoService
         if (pedido == null) return null;
 
         var itens = await _itemService.ObterItensPorPedidoAsync(controle);
-        pedido.Itens = itens.ToList();
+        pedido.Itens = new System.Collections.ObjectModel.ObservableCollection<PedidoItem>(itens);
 
         var pagamentos = await _pagService.ObterPagamentosPorPedidoAsync(pedido.Pedido);
         pedido.Pagamentos = pagamentos.ToList();
