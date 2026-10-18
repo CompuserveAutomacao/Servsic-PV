@@ -630,9 +630,13 @@
 
                                 <StackPanel Grid.Column="0" Spacing="4">
                                     <TextBlock Text="{Binding LabelDocumento}" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteDocumento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox x:Name="TxtNovoClienteDocumento"
+                                             Text="{Binding NovoClienteDocumento, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              KeyDown="NovoClienteCnpj_KeyDown"
+                                             BeforeTextChanging="MascaraNumerica_BeforeTextChanging"
+                                             TextChanging="Documento_TextChanging"
                                              PlaceholderText="{Binding PlaceholderDocumento}"
+                                             MaxLength="18"
                                              Height="36"/>
                                 </StackPanel>
 
@@ -673,48 +677,61 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Linha: Contatos (Telefone, Celular/WhatsApp, Email) -->
+                            <!-- Linha: Contatos (Telefone Fixo e Celular/WhatsApp) -->
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Spacing="4">
                                     <TextBlock Text="Telefone Fixo" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteTelefone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox x:Name="TxtNovoClienteTelefone"
+                                             Text="{Binding NovoClienteTelefone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             BeforeTextChanging="MascaraNumerica_BeforeTextChanging"
+                                             TextChanging="Telefone_TextChanging"
                                              PlaceholderText="(00) 0000-0000"
+                                             MaxLength="15"
                                              Height="36"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Spacing="4">
                                     <TextBlock Text="Celular / WhatsApp" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteCelular, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             PlaceholderText="(00) 90000-0000"
-                                             Height="36"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Spacing="4">
-                                    <TextBlock Text="E-mail" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             PlaceholderText="contato@email.com"
+                                    <TextBox x:Name="TxtNovoClienteCelular"
+                                             Text="{Binding NovoClienteCelular, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             BeforeTextChanging="MascaraNumerica_BeforeTextChanging"
+                                             TextChanging="Celular_TextChanging"
+                                             PlaceholderText="(00) 00000-0000"
+                                             MaxLength="15"
                                              Height="36"/>
                                 </StackPanel>
                             </Grid>
 
+                            <!-- Linha: E-mail (Linha própria abaixo dos telefones de contato) -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="E-mail" Style="{StaticResource TextLabel}"/>
+                                <TextBox x:Name="TxtNovoClienteEmail"
+                                         Text="{Binding NovoClienteEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PlaceholderText="contato@empresa.com"
+                                         Height="36"/>
+                            </StackPanel>
+
                             <!-- Linha: CEP, Endereço e Número -->
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="130"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="90"/>
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Spacing="4">
                                     <TextBlock Text="CEP" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteCEP, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox x:Name="TxtNovoClienteCep"
+                                             Text="{Binding NovoClienteCEP, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             BeforeTextChanging="MascaraNumerica_BeforeTextChanging"
+                                             TextChanging="Cep_TextChanging"
                                              PlaceholderText="00000-000"
+                                             MaxLength="9"
                                              Height="36"/>
                                 </StackPanel>
 
@@ -738,7 +755,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="1.2*"/>
                                     <ColumnDefinition Width="1.5*"/>
-                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="70"/>
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Spacing="4">
@@ -757,7 +774,10 @@
 
                                 <StackPanel Grid.Column="2" Spacing="4">
                                     <TextBlock Text="UF" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteUF, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox x:Name="TxtNovoClienteUf"
+                                             Text="{Binding NovoClienteUF, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             BeforeTextChanging="Uf_BeforeTextChanging"
+                                             TextChanging="Uf_TextChanging"
                                              PlaceholderText="SP"
                                              MaxLength="2"
                                              Height="36"/>

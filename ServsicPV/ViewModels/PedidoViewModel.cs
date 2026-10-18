@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using ServsicPV.Common;
@@ -39,6 +40,7 @@ public class PedidoViewModel : ViewModelBase
     private string _filtroConsultaCliente = string.Empty;
     private Cliente? _clienteConsultaSelecionado;
     private bool _isBuscandoClientesConsulta;
+    private CancellationTokenSource? _pesquisaClienteCts;
 
     // --- Modal: Cadastro Rápido de Cliente ---
     private bool _isCadastroRapidoClienteOpen;
@@ -217,7 +219,16 @@ public class PedidoViewModel : ViewModelBase
     public string FiltroConsultaCliente
     {
         get => _filtroConsultaCliente;
-        set => SetProperty(ref _filtroConsultaCliente, value);
+        set
+        {
+            if (SetProperty(ref _filtroConsultaCliente, value))
+            {
+                if (IsConsultaClienteOpen)
+                {
+                    _ = DispararPesquisaAutomaticaClientesAsync();
+                }
+            }
+        }
     }
 
     public Cliente? ClienteConsultaSelecionado
@@ -573,18 +584,42 @@ public class PedidoViewModel : ViewModelBase
         OnConsultaClienteAberta?.Invoke();
     }
 
+    private async Task DispararPesquisaAutomaticaClientesAsync()
+    {
+        _pesquisaClienteCts?.Cancel();
+        _pesquisaClienteCts?.Dispose();
+        _pesquisaClienteCts = new CancellationTokenSource();
+        var token = _pesquisaClienteCts.Token;
+
+        try
+        {
+            await Task.Delay(250, token);
+            if (token.IsCancellationRequested) return;
+
+            await PesquisarClientesConsultaAsync();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
     public async Task PesquisarClientesConsultaAsync()
     {
         try
         {
             IsBuscandoClientesConsulta = true;
-            ClientesConsulta.Clear();
             var list = await _clienteService.BuscarAsync(FiltroConsultaCliente, 50);
+
+            ClientesConsulta.Clear();
             foreach (var c in list) ClientesConsulta.Add(c);
 
             if (ClientesConsulta.Count > 0)
             {
                 ClienteConsultaSelecionado = ClientesConsulta[0];
+            }
+            else
+            {
+                ClienteConsultaSelecionado = null;
             }
         }
         catch (Exception ex)
@@ -594,7 +629,6 @@ public class PedidoViewModel : ViewModelBase
         finally
         {
             IsBuscandoClientesConsulta = false;
-            OnConsultaClienteAberta?.Invoke();
         }
     }
 
