@@ -105,6 +105,31 @@ public partial class ProdutoConsultaView : UserControl
         }
     }
 
+    private void FiltroAvancado_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is not ProdutoConsultaViewModel vm) return;
+
+        if (e.Key == Windows.System.VirtualKey.Down)
+        {
+            if (ListaProdutos.Items.Count > 0)
+            {
+                if (ListaProdutos.SelectedIndex < 0) ListaProdutos.SelectedIndex = 0;
+                ListaProdutos.Focus(FocusState.Programmatic);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            _ = vm.PesquisarImediatoAsync();
+        }
+        else if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            vm.VoltarAoPedidoCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
     private void ListaProdutos_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (this.DataContext is not ProdutoConsultaViewModel vm) return;

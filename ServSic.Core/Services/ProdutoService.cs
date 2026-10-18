@@ -11,7 +11,28 @@ namespace ServSic.Core.Services;
 
 public class ProdutoService
 {
-    private const string BaseSelect = @"
+    // Consulta Leve e Ultra Rápida: Apenas TabEst1 direta, ZERO LEFT JOINs e apenas produtos ativos
+    private const string SelectCard = @"
+        SELECT {0}
+            e.Controle,
+            e.Codigo,
+            e.CodInterno,
+            e.CodBarra,
+            e.CodBarraCx,
+            e.CodORIGEM as CodOrigem,
+            e.CodFornecedor,
+            e.Produto as Descricao,
+            ISNULL(e.Unidade, 'UN') as Unidade,
+            ISNULL(e.PrecoVenda, 0) as PrVenda,
+            ISNULL(e.Quantidade, 0) as EstoqueLoja,
+            ISNULL(e.QtdDepos, 0) as EstoqueDeposito,
+            (ISNULL(e.Quantidade, 0) + ISNULL(e.QtdDepos, 0)) as Estoque,
+            ISNULL(e.PerDescMax, 0) as PerDescMax,
+            ISNULL(e.Inativo, 0) as Inativo
+        FROM TabEst1 e";
+
+    // Consulta Completa: Carregada exclusivamente sob demanda ao selecionar/clicar no produto para a Ficha Técnica
+    private const string SelectCompleto = @"
         SELECT {0}
             e.Controle,
             e.Codigo,
@@ -45,20 +66,27 @@ public class ProdutoService
             e.LkSubGrupo,
             ISNULL(sub.Descricao, '') as SubGrupo,
             ISNULL(e.PerDescMax, 0) as PerDescMax,
-            ISNULL(e.Inativo, 0) as Inativo,
-            img.pathArquivo as FotoPath
+            ISNULL(e.Inativo, 0) as Inativo
         FROM TabEst1 e
         LEFT JOIN TabEst8 grp ON grp.Controle = e.LkSetor
         LEFT JOIN TabEst8b sub ON sub.Controle = e.LkSubGrupo
-        LEFT JOIN TabEst12 fab ON fab.Controle = e.LkFabricante
-        OUTER APPLY (
-            SELECT TOP 1 pathArquivo 
-            FROM TabEst1Img 
-            WHERE LkCadastro = e.Controle
-            ORDER BY idControle ASC
-        ) img";
+        LEFT JOIN TabEst12 fab ON fab.Controle = e.LkFabricante";
 
-    public async Task<IReadOnlyList<Produto>> BuscarAsync(string termo, int limite = 100, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<Produto>> BuscarAsync(
+        string? termo, 
+        int limite, 
+        CancellationToken cancellationToken = default)
+    {
+        return BuscarAsync(termo, marca: null, grupo: null, localizacao: null, limite: limite, cancellationToken: cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Produto>> BuscarAsync(
+        string? termo = null, 
+        string? marca = null, 
+        string? grupo = null, 
+        string? localizacao = null, 
+        int limite = 100, 
+        CancellationToken cancellationToken = default)
     {
         using var conn = DbConnectionFactory.CreateConnection();
         var parameters = new DynamicParameters();
@@ -68,6 +96,7 @@ public class ProdutoService
         sbWhere.Append("WHERE (e.Inativo IS NULL OR e.Inativo = 0)");
         string orderBy = "ORDER BY e.Produto";
 
+        // 1. Barra de pesquisa principal: Consulta por TODOS os códigos e descrição do produto
         if (!string.IsNullOrWhiteSpace(termo))
         {
             string termoLimpo = termo.Trim();
@@ -85,70 +114,53 @@ public class ProdutoService
                     AND (
                         e.Controle = @controleNum
                         OR e.CodBarra = @exactTerm 
-                        OR e.CodBarraCx = @exactTerm
                         OR e.CodInterno = @exactTerm 
                         OR e.Codigo = @exactTerm
                         OR e.CodORIGEM = @exactTerm
+                        OR e.CodBarraCx = @exactTerm
                         OR e.CodFornecedor = @exactTerm
-                        OR e.NCM = @exactTerm
-                        OR e.CEST = @exactTerm
+                        OR e.CodBarra LIKE @startsTerm
+                        OR e.CodInterno LIKE @startsTerm
                         OR e.Produto LIKE @likeTerm 
-                        OR e.DESCRICAO LIKE @likeTerm
-                        OR e.Fabricante LIKE @likeTerm
-                        OR fab.Nome LIKE @likeTerm
-                        OR grp.Setor LIKE @likeTerm
-                        OR sub.Descricao LIKE @likeTerm
-                        OR e.Moeda LIKE @likeTerm
-                        OR e.CodBarra LIKE @likeTerm
-                        OR e.CodBarraCx LIKE @likeTerm
-                        OR e.CodInterno LIKE @likeTerm
-                        OR e.Codigo LIKE @likeTerm
-                        OR e.CodORIGEM LIKE @likeTerm
-                        OR e.CodFornecedor LIKE @likeTerm
-                        OR e.NCM LIKE @likeTerm
                     )");
 
                 orderBy = @"
                     ORDER BY 
                         CASE 
                             WHEN e.Controle = @controleNum THEN 0
-                            WHEN e.CodInterno = @exactTerm OR e.CodBarra = @exactTerm OR e.CodORIGEM = @exactTerm THEN 1
-                            WHEN e.Produto LIKE @startsTerm THEN 2
-                            WHEN e.Produto LIKE @likeTerm THEN 3
-                            WHEN fab.Nome LIKE @likeTerm OR e.Fabricante LIKE @likeTerm THEN 4
+                            WHEN e.CodBarra = @exactTerm OR e.CodInterno = @exactTerm THEN 1
+                            WHEN e.Codigo = @exactTerm OR e.CodORIGEM = @exactTerm THEN 2
+                            WHEN e.CodBarraCx = @exactTerm OR e.CodFornecedor = @exactTerm THEN 3
+                            WHEN e.Produto LIKE @startsTerm THEN 4
                             ELSE 5
                         END,
                         e.Produto ASC";
             }
             else
             {
-                // Pesquisa inteligente multi-termo
+                // Pesquisa multi-termo ultra rápida: palavras na Descrição e códigos exatos
                 for (int i = 0; i < tokens.Length; i++)
                 {
                     string paramName = $"token_{i}";
-                    parameters.Add(paramName, $"%{tokens[i]}%");
+                    string tokenText = tokens[i];
+                    bool tokenIsNum = int.TryParse(tokenText, out int tokenNum);
+
+                    parameters.Add(paramName, $"%{tokenText}%");
+                    parameters.Add($"{paramName}_num", tokenIsNum ? tokenNum : -1);
+                    parameters.Add($"{paramName}_exact", tokenText);
 
                     sbWhere.Append($@"
                         AND (
                             e.Produto LIKE @{paramName}
-                            OR e.DESCRICAO LIKE @{paramName}
-                            OR e.Fabricante LIKE @{paramName}
-                            OR fab.Nome LIKE @{paramName}
-                            OR grp.Setor LIKE @{paramName}
-                            OR sub.Descricao LIKE @{paramName}
-                            OR e.Moeda LIKE @{paramName}
-                            OR e.CodInterno LIKE @{paramName}
-                            OR e.Codigo LIKE @{paramName}
-                            OR e.CodBarra LIKE @{paramName}
-                            OR e.CodBarraCx LIKE @{paramName}
-                            OR e.CodORIGEM LIKE @{paramName}
-                            OR e.CodFornecedor LIKE @{paramName}
-                            OR e.NCM LIKE @{paramName}
-                            OR e.CEST LIKE @{paramName}
+                            OR e.Controle = @{paramName}_num
+                            OR e.CodBarra = @{paramName}_exact
+                            OR e.CodInterno = @{paramName}_exact
+                            OR e.Codigo = @{paramName}_exact
+                            OR e.CodORIGEM = @{paramName}_exact
                         )");
                 }
 
-                parameters.Add("firstTokenLike", $"%{tokens[0]}%");
+                parameters.Add("firstTokenLike", $"{tokens[0]}%");
                 orderBy = @"
                     ORDER BY 
                         CASE 
@@ -159,31 +171,62 @@ public class ProdutoService
             }
         }
 
-        string sql = string.Format(BaseSelect, "TOP (@limite)") + "\n" + sbWhere + "\n" + orderBy;
+        // 2. Filtro dedicado: Marca / Fabricante (direto em TabEst1, sem joins)
+        if (!string.IsNullOrWhiteSpace(marca))
+        {
+            parameters.Add("marca", $"%{marca.Trim()}%");
+            sbWhere.Append(" AND e.Fabricante LIKE @marca");
+        }
+
+        // 3. Filtro dedicado: Grupo / Setor (subconsulta leve, sem joins no select principal)
+        if (!string.IsNullOrWhiteSpace(grupo))
+        {
+            parameters.Add("grupo", $"%{grupo.Trim()}%");
+            sbWhere.Append(" AND EXISTS (SELECT 1 FROM TabEst8 grp WHERE grp.Controle = e.LkSetor AND grp.Setor LIKE @grupo)");
+        }
+
+        // 4. Filtro dedicado: Localização no Estoque (Moeda)
+        if (!string.IsNullOrWhiteSpace(localizacao))
+        {
+            parameters.Add("localizacao", $"%{localizacao.Trim()}%");
+            sbWhere.Append(" AND e.Moeda LIKE @localizacao");
+        }
+
+        string sql = string.Format(SelectCard, "TOP (@limite)") + "\n" + sbWhere + "\n" + orderBy;
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
         var list = await conn.QueryAsync<Produto>(cmd);
         return list.ToList();
     }
 
-    public async Task<byte[]?> ObterFotoBytesAsync(int controle)
+    public async Task<(byte[]? Bytes, string? Path)> ObterInfoFotoAsync(int controle)
     {
         try
         {
             using var conn = DbConnectionFactory.CreateConnection();
-            return await conn.QueryFirstOrDefaultAsync<byte[]?>(
-                "SELECT TOP 1 Imagem FROM TabEst1Img WHERE LkCadastro = @controle ORDER BY idControle ASC",
+            var row = await conn.QueryFirstOrDefaultAsync<dynamic>(
+                "SELECT TOP 1 Imagem, pathArquivo FROM TabEst1Img WHERE LkCadastro = @controle ORDER BY idControle ASC",
                 new { controle });
+            if (row == null) return (null, null);
+            byte[]? b = row.Imagem as byte[];
+            string? p = row.pathArquivo as string;
+            return (b, p);
         }
         catch
         {
-            return null;
+            return (null, null);
         }
+    }
+
+    public async Task<byte[]?> ObterFotoBytesAsync(int controle)
+    {
+        var (bytes, _) = await ObterInfoFotoAsync(controle);
+        return bytes;
     }
 
     public async Task<Produto?> ObterPorIdAsync(int controle)
     {
         using var conn = DbConnectionFactory.CreateConnection();
-        string sql = string.Format(BaseSelect, "TOP 1") + " WHERE e.Controle = @controle";
+        string sql = string.Format(SelectCompleto, "TOP 1") + " WHERE e.Controle = @controle";
         return await conn.QueryFirstOrDefaultAsync<Produto>(sql, new { controle });
     }
 
@@ -199,7 +242,7 @@ public class ProdutoService
         parameters.Add("codigo", codigoLimpo);
         parameters.Add("codInt", isNumeric ? codInt : -1);
 
-        string sql = string.Format(BaseSelect, "TOP 1") + @"
+        string sql = string.Format(SelectCompleto, "TOP 1") + @"
             WHERE (e.Inativo IS NULL OR e.Inativo = 0)
               AND (
                   e.Controle = @codInt
@@ -214,5 +257,65 @@ public class ProdutoService
               )";
 
         return await conn.QueryFirstOrDefaultAsync<Produto>(sql, parameters);
+    }
+
+    public async Task<IReadOnlyList<string>> ObterMarcasDisponiveisAsync()
+    {
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+            const string sql = @"
+                SELECT DISTINCT LTRIM(RTRIM(Nome)) as Nome 
+                FROM (
+                    SELECT Nome FROM TabEst12 WHERE Nome IS NOT NULL AND LTRIM(RTRIM(Nome)) <> ''
+                    UNION
+                    SELECT Fabricante as Nome FROM TabEst1 WHERE Fabricante IS NOT NULL AND LTRIM(RTRIM(Fabricante)) <> ''
+                ) f
+                ORDER BY 1";
+            var result = await conn.QueryAsync<string>(sql);
+            return result.ToList();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    public async Task<IReadOnlyList<string>> ObterGruposDisponiveisAsync()
+    {
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+            const string sql = @"
+                SELECT DISTINCT LTRIM(RTRIM(Setor)) as Setor 
+                FROM TabEst8 
+                WHERE Setor IS NOT NULL AND LTRIM(RTRIM(Setor)) <> '' 
+                ORDER BY 1";
+            var result = await conn.QueryAsync<string>(sql);
+            return result.ToList();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    public async Task<IReadOnlyList<string>> ObterLocalizacoesDisponiveisAsync()
+    {
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+            const string sql = @"
+                SELECT DISTINCT LTRIM(RTRIM(Moeda)) as Loc 
+                FROM TabEst1 
+                WHERE Moeda IS NOT NULL AND LTRIM(RTRIM(Moeda)) <> '' 
+                ORDER BY 1";
+            var result = await conn.QueryAsync<string>(sql);
+            return result.ToList();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
     }
 }

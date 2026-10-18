@@ -74,7 +74,28 @@ public static class DatabaseMigrationService
                 END";
             await conn.ExecuteAsync(sqlTabEst3B);
 
-            // 5. Sincronização de INI (Venda/VendedorPorUsuario = N)
+            // 5. Índices de performance para busca ultra rápida de produtos na TabEst1
+            const string sqlIndicesTabEst1 = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabEst1')
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TabEst1_CodBarraCx' AND object_id = OBJECT_ID('TabEst1'))
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX IX_TabEst1_CodBarraCx ON TabEst1 (CodBarraCx);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TabEst1_CodFornecedor' AND object_id = OBJECT_ID('TabEst1'))
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX IX_TabEst1_CodFornecedor ON TabEst1 (CodFornecedor);
+                    END
+
+                    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TabEst1_CodigoDirect' AND object_id = OBJECT_ID('TabEst1'))
+                    BEGIN
+                        CREATE NONCLUSTERED INDEX IX_TabEst1_CodigoDirect ON TabEst1 (Codigo);
+                    END
+                END";
+            await conn.ExecuteAsync(sqlIndicesTabEst1);
+
+            // 6. Sincronização de INI (Venda/VendedorPorUsuario = N)
             SincronizarIniVendedorPorUsuario();
 
             _migracaoExecutada = true;

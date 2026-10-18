@@ -100,18 +100,24 @@ public class Produto
     public bool HasEstoqueDeposito => EstoqueDeposito > 0;
     public string StatusEstoqueDescricao => HasEstoque ? $"{Estoque:N2} {Unidade}" : "Sem Estoque (0)";
 
-    // Helpers visuais modernos para badges de estoque
+    // Helpers visuais modernos para badges e cards de estoque
     public string EstoqueBadgeBg => HasEstoque ? "#ECFDF5" : "#FEF2F2";
     public string EstoqueBadgeBorder => HasEstoque ? "#A7F3D0" : "#FECACA";
     public string EstoqueBadgeForeground => HasEstoque ? "#065F46" : "#991B1B";
     public string EstoqueBadgeDotColor => HasEstoque ? "#059669" : "#DC2626";
+    public string CardBackground => HasEstoque ? "#FFFFFF" : "#FEF2F2";
+    public string CardBorderBrush => HasEstoque ? "#E2E8F0" : "#FCA5A5";
+    public string NomeForeground => HasEstoque ? "#0F172A" : "#DC2626";
 
     public string FabricanteFormatado => !string.IsNullOrWhiteSpace(Fabricante) ? Fabricante.Trim() : "Sem marca/fabricante";
     public bool HasFabricante => !string.IsNullOrWhiteSpace(Fabricante);
     public string GrupoFormatado => !string.IsNullOrWhiteSpace(Grupo) ? Grupo.Trim() : "Sem grupo";
     public bool HasGrupo => !string.IsNullOrWhiteSpace(Grupo);
     public bool HasAtacado => PrAtacado > 0 || PrAtacado1 > 0;
-    public string PerDescMaxFormatado => PerDescMax > 0 ? $"{PerDescMax:N2}%" : "Sem limite fixado";
+    public string EstoqueTotalFormatado => $"{Estoque:N2} {Unidade}";
+    public string PerDescMaxFormatado => PerDescMax > 0 ? $"{PerDescMax:N2}%" : "0,00%";
+    public string PerDescMaxValorFormatado => $"{PerDescMax:N2}%";
+    public bool HasPerDescMax => PerDescMax > 0;
 
     public bool HasFoto => (FotoBytes != null && FotoBytes.Length > 0) || !string.IsNullOrWhiteSpace(FotoPath);
     public string ExibicaoResumida => $"{CodigoFormatado} - {Descricao} | {PrVenda:C2}";

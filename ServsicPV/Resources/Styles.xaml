@@ -44,6 +44,7 @@
     <!-- Compatibilidade legada apontando para Azul Claro -->
     <SolidColorBrush x:Key="BrushServsicMintLight" Color="{StaticResource ColorServsicBlueLight}" />
     <SolidColorBrush x:Key="BrushIceBackground" Color="{StaticResource ColorIceBackground}" />
+    <SolidColorBrush x:Key="BrushBackgroundIce" Color="{StaticResource ColorIceBackground}" />
     <SolidColorBrush x:Key="BrushCardBackground" Color="{StaticResource ColorCardBackground}" />
     <SolidColorBrush x:Key="BrushBorder" Color="{StaticResource ColorBorder}" />
     <SolidColorBrush x:Key="BrushBorderHover" Color="{StaticResource ColorBorderHover}" />
