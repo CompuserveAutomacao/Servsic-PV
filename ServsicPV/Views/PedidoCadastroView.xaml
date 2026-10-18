@@ -17,83 +17,16 @@
             </Grid.ColumnDefinitions>
 
             <!-- ========================================== -->
-            <!-- COLUNA ESQUERDA: TÍTULO, ATALHOS, CLIENTE, PRODUTOS -->
+            <!-- COLUNA ESQUERDA: CLIENTE E PRODUTOS       -->
             <!-- ========================================== -->
-            <Grid Grid.Column="0" RowSpacing="10">
+            <Grid Grid.Column="0" RowSpacing="12">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho da Tela com Título e Atalhos -->
-                    <RowDefinition Height="Auto"/> <!-- 1. Alerta de Status -->
-                    <RowDefinition Height="Auto"/> <!-- 2. Card Compacto de Cliente -->
-                    <RowDefinition Height="*"/>    <!-- 3. Grade de Produtos -->
+                    <RowDefinition Height="Auto"/> <!-- 0. Card Compacto de Cliente -->
+                    <RowDefinition Height="*"/>    <!-- 1. Grade de Produtos e Inserção de Itens -->
                 </Grid.RowDefinitions>
 
-                <!-- 0. Cabeçalho Superior da Tela: Título e Atalhos Fora da Lateral Direita -->
-                <Grid Grid.Row="0" Margin="0,0,0,4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Lado Esquerdo: Identidade da Tela com Ícone -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <Border Width="38" Height="38" CornerRadius="8" Background="{StaticResource BrushServsicBlueSoft}" VerticalAlignment="Center">
-                            <ic:SymbolIcon Symbol="Cart" FontSize="20" Foreground="{StaticResource BrushServsicBlue}"/>
-                        </Border>
-                        <StackPanel VerticalAlignment="Center" Spacing="2">
-                            <TextBlock Text="Pedido de Venda" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                            <TextBlock Text="Ponto de Venda / Pré-Venda com bipe rápido de produtos e fechamento instantâneo" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <!-- Atalhos de Teclado Alinhados Dentro da Coluna Esquerda (Fora da Área do Card Lateral) -->
-                    <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="10,5" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                            <Border Background="#F1F5F9" CornerRadius="3" Padding="4,1">
-                                <TextBlock Text="F2" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                            </Border>
-                            <TextBlock Text="Novo" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Text="•" FontSize="10" Foreground="{StaticResource BrushBorder}"/>
-                            <Border Background="#F1F5F9" CornerRadius="3" Padding="4,1">
-                                <TextBlock Text="F3" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                            </Border>
-                            <TextBlock Text="Clientes" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Text="•" FontSize="10" Foreground="{StaticResource BrushBorder}"/>
-                            <Border Background="#F1F5F9" CornerRadius="3" Padding="4,1">
-                                <TextBlock Text="F4" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                            </Border>
-                            <TextBlock Text="Produtos" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Text="•" FontSize="10" Foreground="{StaticResource BrushBorder}"/>
-                            <Border Background="#F1F5F9" CornerRadius="3" Padding="4,1">
-                                <TextBlock Text="F6" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                            </Border>
-                            <TextBlock Text="Totalizar" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <!-- 1. Alerta de Notificação / Status com Botão Fechar -->
-                <Border Grid.Row="1" CornerRadius="6" Padding="14,8" Margin="0,0,0,2"
-                        Visibility="{Binding StatusMensagem, Converter={StaticResource StringToVisibilityConverter}}"
-                        Background="{Binding IsSucesso, Converter={StaticResource StatusColorConverter}}">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <ic:SymbolIcon Grid.Column="0" Symbol="Info" FontSize="16" Foreground="#FFFFFF" Margin="0,0,10,0" VerticalAlignment="Center"/>
-
-                        <TextBlock Grid.Column="1" Text="{Binding StatusMensagem}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
-
-                        <Button Grid.Column="2" Command="{Binding FecharMensagemCommand}" Background="Transparent" BorderThickness="0" Padding="6,2" VerticalAlignment="Center" ToolTipService.ToolTip="Fechar mensagem">
-                            <ic:SymbolIcon Symbol="Dismiss" FontSize="14" Foreground="#FFFFFF"/>
-                        </Button>
-                    </Grid>
-                </Border>
-
-                <!-- 1. Card de Identificação do Cliente -->
-                <Border Grid.Row="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,14">
+                <!-- 0. Card de Identificação do Cliente -->
+                <Border Grid.Row="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,14">
                     <Grid RowSpacing="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- Cabeçalho do Card -->
@@ -237,14 +170,15 @@
                     </Grid>
                 </Border>
 
-                <!-- 2. Grade de Produtos e Inserção de Itens (Fundo Azul Suave) -->
-                <Border Grid.Row="2" Background="#F0F7FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="16,14">
+                <!-- 1. Grade de Produtos e Inserção de Itens (Fundo Azul Suave) -->
+                <Border Grid.Row="1" Background="#F0F7FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="16,14">
                     <Grid RowSpacing="12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho do Card -->
                             <RowDefinition Height="Auto"/> <!-- 1. Barra Rápida de Produto -->
-                            <RowDefinition Height="Auto"/> <!-- 2. Cabeçalho Fixo da Grade de Itens -->
-                            <RowDefinition Height="*"/>    <!-- 3. Lista de Itens com Rolagem -->
+                            <RowDefinition Height="Auto"/> <!-- 2. Faixa Informativa da Margem de Desconto -->
+                            <RowDefinition Height="Auto"/> <!-- 3. Cabeçalho Fixo da Grade de Itens -->
+                            <RowDefinition Height="*"/>    <!-- 4. Lista de Itens com Rolagem -->
                         </Grid.RowDefinitions>
 
                         <!-- Cabeçalho do Card de Produtos com Botão F4 - ITENS em Destaque -->
@@ -360,19 +294,19 @@
                                              PlaceholderText="0,00"
                                              Height="36"/>
                                     <Button x:Name="BtnToggleTipoDescontoItem"
-                                            Grid.Column="1"
-                                            Command="{Binding AlternarTipoDescontoItemCommand}"
-                                            Content="{Binding TipoDescontoItemSimbolo}"
-                                            FontWeight="Bold"
-                                            FontSize="11.5"
-                                            Height="36"
-                                            Width="38"
-                                            Padding="0"
-                                            Background="{StaticResource BrushServsicBlueSoft}"
-                                            Foreground="{StaticResource BrushServsicBlue}"
-                                            BorderBrush="{StaticResource BrushServsicBlue}"
-                                            BorderThickness="1"
-                                            ToolTipService.ToolTip="Alternar Desconto entre % e R$"/>
+                                             Grid.Column="1"
+                                             Command="{Binding AlternarTipoDescontoItemCommand}"
+                                             Content="{Binding TipoDescontoItemSimbolo}"
+                                             FontWeight="Bold"
+                                             FontSize="11.5"
+                                             Height="36"
+                                             Width="38"
+                                             Padding="0"
+                                             Background="{StaticResource BrushServsicBlueSoft}"
+                                             Foreground="{StaticResource BrushServsicBlue}"
+                                             BorderBrush="{StaticResource BrushServsicBlue}"
+                                             BorderThickness="1"
+                                             ToolTipService.ToolTip="Alternar Desconto entre % e R$"/>
                                 </Grid>
                             </StackPanel>
 
@@ -392,8 +326,34 @@
                             </StackPanel>
                         </Grid>
 
+                        <!-- Faixa Informativa: Margem de Desconto Restante para o Vendedor Ofertar -->
+                        <Border Grid.Row="2" 
+                                Visibility="{Binding HasMargemDescontoItemVisivel, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Background="#FFFFFF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="6"
+                                Padding="12,6" Margin="0,-4,0,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="Tag" FontSize="15" Foreground="{Binding BrushMargemDescontoItem}"/>
+                                    <TextBlock Text="MARGEM DE DESCONTO:" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding TextoMargemDescontoItemRestante}" 
+                                               FontSize="12" FontWeight="Bold" 
+                                               Foreground="{Binding BrushMargemDescontoItem}"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" 
+                                           Text="{Binding LimiteDescontoItemInfo}" 
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{StaticResource BrushTextSubtle}" 
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
                         <!-- Cabeçalho Superior Imitando Título de Grid (Card Header) -->
-                        <Border Grid.Row="2" Background="{StaticResource BrushServsicDark}" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,4,0,2">
+                        <Border Grid.Row="3" Background="{StaticResource BrushServsicDark}" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,4,0,2">
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="140"/> <!-- CÓDIGO -->
@@ -418,12 +378,13 @@
 
                         <!-- Lista de Cards Virtuais de Itens (Alta Performance com Virtualização de Containers) -->
                         <ListView x:Name="ListaItens"
-                                  Grid.Row="3"
+                                  Grid.Row="4"
                                   ItemsSource="{Binding Pedido.Itens}"
                                   SelectionMode="None"
                                   IsItemClickEnabled="False"
                                   ShowsScrollingPlaceholders="False"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  ScrollViewer.VerticalScrollMode="Enabled"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                             <ListView.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -581,41 +542,57 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Button Grid.Column="0"
-                                        Command="{Binding SelecionarOrcamentoCommand}"
-                                        IsTabStop="False"
+                                <!-- Orçamento -->
+                                <Border Grid.Column="0" 
                                         Background="{Binding BrushOrcamentoBackground}"
-                                        Foreground="{Binding BrushOrcamentoForeground}"
-                                        FontWeight="Bold"
-                                        FontSize="12.5"
-                                        Height="34"
-                                        CornerRadius="6"
-                                        BorderThickness="0"
-                                        HorizontalAlignment="Stretch"
-                                        Padding="0">
-                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                        <ic:SymbolIcon Symbol="DocumentText" FontSize="15"/>
-                                        <TextBlock Text="Orçamento"/>
-                                    </StackPanel>
-                                </Button>
+                                        BorderBrush="{Binding BrushOrcamentoBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <Button Command="{Binding SelecionarOrcamentoCommand}"
+                                            IsTabStop="False"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Height="34"
+                                            CornerRadius="6"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Stretch"
+                                            Padding="0">
+                                        <Button.Resources>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
+                                        </Button.Resources>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="DocumentText" FontSize="15" Foreground="{Binding BrushOrcamentoForeground}"/>
+                                            <TextBlock Text="Orçamento" FontWeight="Bold" FontSize="12.5" Foreground="{Binding BrushOrcamentoForeground}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Border>
 
-                                <Button Grid.Column="1"
-                                        Command="{Binding SelecionarVendaCommand}"
-                                        IsTabStop="False"
+                                <!-- Pré-Venda -->
+                                <Border Grid.Column="1" 
                                         Background="{Binding BrushVendaBackground}"
-                                        Foreground="{Binding BrushVendaForeground}"
-                                        FontWeight="Bold"
-                                        FontSize="12.5"
-                                        Height="34"
-                                        CornerRadius="6"
-                                        BorderThickness="0"
-                                        HorizontalAlignment="Stretch"
-                                        Padding="0">
-                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                        <ic:SymbolIcon Symbol="Cart" FontSize="15"/>
-                                        <TextBlock Text="Pré-Venda"/>
-                                    </StackPanel>
-                                </Button>
+                                        BorderBrush="{Binding BrushVendaBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <Button Command="{Binding SelecionarVendaCommand}"
+                                            IsTabStop="False"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Height="34"
+                                            CornerRadius="6"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Stretch"
+                                            Padding="0">
+                                        <Button.Resources>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
+                                        </Button.Resources>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="Cart" FontSize="15" Foreground="{Binding BrushVendaForeground}"/>
+                                            <TextBlock Text="Pré-Venda" FontWeight="Bold" FontSize="12.5" Foreground="{Binding BrushVendaForeground}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Border>
                             </Grid>
                         </Border>
 
@@ -626,8 +603,13 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Spacing="2">
-                                    <TextBlock Text="DADOS DO PEDIDO" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="60"/>
+                                <StackPanel Grid.Column="0" Spacing="3">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <TextBlock Text="DADOS DO DOCUMENTO" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="60"/>
+                                        <Border Background="{Binding BrushTipoBadgeBackground}" CornerRadius="4" Padding="6,1">
+                                            <TextBlock Text="{Binding TipoDocumentoDescricao}" FontSize="9.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                        </Border>
+                                    </StackPanel>
                                     <TextBlock Text="{Binding Pedido.NumeroFormatado}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="2">
@@ -760,6 +742,19 @@
                                             ToolTipService.ToolTip="Alternar Desconto Geral entre % e R$"/>
                                 </Grid>
 
+                                <!-- Margem Disponível do Desconto Geral -->
+                                <Border Visibility="{Binding HasMargemDescontoGeralVisivel, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6"
+                                        Padding="8,5" Margin="0,2,0,4">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <ic:SymbolIcon Symbol="Tag" FontSize="13" Foreground="{Binding BrushMargemDescontoGeral}"/>
+                                        <TextBlock Text="{Binding TextoMargemDescontoGeralRestante}"
+                                                   FontSize="10.5" FontWeight="SemiBold"
+                                                   Foreground="{Binding BrushMargemDescontoGeral}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- Acréscimo / Frete com alternância % / R$ -->
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
@@ -833,6 +828,55 @@
                 </Border>
             </Grid>
         </Grid>
+
+        <!-- ============================================================== -->
+        <!-- NOVO SISTEMA DE NOTIFICAÇÃO FLUTUANTE (TOP TOAST ELEVADO)     -->
+        <!-- ============================================================== -->
+        <Border Canvas.ZIndex="9999"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                Margin="0,16,0,0"
+                MaxWidth="650"
+                MinWidth="380"
+                CornerRadius="8"
+                BorderThickness="1.5"
+                BorderBrush="{Binding IsSucesso, Converter={StaticResource NotificationBorderConverter}}"
+                Background="{Binding IsSucesso, Converter={StaticResource NotificationBackgroundConverter}}"
+                Visibility="{Binding StatusMensagem, Converter={StaticResource StringToVisibilityConverter}}"
+                Padding="16,11">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ic:SymbolIcon Grid.Column="0" 
+                               Symbol="Info" 
+                               FontSize="18" 
+                               Foreground="#FFFFFF" 
+                               VerticalAlignment="Center"/>
+
+                <TextBlock Grid.Column="1" 
+                           Text="{Binding StatusMensagem}" 
+                           Foreground="#FFFFFF" 
+                           FontWeight="SemiBold" 
+                           FontSize="13" 
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"/>
+
+                <Button Grid.Column="2" 
+                        Command="{Binding FecharMensagemCommand}" 
+                        Background="Transparent" 
+                        BorderThickness="0" 
+                        Padding="6,4" 
+                        CornerRadius="4"
+                        VerticalAlignment="Center" 
+                        ToolTipService.ToolTip="Fechar notificação">
+                    <ic:SymbolIcon Symbol="Dismiss" FontSize="14" Foreground="#FFFFFF"/>
+                </Button>
+            </Grid>
+        </Border>
 
 
 

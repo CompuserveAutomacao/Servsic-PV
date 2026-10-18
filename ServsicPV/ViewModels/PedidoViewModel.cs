@@ -107,6 +107,9 @@ public class PedidoViewModel : ViewModelBase
                 Pedido.LkVendedor = value.LkVendedor;
                 Pedido.Vendedor = !string.IsNullOrWhiteSpace(value.NomeVendedor) ? value.NomeVendedor : value.Nome;
                 OnPropertyChanged(nameof(Pedido));
+                OnPropertyChanged(nameof(LimiteDescontoUsuario));
+                RecalcularMargemDescontoItem();
+                RecalcularMargemDescontoGeral();
             }
         }
     }
@@ -234,6 +237,7 @@ public class PedidoViewModel : ViewModelBase
                             _isUpdatingDesconto = false;
                         }
                     }
+                    RecalcularMargemDescontoItem();
                 }
             }
         }
@@ -313,6 +317,7 @@ public class PedidoViewModel : ViewModelBase
                     OnPropertyChanged(nameof(DescontoItemInput));
                     OnPropertyChanged(nameof(DescontoItemTexto));
                     OnPropertyChanged(nameof(DescontoItemPercentualTexto));
+                    RecalcularMargemDescontoItem();
                 }
                 finally
                 {
@@ -338,6 +343,7 @@ public class PedidoViewModel : ViewModelBase
                 _descontoItemInputTexto = _descontoItemPercentualInput > 0 ? _descontoItemPercentualInput.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
             }
             OnPropertyChanged(nameof(DescontoItemInputTexto));
+            RecalcularMargemDescontoItem();
         }
         finally
         {
@@ -493,6 +499,7 @@ public class PedidoViewModel : ViewModelBase
                 }
                 Pedido.RecalcularTotais();
                 OnPropertyChanged(nameof(Pedido));
+                RecalcularMargemDescontoGeral();
             }
         }
     }
@@ -511,6 +518,7 @@ public class PedidoViewModel : ViewModelBase
             _descontoGeralInputTexto = perc > 0 ? perc.ToString("N2", System.Globalization.CultureInfo.InvariantCulture) : "0";
         }
         OnPropertyChanged(nameof(DescontoGeralInputTexto));
+        RecalcularMargemDescontoGeral();
     }
 
     public string TipoAcrescimoGeral
@@ -604,19 +612,196 @@ public class PedidoViewModel : ViewModelBase
                     OnPropertyChanged(nameof(PrecoUnitarioTexto));
                 }
                 OnPropertyChanged(nameof(HasProdutoSelecionado));
+                RecalcularMargemDescontoItem();
             }
         }
     }
 
     public bool HasProdutoSelecionado => ProdutoSelecionado != null;
+
+    // --- Cálculo de Margem e Política de Desconto (ServNivelLimite + TabEst1.PerDescMax) ---
+    public decimal LimiteDescontoUsuario => UsuarioLogado?.LimiteDesconto ?? 0m;
+
+    public decimal LimiteDescontoItemEfetivo
+    {
+        get
+        {
+            if (ProdutoSelecionado == null) return LimiteDescontoUsuario;
+            if (ProdutoSelecionado.PerDescMax > 0 && LimiteDescontoUsuario > 0)
+                return Math.Min(ProdutoSelecionado.PerDescMax, LimiteDescontoUsuario);
+            if (ProdutoSelecionado.PerDescMax > 0)
+                return ProdutoSelecionado.PerDescMax;
+            return LimiteDescontoUsuario;
+        }
+    }
+
+    public string LimiteDescontoItemInfo
+    {
+        get
+        {
+            if (!HasMargemDescontoItemVisivel) return string.Empty;
+            string origem = (ProdutoSelecionado?.PerDescMax > 0 && ProdutoSelecionado.PerDescMax < LimiteDescontoUsuario)
+                ? "Teto do Produto"
+                : $"Nível {UsuarioLogado?.NivelDescricao ?? "Operador"}";
+            return $"Teto Máx: {LimiteDescontoItemEfetivo:N2}% ({origem})";
+        }
+    }
+
+    public decimal DescontoItemPercAtual => _descontoItemPercentualInput;
+
+    public decimal MargemRestanteItemPerc
+    {
+        get
+        {
+            if (LimiteDescontoItemEfetivo <= 0) return 0m;
+            return LimiteDescontoItemEfetivo - DescontoItemPercAtual;
+        }
+    }
+
+    public decimal MargemRestanteItemValor
+    {
+        get
+        {
+            decimal subtotal = Math.Round(QuantidadeInput * (ProdutoSelecionado?.PrVenda ?? 0m), 2);
+            if (subtotal <= 0 || MargemRestanteItemPerc <= 0) return 0m;
+            return Math.Round((subtotal * MargemRestanteItemPerc) / 100m, 2);
+        }
+    }
+
+    public bool HasMargemDescontoItemVisivel => ProdutoSelecionado != null && LimiteDescontoItemEfetivo > 0;
+
+    public string TextoMargemDescontoItemRestante
+    {
+        get
+        {
+            if (!HasMargemDescontoItemVisivel) return string.Empty;
+
+            if (MargemRestanteItemPerc > 0)
+            {
+                return $"Resta {MargemRestanteItemPerc:N2}% ({MargemRestanteItemValor:C2}) a ofertar ao cliente";
+            }
+            else if (MargemRestanteItemPerc == 0)
+            {
+                return $"Teto de {LimiteDescontoItemEfetivo:N2}% atingido (0,00% restante)";
+            }
+            else
+            {
+                return $"Ultrapassa o teto em +{Math.Abs(MargemRestanteItemPerc):N2}%! Reduza o desconto";
+            }
+        }
+    }
+
+    public Microsoft.UI.Xaml.Media.Brush BrushMargemDescontoItem
+    {
+        get
+        {
+            if (MargemRestanteItemPerc < 0)
+                return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 38, 38)); // Vermelho
+            if (MargemRestanteItemPerc == 0)
+                return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 217, 119, 6)); // Âmbar
+            return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199)); // Azul Corporativo
+        }
+    }
+
+    public void RecalcularMargemDescontoItem()
+    {
+        OnPropertyChanged(nameof(LimiteDescontoUsuario));
+        OnPropertyChanged(nameof(LimiteDescontoItemEfetivo));
+        OnPropertyChanged(nameof(LimiteDescontoItemInfo));
+        OnPropertyChanged(nameof(DescontoItemPercAtual));
+        OnPropertyChanged(nameof(MargemRestanteItemPerc));
+        OnPropertyChanged(nameof(MargemRestanteItemValor));
+        OnPropertyChanged(nameof(HasMargemDescontoItemVisivel));
+        OnPropertyChanged(nameof(TextoMargemDescontoItemRestante));
+        OnPropertyChanged(nameof(BrushMargemDescontoItem));
+    }
+
+    // --- Margem de Desconto Geral da Venda / Orçamento ---
+    public decimal DescontoGeralPercAtual
+    {
+        get
+        {
+            if (Pedido.Subtotal <= 0 || Pedido.Desconto <= 0) return 0m;
+            return Math.Round((Pedido.Desconto / Pedido.Subtotal) * 100m, 2);
+        }
+    }
+
+    public decimal MargemRestanteGeralPerc
+    {
+        get
+        {
+            if (LimiteDescontoUsuario <= 0) return 0m;
+            return LimiteDescontoUsuario - DescontoGeralPercAtual;
+        }
+    }
+
+    public decimal MargemRestanteGeralValor
+    {
+        get
+        {
+            if (Pedido.Subtotal <= 0 || MargemRestanteGeralPerc <= 0) return 0m;
+            return Math.Round((Pedido.Subtotal * MargemRestanteGeralPerc) / 100m, 2);
+        }
+    }
+
+    public bool HasMargemDescontoGeralVisivel => Pedido.Subtotal > 0 && LimiteDescontoUsuario > 0;
+
+    public string TextoMargemDescontoGeralRestante
+    {
+        get
+        {
+            if (!HasMargemDescontoGeralVisivel) return string.Empty;
+
+            if (MargemRestanteGeralPerc > 0)
+            {
+                return $"Resta {MargemRestanteGeralPerc:N2}% ({MargemRestanteGeralValor:C2}) a ofertar | Teto: {LimiteDescontoUsuario:N2}%";
+            }
+            else if (MargemRestanteGeralPerc == 0)
+            {
+                return $"Teto de {LimiteDescontoUsuario:N2}% atingido (0,00% restante)";
+            }
+            else
+            {
+                return $"Ultrapassa o teto em +{Math.Abs(MargemRestanteGeralPerc):N2}%! Limite: {LimiteDescontoUsuario:N2}%";
+            }
+        }
+    }
+
+    public Microsoft.UI.Xaml.Media.Brush BrushMargemDescontoGeral
+    {
+        get
+        {
+            if (MargemRestanteGeralPerc < 0)
+                return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 38, 38));
+            if (MargemRestanteGeralPerc == 0)
+                return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 217, 119, 6));
+            return new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199));
+        }
+    }
+
+    public void RecalcularMargemDescontoGeral()
+    {
+        OnPropertyChanged(nameof(DescontoGeralPercAtual));
+        OnPropertyChanged(nameof(MargemRestanteGeralPerc));
+        OnPropertyChanged(nameof(MargemRestanteGeralValor));
+        OnPropertyChanged(nameof(HasMargemDescontoGeralVisivel));
+        OnPropertyChanged(nameof(TextoMargemDescontoGeralRestante));
+        OnPropertyChanged(nameof(BrushMargemDescontoGeral));
+    }
+
     public System.Collections.ObjectModel.ObservableCollection<PedidoItem> Itens => Pedido.Itens;
 
-    public bool IsOrcamento => Pedido.Status == "O";
-    public bool IsVenda => Pedido.Status == "V" || Pedido.Status == "P";
+    public bool IsOrcamento => string.Equals(Pedido?.Status, "O", StringComparison.OrdinalIgnoreCase)
+        || (!string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) && !string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase));
+    public bool IsVenda => string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) || string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase);
     public string TituloTela => "Pedido de Venda";
     public string TextoBotaoSalvar => "Totalizar (F6)";
 
     public Microsoft.UI.Xaml.Media.Brush BrushOrcamentoBackground => IsOrcamento
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
+        : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+
+    public Microsoft.UI.Xaml.Media.Brush BrushOrcamentoBorder => IsOrcamento
         ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
         : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
@@ -625,12 +810,22 @@ public class PedidoViewModel : ViewModelBase
         : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 100, 116, 139));
 
     public Microsoft.UI.Xaml.Media.Brush BrushVendaBackground => IsVenda
-        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 11, 25, 44))
+        : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
+
+    public Microsoft.UI.Xaml.Media.Brush BrushVendaBorder => IsVenda
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 11, 25, 44))
         : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
     public Microsoft.UI.Xaml.Media.Brush BrushVendaForeground => IsVenda
         ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255))
         : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 100, 116, 139));
+
+    public string TipoDocumentoDescricao => IsOrcamento ? "ORÇAMENTO" : "PRÉ-VENDA";
+
+    public Microsoft.UI.Xaml.Media.Brush BrushTipoBadgeBackground => IsOrcamento
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
+        : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 11, 25, 44));
 
     public Action? OnTipoDocumentoAlterado { get; set; }
     public Action? OnConsultaClienteAberta { get; set; }
@@ -1037,9 +1232,9 @@ public class PedidoViewModel : ViewModelBase
         AbrirConsultaProdutoCommand = new RelayCommand(_ => AbrirConsultaProduto());
         BuscarClienteRapidoCommand = new RelayCommand(async _ => await BuscarClienteRapidoAsync());
         LimparClienteCommand = new RelayCommand(_ => LimparCliente());
-        AlternarTipoCommand = new RelayCommand(_ => SolicitarAlteracaoTipo(IsOrcamento ? "V" : "O"));
-        SelecionarOrcamentoCommand = new RelayCommand(_ => SolicitarAlteracaoTipo("O"));
-        SelecionarVendaCommand = new RelayCommand(_ => SolicitarAlteracaoTipo("V"));
+        AlternarTipoCommand = new RelayCommand(async _ => await SelecionarTipoAsync(IsOrcamento ? "P" : "O"));
+        SelecionarOrcamentoCommand = new RelayCommand(async _ => await SelecionarTipoAsync("O"));
+        SelecionarVendaCommand = new RelayCommand(async _ => await SelecionarTipoAsync("P"));
         ConfirmarAlteracaoTipoCommand = new RelayCommand(_ => ConfirmarAlteracaoTipo());
         CancelarAlteracaoTipoCommand = new RelayCommand(_ => CancelarAlteracaoTipo());
         AlternarTipoDescontoItemCommand = new RelayCommand(_ => AlternarTipoDescontoItem());
@@ -1063,6 +1258,7 @@ public class PedidoViewModel : ViewModelBase
         SalvarCadastroRapidoClienteCommand = new RelayCommand(async _ => await SalvarCadastroRapidoClienteAsync());
         UsarClienteDuplicadoExistenteCommand = new RelayCommand(_ => UsarClienteDuplicadoExistente());
 
+        NotificarAlteracaoTipo();
         _ = CarregarDadosIniciaisAsync();
     }
 
@@ -1186,51 +1382,59 @@ public class PedidoViewModel : ViewModelBase
 
     public void DefinirTipo(string tipo)
     {
+        if (string.IsNullOrWhiteSpace(tipo)) tipo = "O";
+        tipo = tipo.Trim().ToUpperInvariant();
+        if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "O";
+
         Pedido.Status = tipo;
         Pedido.Venda = tipo == "V" ? 1 : 0;
         NotificarAlteracaoTipo();
     }
 
+    public async Task SelecionarTipoAsync(string tipo)
+    {
+        if (string.IsNullOrWhiteSpace(tipo)) tipo = "O";
+        tipo = tipo.Trim().ToUpperInvariant();
+        if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "O";
+
+        if (string.Equals(Pedido.Status, tipo, StringComparison.OrdinalIgnoreCase)) return;
+
+        bool novoIsOrcamento = tipo == "O";
+        bool permite = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(novoIsOrcamento);
+        if (!permite && Pedido.Itens.Count > 0)
+        {
+            var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
+            foreach (var grp in itensPorProduto)
+            {
+                decimal qtdTotal = grp.Sum(i => i.Quantidade);
+                decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
+                if (qtdTotal > estoqueAtual)
+                {
+                    string nomeDestino = novoIsOrcamento ? "Orçamento" : "Pré-Venda";
+                    ExibirMensagem($"Não é possível alterar para {nomeDestino}: o item '{grp.First().Produto}' possui quantidade ({qtdTotal:N2}) maior que o estoque ({estoqueAtual:N2}). Operação com estoque insuficiente bloqueada pelo ERP.", false, 7000);
+                    return;
+                }
+            }
+        }
+
+        DefinirTipo(tipo);
+    }
+
     public void AlternarTipo(object? _ = null)
     {
-        SolicitarAlteracaoTipo(IsOrcamento ? "V" : "O");
+        _ = SelecionarTipoAsync(IsOrcamento ? "P" : "O");
     }
 
     public void SolicitarAlteracaoTipo(string tipo)
     {
-        if (Pedido.Status == tipo) return;
-
-        NovoTipoPendente = tipo;
-        string nomeDestino = tipo == "O" ? "Orçamento" : "Pré-Venda";
-        MensagemConfirmacaoTipo = $"Deseja realmente alterar o tipo deste pedido para {nomeDestino}?";
-        IsConfirmarAlteracaoTipoOpen = true;
+        _ = SelecionarTipoAsync(tipo);
     }
 
-    public async void ConfirmarAlteracaoTipo()
+    public void ConfirmarAlteracaoTipo()
     {
         if (!string.IsNullOrEmpty(NovoTipoPendente))
         {
-            bool novoIsOrcamento = NovoTipoPendente == "O";
-            bool permite = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(novoIsOrcamento);
-            if (!permite && Pedido.Itens.Count > 0)
-            {
-                var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
-                foreach (var grp in itensPorProduto)
-                {
-                    decimal qtdTotal = grp.Sum(i => i.Quantidade);
-                    decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
-                    if (qtdTotal > estoqueAtual)
-                    {
-                        string nomeDestino = novoIsOrcamento ? "Orçamento" : "Pré-Venda";
-                        ExibirMensagem($"Não é possível alterar para {nomeDestino}: o item '{grp.First().Produto}' possui quantidade ({qtdTotal:N2}) maior que o estoque ({estoqueAtual:N2}). Operação com estoque insuficiente bloqueada pelo ERP.", false, 7000);
-                        IsConfirmarAlteracaoTipoOpen = false;
-                        NovoTipoPendente = string.Empty;
-                        return;
-                    }
-                }
-            }
-
-            DefinirTipo(NovoTipoPendente);
+            _ = SelecionarTipoAsync(NovoTipoPendente);
         }
         IsConfirmarAlteracaoTipoOpen = false;
         NovoTipoPendente = string.Empty;
@@ -1247,9 +1451,13 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsOrcamento));
         OnPropertyChanged(nameof(IsVenda));
         OnPropertyChanged(nameof(TituloTela));
+        OnPropertyChanged(nameof(TipoDocumentoDescricao));
+        OnPropertyChanged(nameof(BrushTipoBadgeBackground));
         OnPropertyChanged(nameof(BrushOrcamentoBackground));
+        OnPropertyChanged(nameof(BrushOrcamentoBorder));
         OnPropertyChanged(nameof(BrushOrcamentoForeground));
         OnPropertyChanged(nameof(BrushVendaBackground));
+        OnPropertyChanged(nameof(BrushVendaBorder));
         OnPropertyChanged(nameof(BrushVendaForeground));
         OnTipoDocumentoAlterado?.Invoke();
     }
@@ -1734,14 +1942,14 @@ public class PedidoViewModel : ViewModelBase
             return;
         }
 
-        // Validação da política de desconto máximo (TabEst1.PerDescMax)
-        if (ProdutoSelecionado.PerDescMax > 0 && DescontoItemInput > 0)
+        // Validação da política de desconto máximo (TabEst1.PerDescMax e ServNivelLimite do Usuário)
+        if (LimiteDescontoItemEfetivo > 0 && DescontoItemInput > 0)
         {
-            decimal maxDescontoPermitido = Math.Round((subtotalItem * ProdutoSelecionado.PerDescMax) / 100m, 2);
+            decimal maxDescontoPermitido = Math.Round((subtotalItem * LimiteDescontoItemEfetivo) / 100m, 2);
             if (DescontoItemInput > maxDescontoPermitido)
             {
                 decimal percInformado = subtotalItem > 0 ? Math.Round((DescontoItemInput / subtotalItem) * 100m, 2) : 0m;
-                ExibirMensagem($"Desconto de {percInformado:N2}% (R$ {DescontoItemInput:N2}) ultrapassa o teto máximo permitido de {ProdutoSelecionado.PerDescMax:N2}% (R$ {maxDescontoPermitido:N2}).", false, 6000);
+                ExibirMensagem($"Desconto de {percInformado:N2}% ({DescontoItemInput:C2}) ultrapassa o limite permitido de {LimiteDescontoItemEfetivo:N2}% ({maxDescontoPermitido:C2}) para seu usuário/produto.", false, 6000);
                 OnItemAdicaoFalhou?.Invoke();
                 return;
             }
@@ -1794,6 +2002,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(Pedido));
         OnPropertyChanged(nameof(Itens));
         OnPropertyChanged(nameof(HasItens));
+        RecalcularMargemDescontoGeral();
         LimparEntradaItem();
         ExibirMensagem($"Item '{item.Produto}' adicionado com sucesso.", true, 3000);
         OnItemAdicionado?.Invoke();
@@ -1807,6 +2016,7 @@ public class PedidoViewModel : ViewModelBase
             Pedido.RecalcularTotais();
             OnPropertyChanged(nameof(Pedido));
             OnPropertyChanged(nameof(HasItens));
+            RecalcularMargemDescontoGeral();
             ExibirMensagem("Item removido do pedido.", true, 2500);
         }
     }
@@ -1827,13 +2037,17 @@ public class PedidoViewModel : ViewModelBase
             return false;
         }
 
-        if (item.PerDescMax > 0 && novoDesconto > 0)
+        decimal limiteEfetivo = item.PerDescMax > 0 && LimiteDescontoUsuario > 0 
+            ? Math.Min(item.PerDescMax, LimiteDescontoUsuario) 
+            : (item.PerDescMax > 0 ? item.PerDescMax : LimiteDescontoUsuario);
+
+        if (limiteEfetivo > 0 && novoDesconto > 0)
         {
-            decimal maxDesconto = Math.Round((item.SubtotalBruto * item.PerDescMax) / 100m, 2);
+            decimal maxDesconto = Math.Round((item.SubtotalBruto * limiteEfetivo) / 100m, 2);
             if (novoDesconto > maxDesconto)
             {
                 decimal perc = Math.Round((novoDesconto / item.SubtotalBruto) * 100m, 2);
-                ExibirMensagem($"Desconto de {perc:N2}% ({novoDesconto:C2}) ultrapassa o teto máximo permitido de {item.PerDescMax:N2}% ({maxDesconto:C2}) para '{item.Produto}'.", false, 6000);
+                ExibirMensagem($"Desconto de {perc:N2}% ({novoDesconto:C2}) ultrapassa o limite permitido de {limiteEfetivo:N2}% ({maxDesconto:C2}) para '{item.Produto}'.", false, 6000);
                 return false;
             }
         }
@@ -1843,6 +2057,7 @@ public class PedidoViewModel : ViewModelBase
         Pedido.RecalcularTotais();
         OnPropertyChanged(nameof(Pedido));
         OnPropertyChanged(nameof(Itens));
+        RecalcularMargemDescontoGeral();
         ExibirMensagem($"Desconto do item '{item.Produto}' atualizado para {novoDesconto:C2}.", true, 3000);
         return true;
     }

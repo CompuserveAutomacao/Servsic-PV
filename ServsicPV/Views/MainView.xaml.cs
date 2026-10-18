@@ -25,7 +25,7 @@ public partial class MainView : Window
 
         _usuarioLogado = usuario;
         TxtUsuarioNome.Text = usuario.Nome;
-        TxtUsuarioNivel.Text = usuario.NivelDescricao;
+        TxtUsuarioNivel.Text = $"{usuario.NivelDescricao} • Desc. Máx: {usuario.LimiteDescontoFormatado}";
         TxtVendedorNome.Text = !string.IsNullOrWhiteSpace(usuario.NomeVendedor)
             ? usuario.NomeVendedor
             : (usuario.LkVendedor.HasValue ? $"Vendedor #{usuario.LkVendedor}" : usuario.Nome);

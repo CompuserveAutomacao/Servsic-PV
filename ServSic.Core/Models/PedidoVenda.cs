@@ -55,6 +55,7 @@ public class PedidoVenda
     public List<FormaPagamento> Pagamentos { get; set; } = new();
 
     public decimal Entrada { get; set; } = 0m;
+    public int? LkCxFecha { get; set; }
     public string? Nota { get; set; }
 
     public bool IsOrcamento => Status == "O";

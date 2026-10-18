@@ -82,6 +82,16 @@ public class PedidoService
             {
                 pedido.VlPago = pedido.Pagamentos.Sum(p => p.Valor);
                 pedido.Faturado = pedido.Pagamentos.Where(p => p.GeraConta).Sum(p => p.Valor);
+                pedido.Entrada = pedido.Pagamentos.Where(p => !p.GeraConta).Sum(p => p.Valor);
+
+                // Regra do ERP CompuServe: Quando o pedido/orçamento é quitado no balcão/checkout,
+                // o Subtotal (saldo a faturar) é zerado e o LkCxFecha é preenchido com o caixa que fechou.
+                // Isso faz o ERP exibir a Situação como 'FECHADO' e preenche a coluna 'À Vista' (Entrada).
+                if (pedido.VlPago >= pedido.Total && pedido.Total > 0)
+                {
+                    pedido.Subtotal = 0m;
+                    pedido.LkCxFecha = pedido.LkCaixa > 0 ? pedido.LkCaixa : 1;
+                }
             }
 
             // 1. Salva cabeçalho na TabEst3A via PedidoCabService

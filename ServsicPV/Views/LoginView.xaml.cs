@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using ServsicPV.ViewModels;
@@ -11,23 +10,13 @@ public partial class LoginView : Window
 {
     private readonly LoginViewModel _viewModel;
 
-    // PInvoke para permitir arrastar a janela sem barra de título
-    [DllImport("user32.dll")]
-    private static extern bool ReleaseCapture();
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
-
-    private const int WM_NCLBUTTONDOWN = 0xA1;
-    private const int HTCAPTION = 0x2;
-
     public LoginView()
     {
         this.InitializeComponent();
 
         // Configura tamanho e ícone da janela
         this.AppWindow.SetIcon("Assets/icoservsicpv.ico");
-        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(430, 560));
+        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(860, 540));
 
         // Centraliza na tela
         var displayArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
@@ -41,10 +30,8 @@ public partial class LoginView : Window
             this.AppWindow.Move(new Windows.Graphics.PointInt32(centerX, centerY));
         }
 
-        // Remove borda e barra de título tradicional do Windows (modo tela limpa/borderless)
         if (this.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
         {
-            presenter.SetBorderAndTitleBar(hasBorder: false, hasTitleBar: false);
             presenter.IsResizable = false;
             presenter.IsMaximizable = false;
         }
@@ -58,36 +45,6 @@ public partial class LoginView : Window
             mainView.Activate();
             this.Close();
         };
-
-        // Foco inicial automático na senha quando a janela for ativada
-        this.Activated += (s, e) =>
-        {
-            TxtPassword?.Focus(FocusState.Programmatic);
-        };
-    }
-
-    private void Header_PointerPressed(object sender, PointerRoutedEventArgs e)
-    {
-        // Permite que o operador mova a tela arrastando o cabeçalho superior escuro
-        try
-        {
-            var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-            ReleaseCapture();
-            SendMessage(hWnd, WM_NCLBUTTONDOWN, (IntPtr)HTCAPTION, IntPtr.Zero);
-        }
-        catch
-        {
-            // Fallback seguro caso PInvoke não seja permitido
-        }
-    }
-
-    private void CboUsuario_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key == Windows.System.VirtualKey.Enter)
-        {
-            TxtPassword.Focus(FocusState.Programmatic);
-            e.Handled = true;
-        }
     }
 
     private void TxtPassword_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -99,29 +56,6 @@ public partial class LoginView : Window
             {
                 _viewModel.LoginCommand.Execute(null);
             }
-        }
-    }
-
-    private void BtnSair_Click(object sender, RoutedEventArgs e)
-    {
-        this.Close();
-        Application.Current.Exit();
-    }
-
-    private void RootGrid_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key == Windows.System.VirtualKey.Escape)
-        {
-            if (_viewModel.IsConfigOpen)
-            {
-                _viewModel.FecharConfiguracao();
-            }
-            else
-            {
-                this.Close();
-                Application.Current.Exit();
-            }
-            e.Handled = true;
         }
     }
 

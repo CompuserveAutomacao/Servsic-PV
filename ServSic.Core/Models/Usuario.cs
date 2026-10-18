@@ -16,4 +16,7 @@ public class Usuario
         2 => "Gerente",
         _ => $"Nível {Nivel}"
     };
+
+    public decimal LimiteDesconto { get; set; } = 0m;
+    public string LimiteDescontoFormatado => LimiteDesconto > 0 ? $"{LimiteDesconto:N2}%" : "0,00%";
 }

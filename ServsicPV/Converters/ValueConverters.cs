@@ -97,3 +97,27 @@ public class StatusColorConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
 }
+
+public class NotificationBackgroundConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool isSucesso && !isSucesso)
+            return new SolidColorBrush(Color.FromArgb(255, 220, 38, 38)); // #DC2626 Vermelho Danger
+        return new SolidColorBrush(Color.FromArgb(255, 11, 25, 44));     // #0B192C Navy Oficial ServSic
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}
+
+public class NotificationBorderConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is bool isSucesso && !isSucesso)
+            return new SolidColorBrush(Color.FromArgb(255, 239, 68, 68)); // #EF4444 Borda Danger
+        return new SolidColorBrush(Color.FromArgb(255, 2, 132, 199));     // #0284C7 Borda Azul ServSic
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();
+}

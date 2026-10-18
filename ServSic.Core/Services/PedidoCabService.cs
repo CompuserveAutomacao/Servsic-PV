@@ -32,6 +32,8 @@ public class PedidoCabService
                 ta.ACRESCIMO as Acrescimo,
                 ta.SUBTOTAL as Subtotal,
                 ta.Vlpago as VlPago,
+                ISNULL(ta.Entrada, 0) as Entrada,
+                ta.LkCxFecha as LkCxFecha,
                 ta.QtdItens,
                 ta.Status,
                 ta.Venda,
@@ -244,13 +246,13 @@ public class PedidoCabService
             const string sqlInsertA = @"
                 INSERT INTO TabEst3A (
                     Controle, Pedido, Codigo, Data, HoraIni, Cliente, LkCliente, Vendedor, LkVendedor,
-                    TOTAL, DESCONTO, ACRESCIMO, SUBTOTAL, Vlpago, Faturado, QtdItens, Status, Venda, Cancelada,
-                    LkUsuario, LkCaixa, idEmpresa, Endereco, Numero, Bairro, Cidade, UF, CEP, CPF_CNPJ,
+                    TOTAL, DESCONTO, ACRESCIMO, SUBTOTAL, Vlpago, Entrada, Faturado, QtdItens, Status, Venda, Cancelada,
+                    LkUsuario, LkCaixa, LkCxFecha, idEmpresa, Endereco, Numero, Bairro, Cidade, UF, CEP, CPF_CNPJ,
                     Telefone, eMail, ComplEnd, Obs
                 ) VALUES (
                     @Controle, @Pedido, @Codigo, @Data, @HoraIni, @Cliente, @LkCliente, @Vendedor, @LkVendedor,
-                    @Total, @Desconto, @Acrescimo, @Subtotal, @VlPago, @Faturado, @QtdItens, @Status, @Venda, @Cancelada,
-                    @LkUsuario, @LkCaixa, @IdEmpresa, @Endereco, @Numero, @Bairro, @Cidade, @UF, @CEP, @CPF_CNPJ,
+                    @Total, @Desconto, @Acrescimo, @Subtotal, @VlPago, @Entrada, @Faturado, @QtdItens, @Status, @Venda, @Cancelada,
+                    @LkUsuario, @LkCaixa, @LkCxFecha, @IdEmpresa, @Endereco, @Numero, @Bairro, @Cidade, @UF, @CEP, @CPF_CNPJ,
                     @Telefone, @Email, @ComplEnd, @Obs
                 );";
 
@@ -277,6 +279,7 @@ public class PedidoCabService
                     ACRESCIMO = @Acrescimo,
                     SUBTOTAL = @Subtotal,
                     Vlpago = @VlPago,
+                    Entrada = @Entrada,
                     Faturado = @Faturado,
                     QtdItens = @QtdItens,
                     Status = @Status,
@@ -284,6 +287,7 @@ public class PedidoCabService
                     Cancelada = @Cancelada,
                     LkUsuario = @LkUsuario,
                     LkCaixa = @LkCaixa,
+                    LkCxFecha = @LkCxFecha,
                     Endereco = @Endereco,
                     Numero = @Numero,
                     Bairro = @Bairro,

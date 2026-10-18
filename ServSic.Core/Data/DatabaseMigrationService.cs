@@ -147,6 +147,26 @@ public static class DatabaseMigrationService
                 END";
             await conn.ExecuteAsync(sqlIndicesTabEst1);
 
+            // 8. ServNivelLimite (Tabela de limites de desconto por nível de usuário: Operador, Supervisor, Gerente)
+            const string sqlServNivelLimite = @"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ServNivelLimite')
+                BEGIN
+                    CREATE TABLE ServNivelLimite (
+                        Controle INT IDENTITY(1,1) PRIMARY KEY,
+                        IdEmpresa INT NULL,
+                        DataHora DATETIME NULL,
+                        OperadorDescVen FLOAT NULL CONSTRAINT DF_ServNivelLimite_OperadorDescVen DEFAULT 3.0,
+                        OperadorDescRec FLOAT NULL CONSTRAINT DF_ServNivelLimite_OperadorDescRec DEFAULT 0.0,
+                        SupervisorDescVen FLOAT NULL CONSTRAINT DF_ServNivelLimite_SupervisorDescVen DEFAULT 3.0,
+                        SupervisorDescRec FLOAT NULL CONSTRAINT DF_ServNivelLimite_SupervisorDescRec DEFAULT 0.0,
+                        GerenteDescVen FLOAT NULL CONSTRAINT DF_ServNivelLimite_GerenteDescVen DEFAULT 5.0,
+                        GerenteDescRec FLOAT NULL CONSTRAINT DF_ServNivelLimite_GerenteDescRec DEFAULT 50.0
+                    );
+                    INSERT INTO ServNivelLimite (IdEmpresa, DataHora, OperadorDescVen, SupervisorDescVen, GerenteDescVen)
+                    VALUES (1, GETDATE(), 3.0, 3.0, 5.0);
+                END";
+            await conn.ExecuteAsync(sqlServNivelLimite);
+
             // 6. Sincronização de INI (Venda/VendedorPorUsuario = N)
             SincronizarIniVendedorPorUsuario();
 

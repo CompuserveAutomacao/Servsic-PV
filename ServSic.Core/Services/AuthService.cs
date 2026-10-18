@@ -35,9 +35,16 @@ public class AuthService
                 s.CODSENHA as CodSenha,
                 s.NIVEL as Nivel,
                 s.LkVendedor as LkVendedor,
-                v.NOME as NomeVendedor
+                v.NOME as NomeVendedor,
+                CAST(CASE 
+                    WHEN s.NIVEL = 0 THEN ISNULL(lim.OperadorDescVen, 0)
+                    WHEN s.NIVEL = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
+                    WHEN s.NIVEL >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
+                    ELSE 0 
+                END AS decimal(12,2)) as LimiteDesconto
             FROM serv s
             LEFT JOIN TabVend v ON s.LkVendedor = v.CONTROLE
+            OUTER APPLY (SELECT TOP 1 OperadorDescVen, SupervisorDescVen, GerenteDescVen FROM ServNivelLimite ORDER BY Controle DESC) lim
             WHERE s.USUARIO IS NOT NULL AND LTRIM(RTRIM(s.USUARIO)) <> ''
             ORDER BY s.USUARIO";
 
@@ -58,9 +65,16 @@ public class AuthService
                 s.CODSENHA as CodSenha,
                 s.NIVEL as Nivel,
                 s.LkVendedor as LkVendedor,
-                v.NOME as NomeVendedor
+                v.NOME as NomeVendedor,
+                CAST(CASE 
+                    WHEN s.NIVEL = 0 THEN ISNULL(lim.OperadorDescVen, 0)
+                    WHEN s.NIVEL = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
+                    WHEN s.NIVEL >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
+                    ELSE 0 
+                END AS decimal(12,2)) as LimiteDesconto
             FROM serv s
             LEFT JOIN TabVend v ON s.LkVendedor = v.CONTROLE
+            OUTER APPLY (SELECT TOP 1 OperadorDescVen, SupervisorDescVen, GerenteDescVen FROM ServNivelLimite ORDER BY Controle DESC) lim
             WHERE UPPER(LTRIM(RTRIM(s.USUARIO))) = UPPER(LTRIM(RTRIM(@usuario)))";
 
         var user = await conn.QueryFirstOrDefaultAsync<Usuario>(sql, new { usuario = nomeUsuario });

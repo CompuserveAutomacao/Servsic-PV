@@ -24,7 +24,18 @@ public partial class PedidoCadastroView : UserControl
         {
             vm.OnClienteDefinido = () => FocarCodigoProduto();
             vm.OnProdutoDefinido = () => FocarQuantidade();
-            vm.OnItemAdicionado = () => FocarCodigoProduto();
+            vm.OnItemAdicionado = () =>
+            {
+                FocarCodigoProduto();
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    await Task.Delay(60);
+                    if (vm.Pedido?.Itens?.Count > 0)
+                    {
+                        ListaItens?.ScrollIntoView(vm.Pedido.Itens[^1]);
+                    }
+                });
+            };
             vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
             vm.OnCheckoutAberto = () => FocarCheckoutValor();
 

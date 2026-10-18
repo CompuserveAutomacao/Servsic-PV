@@ -70,11 +70,13 @@ public class PedidoItemService
             INSERT INTO TabEst3B (
                 Controle, LkEst3A, PEDIDO, LkProduto, CodInterno, Produto,
                 Quantidade, VlUnitario, Desconto, Acrescimo, Total, PrecoVenda,
-                PrCusto, Unidade, MARCA, LkVendedor, Vendedor
+                PrCusto, Unidade, MARCA, LkVendedor, Vendedor,
+                DataInc, HoraIni, Venda_Servico, QtdReal, FracUN, FracQtd, FracQtdTotal
             ) VALUES (
                 @Controle, @LkEst3A, @Pedido, @LkProduto, @CodInterno, @Produto,
                 @Quantidade, @VlUnitario, @Desconto, @Acrescimo, @Total, @PrecoVenda,
-                @PrCusto, @Unidade, @Marca, @LkVendedor, @Vendedor
+                @PrCusto, @Unidade, @Marca, @LkVendedor, @Vendedor,
+                @DataInc, @HoraIni, @Venda_Servico, @QtdReal, @FracUN, @FracQtd, @FracQtdTotal
             );";
 
         foreach (var item in itens)
@@ -92,7 +94,17 @@ public class PedidoItemService
             if (item.Marca?.Length > 20) item.Marca = item.Marca.Substring(0, 20);
             if (item.Vendedor?.Length > 30) item.Vendedor = item.Vendedor.Substring(0, 30);
 
-            await conn.ExecuteAsync(sqlInsertB, item, transaction: trans);
+            var parameters = new DynamicParameters(item);
+            parameters.Add("PrecoVenda", item.VlUnitario);
+            parameters.Add("DataInc", DateTime.Today);
+            parameters.Add("HoraIni", DateTime.Now.ToString("HH:mm"));
+            parameters.Add("Venda_Servico", "I");
+            parameters.Add("QtdReal", item.Quantidade);
+            parameters.Add("FracUN", !string.IsNullOrWhiteSpace(item.Unidade) ? item.Unidade : "UN");
+            parameters.Add("FracQtd", item.Quantidade);
+            parameters.Add("FracQtdTotal", item.Quantidade);
+
+            await conn.ExecuteAsync(sqlInsertB, parameters, transaction: trans);
         }
     }
 
