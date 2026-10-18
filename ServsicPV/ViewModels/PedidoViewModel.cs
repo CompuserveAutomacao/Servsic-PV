@@ -48,6 +48,11 @@ public class PedidoViewModel : ViewModelBase
 
     private Usuario? _usuarioLogado;
 
+    // --- Modal: Confirmação de Alteração de Tipo (Orçamento / Pré-Venda) ---
+    private bool _isConfirmarAlteracaoTipoOpen;
+    private string _novoTipoPendente = string.Empty;
+    private string _mensagemConfirmacaoTipo = string.Empty;
+
     // --- Modal: Consulta de Clientes ---
     private bool _isConsultaClienteOpen;
     private string _filtroConsultaCliente = string.Empty;
@@ -768,6 +773,25 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _clienteDuplicadoEncontrado, value);
     }
 
+    // --- Propriedades de Confirmação de Alteração de Tipo ---
+    public bool IsConfirmarAlteracaoTipoOpen
+    {
+        get => _isConfirmarAlteracaoTipoOpen;
+        set => SetProperty(ref _isConfirmarAlteracaoTipoOpen, value);
+    }
+
+    public string NovoTipoPendente
+    {
+        get => _novoTipoPendente;
+        set => SetProperty(ref _novoTipoPendente, value);
+    }
+
+    public string MensagemConfirmacaoTipo
+    {
+        get => _mensagemConfirmacaoTipo;
+        set => SetProperty(ref _mensagemConfirmacaoTipo, value);
+    }
+
     // --- Comandos ---
     public ICommand SalvarCommand { get; }
     public ICommand NovoCommand { get; }
@@ -780,6 +804,8 @@ public class PedidoViewModel : ViewModelBase
     public ICommand AlternarTipoCommand { get; }
     public ICommand SelecionarOrcamentoCommand { get; }
     public ICommand SelecionarVendaCommand { get; }
+    public ICommand ConfirmarAlteracaoTipoCommand { get; }
+    public ICommand CancelarAlteracaoTipoCommand { get; }
     public ICommand ConverterEmVendaCommand { get; }
     public ICommand AlternarTipoDescontoItemCommand { get; }
     public ICommand AlternarTipoDescontoGeralCommand { get; }
@@ -873,9 +899,11 @@ public class PedidoViewModel : ViewModelBase
         AbrirConsultaProdutoCommand = new RelayCommand(_ => AbrirConsultaProduto());
         BuscarClienteRapidoCommand = new RelayCommand(async _ => await BuscarClienteRapidoAsync());
         LimparClienteCommand = new RelayCommand(_ => LimparCliente());
-        AlternarTipoCommand = new RelayCommand(AlternarTipo);
-        SelecionarOrcamentoCommand = new RelayCommand(_ => DefinirTipo("O"));
-        SelecionarVendaCommand = new RelayCommand(_ => DefinirTipo("V"));
+        AlternarTipoCommand = new RelayCommand(_ => SolicitarAlteracaoTipo(IsOrcamento ? "V" : "O"));
+        SelecionarOrcamentoCommand = new RelayCommand(_ => SolicitarAlteracaoTipo("O"));
+        SelecionarVendaCommand = new RelayCommand(_ => SolicitarAlteracaoTipo("V"));
+        ConfirmarAlteracaoTipoCommand = new RelayCommand(_ => ConfirmarAlteracaoTipo());
+        CancelarAlteracaoTipoCommand = new RelayCommand(_ => CancelarAlteracaoTipo());
         ConverterEmVendaCommand = new RelayCommand(async _ => await ConverterEmVendaAsync());
         AlternarTipoDescontoItemCommand = new RelayCommand(_ => AlternarTipoDescontoItem());
         AlternarTipoDescontoGeralCommand = new RelayCommand(_ => AlternarTipoDescontoGeral());
@@ -959,7 +987,33 @@ public class PedidoViewModel : ViewModelBase
 
     public void AlternarTipo(object? _ = null)
     {
-        DefinirTipo(IsOrcamento ? "V" : "O");
+        SolicitarAlteracaoTipo(IsOrcamento ? "V" : "O");
+    }
+
+    public void SolicitarAlteracaoTipo(string tipo)
+    {
+        if (Pedido.Status == tipo) return;
+
+        NovoTipoPendente = tipo;
+        string nomeDestino = tipo == "O" ? "Orçamento" : "Pré-Venda";
+        MensagemConfirmacaoTipo = $"Deseja realmente alterar o tipo deste pedido para {nomeDestino}?";
+        IsConfirmarAlteracaoTipoOpen = true;
+    }
+
+    public void ConfirmarAlteracaoTipo()
+    {
+        if (!string.IsNullOrEmpty(NovoTipoPendente))
+        {
+            DefinirTipo(NovoTipoPendente);
+        }
+        IsConfirmarAlteracaoTipoOpen = false;
+        NovoTipoPendente = string.Empty;
+    }
+
+    public void CancelarAlteracaoTipo()
+    {
+        IsConfirmarAlteracaoTipoOpen = false;
+        NovoTipoPendente = string.Empty;
     }
 
     private void NotificarAlteracaoTipo()

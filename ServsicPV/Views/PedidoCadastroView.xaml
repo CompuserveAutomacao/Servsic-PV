@@ -213,15 +213,34 @@
                                 <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                             </StackPanel>
 
-                            <!-- Botão F4 - ITENS com Destaque Forte Primário -->
-                            <Button Grid.Column="1" Command="{Binding AbrirConsultaProdutoCommand}" 
-                                    Style="{StaticResource BtnPrimary}" 
-                                    Height="34" Padding="14,0" 
+                            <!-- Botão F4 - ITENS (Fonte Segoe UI Semibold, Contraste Perfeito no Foco/Hover) -->
+                            <Button Grid.Column="1" 
+                                    Command="{Binding AbrirConsultaProdutoCommand}" 
+                                    IsTabStop="False"
+                                    Height="34" 
+                                    Padding="14,0" 
                                     CornerRadius="6"
-                                    ToolTipService.ToolTip="Consultar Produtos em Tela Cheia (F4)">
+                                    BorderThickness="1.5"
+                                    BorderBrush="{StaticResource BrushServsicBlue}"
+                                    Background="#FFFFFF"
+                                    Foreground="{StaticResource BrushServsicBlue}">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#BAE6FD"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#E0F2FE"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#0369A1"/>
+                                    <SolidColorBrush x:Key="ButtonBorderBrushFocused" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#0369A1"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#0284C7"/>
+                                </Button.Resources>
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ic:SymbolIcon Symbol="Search" FontSize="15" Foreground="#FFFFFF"/>
-                                    <TextBlock Text="F4 - ITENS" FontWeight="Bold" FontSize="12.5" Foreground="#FFFFFF"/>
+                                    <ic:SymbolIcon Symbol="Search" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text="F4 - ITENS" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -1029,6 +1048,45 @@
                         </StackPanel>
                     </Grid>
                 </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
+        <!-- MODAL: CONFIRMAÇÃO DE ALTERAÇÃO DE TIPO (ORÇAMENTO / PRÉ-VENDA)-->
+        <!-- ============================================================== -->
+        <Grid x:Name="ModalConfirmarTipoOverlay"
+              Background="#750B192C"
+              Visibility="{Binding IsConfirmarAlteracaoTipoOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+              KeyDown="ModalConfirmarTipo_KeyDown"
+              Padding="24">
+            <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12"
+                    MaxWidth="440" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                <StackPanel Spacing="18">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Border Background="#E0F2FE" Width="44" Height="44" CornerRadius="22" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="QuestionCircle" FontSize="24" Foreground="{StaticResource BrushServsicBlue}"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="Confirmar Alteração" FontSize="16" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                            <TextBlock Text="Mudança no tipo do documento" FontSize="12.5" FontFamily="Segoe UI" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding MensagemConfirmacaoTipo}" FontSize="14" FontFamily="Segoe UI" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap"/>
+
+                    <Grid ColumnSpacing="12" Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Command="{Binding CancelarAlteracaoTipoCommand}" Style="{StaticResource BtnSecondary}" Height="38" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Cancelar (Esc)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
+                        </Button>
+                        <Button Grid.Column="1" Command="{Binding ConfirmarAlteracaoTipoCommand}" Style="{StaticResource BtnPrimary}" Height="38" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Sim, Alterar (Enter)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
+                        </Button>
+                    </Grid>
+                </StackPanel>
             </Border>
         </Grid>
 

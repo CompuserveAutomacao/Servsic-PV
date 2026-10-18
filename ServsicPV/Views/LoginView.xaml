@@ -16,9 +16,9 @@
 
         <!-- Painel Esquerdo: Identidade Visual ServSic -->
         <Grid Grid.Column="0" Background="{StaticResource BrushServsicDark}">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="6">
                 <!-- Imagem da Logo Oficial do Sistema -->
-                <Image Source="ms-appx:///Assets/logo.png" Width="96" Height="96" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                <Image Source="ms-appx:///Assets/logo.png" Width="100" Height="100" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                 
                 <!-- Logo Tipográfica Compu (Branco) + serve (Vermelho) -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">

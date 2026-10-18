@@ -111,6 +111,14 @@ public partial class PedidoCadastroView : UserControl
                 e.Handled = true;
             }
         }
+        else if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            if (this.DataContext is PedidoViewModel vm && vm.IsConfirmarAlteracaoTipoOpen)
+            {
+                vm.CancelarAlteracaoTipoCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
     }
 
     private async void CodigoProduto_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -331,6 +339,29 @@ public partial class PedidoCadastroView : UserControl
             {
                 vm.FecharCadastroRapidoClienteCommand.Execute(null);
                 e.Handled = true;
+            }
+        }
+    }
+
+    private void ModalConfirmarTipo_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                if (vm.ConfirmarAlteracaoTipoCommand.CanExecute(null))
+                {
+                    vm.ConfirmarAlteracaoTipoCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Windows.System.VirtualKey.Escape)
+            {
+                if (vm.CancelarAlteracaoTipoCommand.CanExecute(null))
+                {
+                    vm.CancelarAlteracaoTipoCommand.Execute(null);
+                    e.Handled = true;
+                }
             }
         }
     }

@@ -34,8 +34,6 @@
                         <TextBlock Text="Compu" FontSize="20" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
                         <TextBlock Text="serve" FontSize="20" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#EF4444" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Border Width="1" Height="18" Background="#334155" Margin="8,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="SERVSIC PV" FontSize="13" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Lado Direito: Vendedor Responsável, Usuário Conectado & Logout -->
