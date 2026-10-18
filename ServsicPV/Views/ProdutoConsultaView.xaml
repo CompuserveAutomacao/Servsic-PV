@@ -212,9 +212,9 @@
                                 <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="#0284C7"/>
                                 <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="#0369A1"/>
                                 
-                                <!-- Elimina o retângulo preto de foco do Windows -->
-                                <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="Transparent"/>
-                                <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="Transparent"/>
+                                <!-- Foco preto padrão do Windows -->
+                                <SolidColorBrush x:Key="FocusVisualPrimaryBrush" Color="#000000"/>
+                                <SolidColorBrush x:Key="FocusVisualSecondaryBrush" Color="#FFFFFF"/>
                                 <Thickness x:Key="ListViewItemBorderThickness">1</Thickness>
                                 <Thickness x:Key="ListViewItemSelectedBorderThickness">1.5</Thickness>
                                 <CornerRadius x:Key="ListViewItemCornerRadius">8</CornerRadius>
@@ -225,9 +225,11 @@
                                     <Setter Property="Padding" Value="14,8"/>
                                     <Setter Property="Margin" Value="0,3"/>
                                     <Setter Property="CornerRadius" Value="8"/>
-                                    <Setter Property="UseSystemFocusVisuals" Value="False"/>
-                                    <Setter Property="FocusVisualPrimaryThickness" Value="0"/>
-                                    <Setter Property="FocusVisualSecondaryThickness" Value="0"/>
+                                    <Setter Property="UseSystemFocusVisuals" Value="True"/>
+                                    <Setter Property="FocusVisualPrimaryBrush" Value="#000000"/>
+                                    <Setter Property="FocusVisualSecondaryBrush" Value="#FFFFFF"/>
+                                    <Setter Property="FocusVisualPrimaryThickness" Value="2"/>
+                                    <Setter Property="FocusVisualSecondaryThickness" Value="1"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
