@@ -192,8 +192,8 @@
                     </Grid>
                 </Border>
 
-                <!-- 2. Grade de Produtos e Inserção de Itens -->
-                <Border Grid.Row="2" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,14">
+                <!-- 2. Grade de Produtos e Inserção de Itens (Fundo Azul Suave) -->
+                <Border Grid.Row="2" Background="#F0F7FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="16,14">
                     <Grid RowSpacing="12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho do Card -->
@@ -202,7 +202,7 @@
                             <RowDefinition Height="*"/>    <!-- 3. Lista de Itens com Rolagem -->
                         </Grid.RowDefinitions>
 
-                        <!-- Cabeçalho do Card de Produtos com Botão F4 - ITENS -->
+                        <!-- Cabeçalho do Card de Produtos com Botão F4 - ITENS em Destaque -->
                         <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -213,11 +213,15 @@
                                 <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                             </StackPanel>
 
-                            <!-- Botão F4 - ITENS idêntico ao ERP Legado -->
-                            <Button Grid.Column="1" Command="{Binding AbrirConsultaProdutoCommand}" Style="{StaticResource BtnSecondary}" Height="32" Padding="12,0" ToolTipService.ToolTip="Consultar Produtos em Tela Cheia (F4)">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <ic:SymbolIcon Symbol="Search" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    <TextBlock Text="F4 - ITENS" FontWeight="Bold" FontSize="12" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <!-- Botão F4 - ITENS com Destaque Forte Primário -->
+                            <Button Grid.Column="1" Command="{Binding AbrirConsultaProdutoCommand}" 
+                                    Style="{StaticResource BtnPrimary}" 
+                                    Height="34" Padding="14,0" 
+                                    CornerRadius="6"
+                                    ToolTipService.ToolTip="Consultar Produtos em Tela Cheia (F4)">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ic:SymbolIcon Symbol="Search" FontSize="15" Foreground="#FFFFFF"/>
+                                    <TextBlock Text="F4 - ITENS" FontWeight="Bold" FontSize="12.5" Foreground="#FFFFFF"/>
                                 </StackPanel>
                             </Button>
                         </Grid>
@@ -548,126 +552,198 @@
             </Grid>
 
             <!-- ============================================================== -->
-            <!-- COLUNA DIREITA: RESUMO FINANCEIRO VERTICAL OCUPANDO TODA A TELA -->
+            <!-- COLUNA DIREITA: TIPO DE PEDIDO, IDENTIFICAÇÃO E RESUMO FINANCEIRO -->
             <!-- ============================================================== -->
-            <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="18">
-                <Grid RowSpacing="14">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/> <!-- Título & Data -->
-                        <RowDefinition Height="*"/>    <!-- Campos e Totais -->
-                        <RowDefinition Height="Auto"/> <!-- Botão Gravar -->
-                    </Grid.RowDefinitions>
+            <Grid Grid.Column="1" RowSpacing="12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- 0. Seletor Orçamento / Pré-Venda + Dados do Pedido -->
+                    <RowDefinition Height="*"/>    <!-- 1. Resumo Financeiro Vertical Completo -->
+                </Grid.RowDefinitions>
 
-                    <!-- Cabeçalho do Resumo -->
-                    <Grid Grid.Row="0">
-                        <StackPanel Spacing="2">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                <!-- Card Superior: Seletor Orçamento / Pré-Venda e Identificação do Pedido -->
+                <Border Grid.Row="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                    <StackPanel Spacing="8">
+                        <!-- Seletor Segmentado Orçamento / Pré-Venda -->
+                        <Border Background="#F1F5F9" CornerRadius="8" Padding="3" BorderBrush="#E2E8F0" BorderThickness="1">
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0"
+                                        Command="{Binding SelecionarOrcamentoCommand}"
+                                        IsTabStop="False"
+                                        Background="{Binding BrushOrcamentoBackground}"
+                                        Foreground="{Binding BrushOrcamentoForeground}"
+                                        FontWeight="Bold"
+                                        FontSize="12.5"
+                                        Height="34"
+                                        CornerRadius="6"
+                                        BorderThickness="0"
+                                        HorizontalAlignment="Stretch"
+                                        Padding="0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <ic:SymbolIcon Symbol="DocumentText" FontSize="15"/>
+                                        <TextBlock Text="Orçamento"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button Grid.Column="1"
+                                        Command="{Binding SelecionarVendaCommand}"
+                                        IsTabStop="False"
+                                        Background="{Binding BrushVendaBackground}"
+                                        Foreground="{Binding BrushVendaForeground}"
+                                        FontWeight="Bold"
+                                        FontSize="12.5"
+                                        Height="34"
+                                        CornerRadius="6"
+                                        BorderThickness="0"
+                                        HorizontalAlignment="Stretch"
+                                        Padding="0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                        <ic:SymbolIcon Symbol="Cart" FontSize="15"/>
+                                        <TextBlock Text="Pré-Venda"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Dados do Pedido / Orçamento (Nº e Emissão) -->
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="DADOS DO PEDIDO" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="60"/>
+                                    <TextBlock Text="{Binding Pedido.NumeroFormatado}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock Text="EMISSÃO" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="60" HorizontalAlignment="Right"/>
+                                    <TextBlock Text="{Binding Pedido.DataFormatada}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Card Principal: Resumo Financeiro -->
+                <Border Grid.Row="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,14">
+                    <Grid RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- Cabeçalho -->
+                            <RowDefinition Height="*"/>    <!-- Campos e Totais -->
+                            <RowDefinition Height="Auto"/> <!-- Botão Gravar -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Cabeçalho do Resumo -->
+                        <Grid Grid.Row="0">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <ic:SymbolIcon Symbol="Receipt" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
-                                <TextBlock Text="Resumo Financeiro" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                <TextBlock Text="Resumo Financeiro" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                             </StackPanel>
-                            <TextBlock FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}">
-                                <Run Text="Emissão: "/><Run Text="{Binding Pedido.DataFormatada}"/>
-                            </TextBlock>
-                        </StackPanel>
+                        </Grid>
+
+                        <!-- Detalhamento de Valores e Observações -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Spacing="12">
+                                <Grid>
+                                    <TextBlock Text="Itens no Pedido:" Foreground="{StaticResource BrushTextSubtle}" FontSize="13"/>
+                                    <TextBlock Text="{Binding Pedido.QtdItens}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
+                                </Grid>
+
+                                <Grid>
+                                    <TextBlock Text="Subtotal Bruto:" Foreground="{StaticResource BrushTextSubtle}" FontSize="13"/>
+                                    <TextBlock Text="{Binding Pedido.Subtotal, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
+                                </Grid>
+
+                                <!-- Desconto Geral com alternância % / R$ -->
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="38"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <TextBlock Text="Desconto Geral (" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                        <TextBlock Text="{Binding TipoDescontoGeralSimbolo}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" FontSize="12.5"/>
+                                        <TextBlock Text="):" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding DescontoGeralInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                             Height="32"/>
+                                    <Button Grid.Column="2"
+                                            Command="{Binding AlternarTipoDescontoGeralCommand}"
+                                            Content="{Binding TipoDescontoGeralSimbolo}"
+                                            FontWeight="Bold" FontSize="11"
+                                            Height="32" Width="38" Padding="0"
+                                            Background="{StaticResource BrushServsicBlueSoft}"
+                                            Foreground="{StaticResource BrushServsicBlue}"
+                                            BorderBrush="{StaticResource BrushServsicBlue}"
+                                            BorderThickness="1"
+                                            ToolTipService.ToolTip="Alternar Desconto Geral entre % e R$"/>
+                                </Grid>
+
+                                <!-- Acréscimo / Frete com alternância % / R$ -->
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="38"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <TextBlock Text="Acrésc./Frete (" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                        <TextBlock Text="{Binding TipoAcrescimoGeralSimbolo}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" FontSize="12.5"/>
+                                        <TextBlock Text="):" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding AcrescimoGeralInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                             Height="32"/>
+                                    <Button Grid.Column="2"
+                                            Command="{Binding AlternarTipoAcrescimoGeralCommand}"
+                                            Content="{Binding TipoAcrescimoGeralSimbolo}"
+                                            FontWeight="Bold" FontSize="11"
+                                            Height="32" Width="38" Padding="0"
+                                            Background="{StaticResource BrushServsicBlueSoft}"
+                                            Foreground="{StaticResource BrushServsicBlue}"
+                                            BorderBrush="{StaticResource BrushServsicBlue}"
+                                            BorderThickness="1"
+                                            ToolTipService.ToolTip="Alternar Acréscimo entre % e R$"/>
+                                </Grid>
+
+                                <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,4"/>
+
+                                <!-- Total Geral em Destaque -->
+                                <Border Background="{StaticResource BrushServsicDark}" CornerRadius="8" Padding="16">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="VALOR TOTAL" FontSize="11" FontWeight="Bold" Foreground="#94A3B8" CharacterSpacing="80"/>
+                                        <TextBlock Text="{Binding Pedido.Total, Converter={StaticResource CurrencyConverter}}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlueLight}"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Observações do Pedido -->
+                                <StackPanel Spacing="6" Margin="0,4,0,0">
+                                    <TextBlock Text="Observações" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding Pedido.Obs, Mode=TwoWay}" Height="90" TextWrapping="Wrap" AcceptsReturn="True" PlaceholderText="Instruções de entrega, pagamento, etc..."/>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- Botão Gravar Pedido Direto ao Banco -->
+                        <Button Grid.Row="2" Command="{Binding SalvarCommand}" Style="{StaticResource BtnPrimary}" Height="48" FontSize="15" FontWeight="Bold">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ic:SymbolIcon Symbol="Save" FontSize="18"/>
+                                <TextBlock Text="Gravar Pedido"/>
+                            </StackPanel>
+                        </Button>
+
                     </Grid>
-
-                    <!-- Detalhamento de Valores e Observações -->
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="12">
-                            <Grid>
-                                <TextBlock Text="Itens no Pedido:" Foreground="{StaticResource BrushTextSubtle}" FontSize="13"/>
-                                <TextBlock Text="{Binding Pedido.QtdItens}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
-                            </Grid>
-
-                            <Grid>
-                                <TextBlock Text="Subtotal Bruto:" Foreground="{StaticResource BrushTextSubtle}" FontSize="13"/>
-                                <TextBlock Text="{Binding Pedido.Subtotal, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
-                            </Grid>
-
-                            <!-- Desconto Geral com alternância % / R$ -->
-                            <Grid ColumnSpacing="8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="38"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <TextBlock Text="Desconto Geral (" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
-                                    <TextBlock Text="{Binding TipoDescontoGeralSimbolo}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" FontSize="12.5"/>
-                                    <TextBlock Text="):" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
-                                </StackPanel>
-                                <TextBox Grid.Column="1"
-                                         Text="{Binding DescontoGeralInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
-                                         Height="32"/>
-                                <Button Grid.Column="2"
-                                        Command="{Binding AlternarTipoDescontoGeralCommand}"
-                                        Content="{Binding TipoDescontoGeralSimbolo}"
-                                        FontWeight="Bold" FontSize="11"
-                                        Height="32" Width="38" Padding="0"
-                                        Background="{StaticResource BrushServsicBlueSoft}"
-                                        Foreground="{StaticResource BrushServsicBlue}"
-                                        BorderBrush="{StaticResource BrushServsicBlue}"
-                                        BorderThickness="1"
-                                        ToolTipService.ToolTip="Alternar Desconto Geral entre % e R$"/>
-                            </Grid>
-
-                            <!-- Acréscimo / Frete com alternância % / R$ -->
-                            <Grid ColumnSpacing="8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="38"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <TextBlock Text="Acrésc./Frete (" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
-                                    <TextBlock Text="{Binding TipoAcrescimoGeralSimbolo}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" FontSize="12.5"/>
-                                    <TextBlock Text="):" Foreground="{StaticResource BrushTextSubtle}" FontSize="12.5"/>
-                                </StackPanel>
-                                <TextBox Grid.Column="1"
-                                         Text="{Binding AcrescimoGeralInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
-                                         Height="32"/>
-                                <Button Grid.Column="2"
-                                        Command="{Binding AlternarTipoAcrescimoGeralCommand}"
-                                        Content="{Binding TipoAcrescimoGeralSimbolo}"
-                                        FontWeight="Bold" FontSize="11"
-                                        Height="32" Width="38" Padding="0"
-                                        Background="{StaticResource BrushServsicBlueSoft}"
-                                        Foreground="{StaticResource BrushServsicBlue}"
-                                        BorderBrush="{StaticResource BrushServsicBlue}"
-                                        BorderThickness="1"
-                                        ToolTipService.ToolTip="Alternar Acréscimo entre % e R$"/>
-                            </Grid>
-
-                            <Border Height="1" Background="{StaticResource BrushBorder}" Margin="0,4"/>
-
-                            <!-- Total Geral em Destaque -->
-                            <Border Background="{StaticResource BrushServsicDark}" CornerRadius="8" Padding="16">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="VALOR TOTAL" FontSize="11" FontWeight="Bold" Foreground="#94A3B8" CharacterSpacing="80"/>
-                                    <TextBlock Text="{Binding Pedido.Total, Converter={StaticResource CurrencyConverter}}" FontSize="26" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlueLight}"/>
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Observações do Pedido -->
-                            <StackPanel Spacing="6" Margin="0,4,0,0">
-                                <TextBlock Text="Observações" Style="{StaticResource TextLabel}"/>
-                                <TextBox Text="{Binding Pedido.Obs, Mode=TwoWay}" Height="90" TextWrapping="Wrap" AcceptsReturn="True" PlaceholderText="Instruções de entrega, pagamento, etc..."/>
-                            </StackPanel>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <!-- Botão Gravar Pedido Direto ao Banco -->
-                    <Button Grid.Row="2" Command="{Binding SalvarCommand}" Style="{StaticResource BtnPrimary}" Height="48" FontSize="15" FontWeight="Bold">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ic:SymbolIcon Symbol="Save" FontSize="18"/>
-                            <TextBlock Text="Gravar Pedido"/>
-                        </StackPanel>
-                    </Button>
-
-                </Grid>
-            </Border>
+                </Border>
+            </Grid>
         </Grid>
 
 

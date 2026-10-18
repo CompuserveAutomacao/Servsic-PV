@@ -16,24 +16,24 @@
 
         <!-- Painel Esquerdo: Identidade Visual ServSic -->
         <Grid Grid.Column="0" Background="{StaticResource BrushServsicDark}">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
                 <!-- Imagem da Logo Oficial do Sistema -->
-                <Image Source="ms-appx:///Assets/logo.png" MaxWidth="240" MaxHeight="160" Stretch="Uniform" HorizontalAlignment="Center"/>
+                <Image Source="ms-appx:///Assets/logo.png" Width="96" Height="96" Stretch="Uniform" HorizontalAlignment="Center" Margin="0,0,0,4"/>
                 
-                <!-- Logo Tipográfica Compu (Branco) + serve (Azul Menta) -->
+                <!-- Logo Tipográfica Compu (Branco) + serve (Vermelho) -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="Compu" FontSize="44" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#FFFFFF"/>
-                    <TextBlock Text="serve" FontSize="44" FontFamily="Segoe UI" FontWeight="Bold" Foreground="{StaticResource BrushServsicMint}"/>
+                    <TextBlock Text="Compu" FontSize="40" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#FFFFFF"/>
+                    <TextBlock Text="serve" FontSize="40" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#EF4444"/>
                 </StackPanel>
 
                 <!-- Subtítulo Suave -->
                 <TextBlock Text="Soluções em tecnologia comercial" 
                            Foreground="#94A3B8" 
-                           FontSize="13.5" 
+                           FontSize="13" 
                            FontFamily="Segoe UI"
                            FontWeight="Normal"
                            HorizontalAlignment="Center"
-                           Margin="0,2,0,0"/>
+                           Margin="0,0,0,0"/>
             </StackPanel>
         </Grid>
 

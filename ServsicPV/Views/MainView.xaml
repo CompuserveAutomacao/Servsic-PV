@@ -27,52 +27,15 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Lado Esquerdo: Seletor Segmentado Orçamento / Venda e Identificador do Pedido -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="14">
-                    <!-- Seletor Segmentado no Topo -->
-                    <Border Background="#1E293B" CornerRadius="8" Padding="3" BorderBrush="#334155" BorderThickness="1">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                            <Button Command="{Binding SelecionarOrcamentoCommand}"
-                                    IsTabStop="False"
-                                    Background="{Binding BrushOrcamentoBackground}"
-                                    Foreground="{Binding BrushOrcamentoForeground}"
-                                    FontWeight="Bold"
-                                    FontSize="13"
-                                    Height="32"
-                                    CornerRadius="6"
-                                    BorderThickness="0"
-                                    Padding="14,0">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <ic:SymbolIcon Symbol="DocumentText" FontSize="16"/>
-                                    <TextBlock Text="Orçamento"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Command="{Binding SelecionarVendaCommand}"
-                                    IsTabStop="False"
-                                    Background="{Binding BrushVendaBackground}"
-                                    Foreground="{Binding BrushVendaForeground}"
-                                    FontWeight="Bold"
-                                    FontSize="13"
-                                    Height="32"
-                                    CornerRadius="6"
-                                    BorderThickness="0"
-                                    Padding="14,0">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <ic:SymbolIcon Symbol="Cart" FontSize="16"/>
-                                    <TextBlock Text="Pedido de Venda"/>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Identificador do Pedido / Orçamento -->
-                    <Border Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="12,5" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <ic:SymbolIcon Symbol="DocumentBulletList" FontSize="15" Foreground="{StaticResource BrushServsicBlueLight}"/>
-                            <TextBlock Text="{Binding Pedido.NumeroFormatado}" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlueLight}" FontSize="12.5"/>
-                        </StackPanel>
-                    </Border>
+                <!-- Lado Esquerdo: Logo e Marca Compu + serve (em vermelho) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                    <Image Source="ms-appx:///Assets/logo.png" Height="30" Width="30" Stretch="Uniform" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Compu" FontSize="20" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                        <TextBlock Text="serve" FontSize="20" FontFamily="Segoe UI" FontWeight="Bold" Foreground="#EF4444" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Border Width="1" Height="18" Background="#334155" Margin="8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="SERVSIC PV" FontSize="13" FontWeight="SemiBold" Foreground="#94A3B8" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Lado Direito: Vendedor Responsável, Usuário Conectado & Logout -->
