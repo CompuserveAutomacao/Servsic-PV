@@ -318,4 +318,27 @@ public class ProdutoService
             return Array.Empty<string>();
         }
     }
+
+    public async Task<decimal> ObterEstoqueAtualAsync(int controle)
+    {
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+            const string sql = @"
+                SELECT (ISNULL(Quantidade, 0) + ISNULL(QtdDepos, 0))
+                FROM TabEst1 
+                WHERE Controle = @controle";
+            var estoque = await conn.ExecuteScalarAsync<object?>(sql, new { controle });
+            if (estoque != null && decimal.TryParse(estoque.ToString(), out var dec))
+            {
+                return dec;
+            }
+            return 0m;
+        }
+        catch
+        {
+            return 0m;
+        }
+    }
 }
+

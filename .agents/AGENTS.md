@@ -40,6 +40,10 @@ O SERVSIC PV é uma aplicação de alta produtividade para frente de caixa e pr�
 - **Regra do Menta / Verde:**
   - **TERMINANTEMENTE PROIBIDO** o uso de cor menta/verde na interface operacional do sistema.
   - A cor menta (`#00D2C4`) é de uso restrito e exclusivo do logotipo "serve" da marca CompuServe.
+- **Regra de Foco e Estados de Interação (JAMAIS USAR FOCO BRANCO):**
+  - **TERMINANTEMENTE PROIBIDO** o uso de foco branco ou fundo desbotado/fantasma em botões e componentes interativos.
+  - O estado de foco (<kbd>Tab</kbd> / navegação por teclado) e de hover/apontamento de botões de ação e botões principais deve obrigatoriamente utilizar o **Azul Escuro Navy padrão do sistema (`#0B192C`)** com texto e ícones em **Branco Puro (`#FFFFFF`)**, garantindo alto contraste, legibilidade imediata e presença visual firme.
+  - Nunca permitir que estilos padrão do WinUI 3 (ex: `ButtonBackgroundPointerOver`, `ButtonBackgroundFocused`) transformem o botão em branco ou apaguem o contraste do texto.
 - **Ícones Modernos:**
   - Usar exclusivamente Fluent Icons (`using:FluentIcons.WinUI` com `<ic:SymbolIcon Symbol="..." />`).
   - Nunca duplicar símbolos textuais com ícones (ex: botões com ícone de `Add` devem exibir apenas o texto `Novo Cliente`, nunca `+ Novo Cliente`).

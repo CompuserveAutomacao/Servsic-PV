@@ -63,7 +63,7 @@ public partial class MainView : Window
         _cadastroView = new PedidoCadastroView { DataContext = _pedidoViewModel };
         _cadastroView.OnSolicitarHistorico = () => MostrarConsulta();
 
-        _consultaViewModel = new PedidoConsultaViewModel(_pedidoService);
+        _consultaViewModel = new PedidoConsultaViewModel(_pedidoService) { UsuarioLogado = usuario };
         _consultaViewModel.OnEditarPedido = (controle) => CarregarPedidoParaEdicao(controle);
         _consultaView = new PedidoConsultaView { DataContext = _consultaViewModel };
         _consultaView.OnVoltarAoPedido = () => MostrarCadastro();
@@ -127,7 +127,8 @@ public partial class MainView : Window
     private void MostrarConsulta()
     {
         ContentArea.Content = _consultaView;
-        _ = _consultaViewModel.PesquisarAsync();
+        _consultaViewModel.Abrir(_pedidoViewModel.UsuarioLogado);
+        _consultaView.FocarGradeOuPesquisa();
     }
 
     private void MostrarConsultaCliente(string? filtro = null)
@@ -151,8 +152,9 @@ public partial class MainView : Window
             var p = await _pedidoService.ObterPorIdAsync(controle);
             if (p != null)
             {
-                _pedidoViewModel.Pedido = p;
+                await _pedidoViewModel.CarregarPedidoAsync(p);
                 MostrarCadastro();
+                _cadastroView.FocarCodigoProduto();
             }
         }
         catch (Exception ex)
@@ -198,6 +200,34 @@ public partial class MainView : Window
 
     private void OnEscapeGlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (_pedidoViewModel.ConfiguracaoImpressoraViewModel.IsOpen)
+        {
+            _pedidoViewModel.ConfiguracaoImpressoraViewModel.Fechar();
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.CupomVisualizacaoViewModel.IsOpen)
+        {
+            _pedidoViewModel.CupomVisualizacaoViewModel.Fechar();
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.IsObservacoesOpen)
+        {
+            _pedidoViewModel.IsObservacoesOpen = false;
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.IsCheckoutOpen)
+        {
+            _pedidoViewModel.FecharCheckout();
+            args.Handled = true;
+            return;
+        }
+
         if (_pedidoViewModel.IsConfirmarAlteracaoTipoOpen)
         {
             _pedidoViewModel.CancelarAlteracaoTipo();
@@ -228,6 +258,11 @@ public partial class MainView : Window
             args.Handled = true;
             return;
         }
+    }
+
+    private void BtnConfiguracoes_Click(object sender, RoutedEventArgs e)
+    {
+        _pedidoViewModel.ConfiguracaoImpressoraViewModel.Abrir();
     }
 
     private void BtnSair_Click(object sender, RoutedEventArgs e)

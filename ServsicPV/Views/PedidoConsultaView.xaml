@@ -7,148 +7,517 @@
     xmlns:ic="using:FluentIcons.WinUI"
     mc:Ignorable="d">
 
-    <Grid Background="{StaticResource BrushIceBackground}" Padding="24" RowSpacing="16">
+    <Grid Background="{StaticResource BrushIceBackground}" Padding="18,14" RowSpacing="12">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Filtros -->
-            <RowDefinition Height="Auto"/> <!-- Mensagem de Status -->
-            <RowDefinition Height="*"/>    <!-- Lista de Pedidos -->
+            <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho Superior: Título & Botão no Topo -->
+            <RowDefinition Height="Auto"/> <!-- 1. Barra de Filtros -->
+            <RowDefinition Height="Auto"/> <!-- 2. Mensagem de Status -->
+            <RowDefinition Height="*"/>    <!-- 3. Área Central: Grade Principal + Card Lateral -->
+            <RowDefinition Height="Auto"/> <!-- 4. Barra Inferior de Ações -->
         </Grid.RowDefinitions>
 
-        <!-- Barra de Filtros -->
-        <Border Grid.Row="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16">
+        <!-- 0. Cabeçalho Superior da Tela: Título e Botão Voltar Livres no Topo -->
+        <Grid Grid.Row="0" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lado Esquerdo: Identidade da Tela com Ícone -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Border Width="42" Height="42" CornerRadius="10" Background="{StaticResource BrushServsicBlueSoft}" VerticalAlignment="Center">
+                    <ic:SymbolIcon Symbol="DocumentBulletList" FontSize="22" Foreground="{StaticResource BrushServsicBlue}"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="Consulta de Pedidos" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                    </StackPanel>
+                    <TextBlock Text="Histórico dos últimos 7 dias com detalhes de produtos e formas de pagamento" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Lado Direito: Botão Voltar no Topo Fora do Card -->
+            <Button Grid.Column="1" Click="BtnVoltar_Click" Style="{StaticResource BtnSecondary}" Height="38" Padding="16,0" ToolTipService.ToolTip="Voltar para a tela de vendas (Esc)">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ic:SymbolIcon Symbol="ArrowLeft" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                    <TextBlock Text="Voltar (Esc)" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- 1. Barra de Filtros Organizada -->
+        <Border Grid.Row="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16,12">
             <Grid ColumnSpacing="12" RowSpacing="10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
-                    <ColumnDefinition Width="140"/>
-                    <ColumnDefinition Width="140"/>
+                    <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="160"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Campo de Busca -->
                 <StackPanel Grid.Column="0" Spacing="4">
-                    <TextBlock Text="Pesquisar (Cliente, Pedido, CPF/CNPJ)" Style="{StaticResource TextLabel}"/>
-                    <TextBox Text="{Binding FiltroTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBlock Text="Pesquisar (Cliente, Nº Pedido, CPF/CNPJ)" Style="{StaticResource TextLabel}"/>
+                    <TextBox x:Name="TxtPesquisa"
+                             Text="{Binding FiltroTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              KeyDown="FiltroTexto_KeyDown"
-                             PlaceholderText="Digite para pesquisar..."
-                             Height="38"/>
+                             PlaceholderText="Digite para pesquisar e tecle Enter..."
+                             Height="36"/>
                 </StackPanel>
 
-                <!-- Data Início -->
+                <!-- Data Início (Últimos 7 dias por padrão) -->
                 <StackPanel Grid.Column="1" Spacing="4">
                     <TextBlock Text="Data Início" Style="{StaticResource TextLabel}"/>
-                    <DatePicker Date="{Binding DataInicio, Mode=TwoWay}" Height="38"/>
+                    <CalendarDatePicker Date="{Binding DataInicio, Mode=TwoWay}"
+                                        DateFormat="{}{day.integer(2)}/{month.integer(2)}/{year.full}"
+                                        PlaceholderText="dd/mm/aaaa"
+                                        HorizontalAlignment="Stretch"
+                                        Height="36"/>
                 </StackPanel>
 
                 <!-- Data Fim -->
                 <StackPanel Grid.Column="2" Spacing="4">
                     <TextBlock Text="Data Fim" Style="{StaticResource TextLabel}"/>
-                    <DatePicker Date="{Binding DataFim, Mode=TwoWay}" Height="38"/>
+                    <CalendarDatePicker Date="{Binding DataFim, Mode=TwoWay}"
+                                        DateFormat="{}{day.integer(2)}/{month.integer(2)}/{year.full}"
+                                        PlaceholderText="dd/mm/aaaa"
+                                        HorizontalAlignment="Stretch"
+                                        Height="36"/>
                 </StackPanel>
 
-                <!-- Status -->
+                <!-- Status / Operação -->
                 <StackPanel Grid.Column="3" Spacing="4">
-                    <TextBlock Text="Status" Style="{StaticResource TextLabel}"/>
+                    <TextBlock Text="Status / Operação" Style="{StaticResource TextLabel}"/>
                     <ComboBox SelectedValue="{Binding FiltroStatus, Mode=TwoWay}"
                               SelectedValuePath="Content"
                               HorizontalAlignment="Stretch"
-                              Height="38">
+                              Height="36">
                         <ComboBoxItem Content="TODOS" IsSelected="True"/>
                         <ComboBoxItem Content="ORÇAMENTOS"/>
+                        <ComboBoxItem Content="PRÉ-VENDAS"/>
                         <ComboBoxItem Content="VENDAS"/>
+                        <ComboBoxItem Content="CANCELADOS"/>
                     </ComboBox>
                 </StackPanel>
 
-                <!-- Botão Pesquisar e Voltar -->
-                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                    <Button Command="{Binding PesquisarCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <ic:SymbolIcon Symbol="Search" FontSize="16"/>
-                            <TextBlock Text="Pesquisar"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Click="BtnVoltar_Click" Style="{StaticResource BtnSecondary}" Height="38" Padding="14,0" ToolTipService.ToolTip="Retornar à emissão de pedidos">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <ic:SymbolIcon Symbol="ArrowLeft" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
-                            <TextBlock Text="Voltar ao Pedido"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
+                <!-- Botão Pesquisar -->
+                <Button Grid.Column="4" x:Name="BtnPesquisarPedidos"
+                        Command="{Binding PesquisarCommand}"
+                        Height="36" Padding="18,0" VerticalAlignment="Bottom"
+                        GotFocus="BtnNavy_GotFocus"
+                        LostFocus="BtnPesquisar_LostFocus"
+                        PointerEntered="BtnNavy_PointerEntered"
+                        PointerExited="BtnPesquisar_PointerExited"
+                        ToolTipService.ToolTip="Pesquisar pedidos com os filtros selecionados">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ic:SymbolIcon Symbol="Search" FontSize="16" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Pesquisar" FontWeight="Bold" Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </Button>
             </Grid>
         </Border>
 
-        <!-- Mensagem Informativa -->
-        <Border Grid.Row="1" Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="6" Padding="12,8"
+        <!-- 2. Mensagem Informativa -->
+        <Border Grid.Row="2" Background="#E0F2FE" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="6" Padding="12,8"
                 Visibility="{Binding Mensagem, Converter={StaticResource StringToVisibilityConverter}}">
             <TextBlock Text="{Binding Mensagem}" Foreground="#0369A1" FontSize="13" FontWeight="SemiBold"/>
         </Border>
 
-        <!-- Grade de Pedidos -->
-        <Border Grid.Row="2" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16">
-            <ListView ItemsSource="{Binding Pedidos}" SelectionMode="Single" SelectedItem="{Binding PedidoSelecionado, Mode=TwoWay}">
-                <ListView.HeaderTemplate>
-                    <DataTemplate>
-                        <Grid Background="#F1F5F9" Padding="12,8" CornerRadius="4" Margin="0,0,0,4">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="90"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="PEDIDO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="1" Text="DATA" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="2" Text="CLIENTE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="3" Text="VENDEDOR" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="4" Text="TIPO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="5" Text="VALOR TOTAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="6" Text="STATUS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                            <TextBlock Grid.Column="7" Text="AÇÕES" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.HeaderTemplate>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="12,10" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="90"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
+        <!-- 3. Área Central: Grade Principal de Pedidos + Card Lateral de Detalhes -->
+        <Grid Grid.Row="3" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>   <!-- Grade Principal de Pedidos -->
+                <ColumnDefinition Width="400"/> <!-- Card Lateral de Detalhes -->
+            </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Column="0" Text="{Binding Pedido}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding DataFormatada}" FontSize="12.5" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="{Binding Cliente}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="3" Text="{Binding Vendedor}" FontSize="12" VerticalAlignment="Center"/>
-                            
-                            <!-- Tag Orçamento / Venda -->
-                            <Border Grid.Column="4" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left"
-                                    Background="{Binding Status, Converter={StaticResource StatusColorConverter}}">
-                                <TextBlock Text="{Binding StatusDescricao}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <!-- 2A. Grade Principal de Pedidos e Orçamentos -->
+            <Border Grid.Column="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12">
+                <ListView x:Name="ListaPedidos"
+                          ItemsSource="{Binding Pedidos}" 
+                          SelectionMode="Single" 
+                          SelectedItem="{Binding PedidoSelecionado, Mode=TwoWay}"
+                          PreviewKeyDown="ListaPedidos_PreviewKeyDown"
+                          KeyDown="ListaPedidos_KeyDown"
+                          DoubleTapped="ListaPedidos_DoubleTapped">
+                    <ListView.HeaderTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource BrushServsicDark}" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,4">
+                                <Grid ColumnSpacing="6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="75"/>  <!-- PEDIDO -->
+                                        <ColumnDefinition Width="85"/>  <!-- DATA -->
+                                        <ColumnDefinition Width="*"/>   <!-- CLIENTE -->
+                                        <ColumnDefinition Width="110"/> <!-- VENDEDOR -->
+                                        <ColumnDefinition Width="95"/>  <!-- OPERAÇÃO -->
+                                        <ColumnDefinition Width="95"/>  <!-- SITUAÇÃO -->
+                                        <ColumnDefinition Width="105"/> <!-- VALOR TOTAL -->
+                                        <ColumnDefinition Width="50"/>  <!-- AÇÃO -->
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="PEDIDO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="DATA" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="CLIENTE" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="VENDEDOR" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="4" Text="OPERAÇÃO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="5" Text="SITUAÇÃO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="6" Text="VALOR TOTAL" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="7" Text="ABRIR" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Grid>
                             </Border>
+                        </DataTemplate>
+                    </ListView.HeaderTemplate>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="10,7">
+                                <Grid ColumnSpacing="6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="75"/>
+                                        <ColumnDefinition Width="85"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="110"/>
+                                        <ColumnDefinition Width="95"/>
+                                        <ColumnDefinition Width="95"/>
+                                        <ColumnDefinition Width="105"/>
+                                        <ColumnDefinition Width="50"/>
+                                    </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Column="5" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <!-- 0. Pedido -->
+                                    <TextBlock Grid.Column="0" Text="{Binding Pedido}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
 
-                            <TextBlock Grid.Column="6" Text="{Binding Cancelada, Converter={StaticResource StatusColorConverter}}" FontSize="12" VerticalAlignment="Center"/>
+                                    <!-- 1. Data -->
+                                    <TextBlock Grid.Column="1" Text="{Binding DataFormatada}" FontSize="12" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
 
-                            <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6">
-                                <Button Click="BtnAbrirPedido_Click" Style="{StaticResource BtnSecondary}" Padding="8,4" Height="30" ToolTipService.ToolTip="Visualizar Pedido">
-                                    <ic:SymbolIcon Symbol="Open" FontSize="14"/>
-                                </Button>
+                                    <!-- 2. Cliente -->
+                                    <TextBlock Grid.Column="2" Text="{Binding Cliente}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                    <!-- 3. Vendedor -->
+                                    <TextBlock Grid.Column="3" Text="{Binding Vendedor}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                                    <!-- 4. Operação (ORÇAMENTO / PRÉ-VENDA / VENDA / CANCELADO) -->
+                                    <Border Grid.Column="4" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            Background="{Binding OperacaoBgColor}">
+                                        <TextBlock Text="{Binding OperacaoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding OperacaoFgColor}"/>
+                                    </Border>
+
+                                    <!-- 5. Situação (PENDENTE / CONCLUÍDA / FECHADO / CANCELADA) -->
+                                    <Border Grid.Column="5" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                            Background="{Binding SituacaoBgColor}">
+                                        <TextBlock Text="{Binding SituacaoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding SituacaoFgColor}"/>
+                                    </Border>
+
+                                    <!-- 6. Valor Total -->
+                                    <TextBlock Grid.Column="6" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                    <!-- 7. Ações -->
+                                    <Button Grid.Column="7" Click="BtnAbrirPedido_Click" Style="{StaticResource BtnSecondary}" Padding="6,3" Height="28" HorizontalAlignment="Center" ToolTipService.ToolTip="Abrir Pedido (Enter)">
+                                        <ic:SymbolIcon Symbol="Open" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Border>
+
+            <!-- 2B. Card Lateral de Detalhes: Produtos e Formas de Pagamento -->
+            <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14">
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Topo: Identificação do Pedido -->
+                        <RowDefinition Height="Auto"/> <!-- Botões de Abas: Produtos / Pagamentos -->
+                        <RowDefinition Height="*"/>    <!-- Conteúdo da Aba: Lista de Produtos ou Pagamentos -->
+                        <RowDefinition Height="Auto"/> <!-- Resumo Financeiro de Totais -->
+                        <RowDefinition Height="Auto"/> <!-- Botão de Abertura Imediata -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Topo: Identificação do Pedido Selecionado -->
+                    <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                        <StackPanel Spacing="5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="DocumentText" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text="PEDIDO #" FontSize="14" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                    <TextBlock Text="{Binding PedidoDetalhe.Pedido}" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <Border CornerRadius="4" Padding="6,2" Background="{Binding PedidoDetalhe.OperacaoBgColor}">
+                                        <TextBlock Text="{Binding PedidoDetalhe.OperacaoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding PedidoDetalhe.OperacaoFgColor}"/>
+                                    </Border>
+                                    <Border CornerRadius="4" Padding="6,2" Background="{Binding PedidoDetalhe.SituacaoBgColor}">
+                                        <TextBlock Text="{Binding PedidoDetalhe.SituacaoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding PedidoDetalhe.SituacaoFgColor}"/>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Text="{Binding PedidoDetalhe.Cliente, FallbackValue='Consumidor Não Identificado'}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                            <Grid>
+                                <TextBlock Text="{Binding PedidoDetalhe.Vendedor, FallbackValue='-'}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}">
+                                    <Run Text="Vendedor: "/><Run Text="{Binding PedidoDetalhe.Vendedor}"/>
+                                </TextBlock>
+                                <TextBlock HorizontalAlignment="Right" FontSize="11" Foreground="{StaticResource BrushTextSubtle}">
+                                    <Run Text="{Binding PedidoDetalhe.DataFormatada}"/><Run Text=" "/><Run Text="{Binding PedidoDetalhe.HoraIni}"/>
+                                </TextBlock>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Botões de Alternância de Abas: PRODUTOS vs PAGAMENTOS -->
+                    <Grid Grid.Row="1" ColumnSpacing="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Botão Aba Produtos -->
+                        <Button Grid.Column="0"
+                                Command="{Binding SelecionarAbaCommand}" CommandParameter="PRODUTOS"
+                                Height="32" HorizontalAlignment="Stretch" Padding="6,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Box" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock FontSize="11.5" FontWeight="Bold">
+                                    <Run Text="PRODUTOS ("/><Run Text="{Binding PedidoDetalhe.Itens.Count, FallbackValue=0}"/><Run Text=")"/>
+                                </TextBlock>
                             </StackPanel>
+                        </Button>
+
+                        <!-- Botão Aba Pagamentos -->
+                        <Button Grid.Column="1"
+                                Command="{Binding SelecionarAbaCommand}" CommandParameter="PAGAMENTOS"
+                                Height="32" HorizontalAlignment="Stretch" Padding="6,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Payment" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock FontSize="11.5" FontWeight="Bold">
+                                    <Run Text="PAGAMENTOS ("/><Run Text="{Binding PedidoDetalhe.Pagamentos.Count, FallbackValue=0}"/><Run Text=")"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Conteúdo 1: Grade de Produtos do Pedido -->
+                    <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="6"
+                            Visibility="{Binding IsAbaProdutos, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <!-- Estado Vazio de Produtos -->
+                            <TextBlock Text="Nenhum item lançado neste pedido."
+                                       FontSize="12" Foreground="{StaticResource BrushTextSubtle}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Visibility="{Binding HasItensDetalhe, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+
+                            <!-- Lista de Produtos -->
+                            <ListView ItemsSource="{Binding PedidoDetalhe.Itens}"
+                                      SelectionMode="None"
+                                      Visibility="{Binding HasItensDetalhe, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#F1F5F9" BorderThickness="0,0,0,1" Padding="6,5">
+                                            <Grid ColumnSpacing="6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                    <TextBlock Text="{Binding Produto}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Text="{Binding CodInterno}" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                        <TextBlock Text="•" FontSize="10" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                        <TextBlock FontSize="11" Foreground="{StaticResource BrushTextSubtle}">
+                                                            <Run Text="{Binding QuantidadeFormatada}"/><Run Text=" "/><Run Text="{Binding Unidade}"/><Run Text=" x "/><Run Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                    </Border>
+
+                    <!-- Conteúdo 2: Formas de Pagamento e Parcelas do Pedido -->
+                    <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="6"
+                            Visibility="{Binding IsAbaPagamentos, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <!-- Estado Vazio de Pagamentos (Orçamento/Pré-venda em aberto) -->
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6"
+                                        Visibility="{Binding HasPagamentos, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                <ic:SymbolIcon Symbol="ReceiptMoney" FontSize="24" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Nenhum plano de pagamento registrado." FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Orçamento / Pré-venda ainda não finalizada pelo caixa." FontSize="11" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Lista de Parcelas e Formas de Pagamento -->
+                            <ListView ItemsSource="{Binding PedidoDetalhe.Pagamentos}"
+                                      SelectionMode="None"
+                                      Visibility="{Binding HasPagamentos, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#F1F5F9" BorderThickness="0,0,0,1" Padding="8,6">
+                                            <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Border Grid.Column="0" Background="#F0F9FF" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding ParcelaFormatada}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                </Border>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                                    <TextBlock Text="{Binding Recebimento}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                                    <TextBlock Text="{Binding VencimentoDescricao}" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding ValorFormatado}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Border>
+
+                    <!-- Resumo Financeiro de Totais -->
+                    <Border Grid.Row="3" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,8">
+                        <StackPanel Spacing="4">
+                            <Grid>
+                                <TextBlock Text="Subtotal:" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                <TextBlock Text="{Binding PedidoDetalhe.Subtotal, Converter={StaticResource CurrencyConverter}}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="Desconto:" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                <TextBlock Text="{Binding PedidoDetalhe.DescontoTotal, Converter={StaticResource CurrencyConverter}}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushDanger}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="Acréscimo:" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                <TextBlock Text="{Binding PedidoDetalhe.AcrescimoGeral, Converter={StaticResource CurrencyConverter}}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <!-- Total em Destaque Navy -->
+                            <Border Background="{StaticResource BrushServsicDark}" CornerRadius="4" Padding="8,6" Margin="0,2,0,0">
+                                <Grid>
+                                    <TextBlock Text="VALOR TOTAL:" FontSize="12" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PedidoDetalhe.Total, Converter={StaticResource CurrencyConverter}}" FontSize="15" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Botão de Ação: Imprimir Comprovante em Navy #0B192C -->
+                    <Button Grid.Row="4" x:Name="BtnImprimirPedidoLateral"
+                            Command="{Binding ImprimirCommand}"
+                            Height="38" HorizontalAlignment="Stretch"
+                            GotFocus="BtnNavy_GotFocus"
+                            LostFocus="BtnNavy_LostFocus"
+                            PointerEntered="BtnNavy_PointerEntered"
+                            PointerExited="BtnNavy_PointerExited"
+                            ToolTipService.ToolTip="Imprimir comprovante do pedido na impressora configurada">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackground" Color="#0B192C"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                            <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                            <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                            <ic:SymbolIcon Symbol="Print" FontSize="16" Foreground="#FFFFFF"/>
+                            <TextBlock Text="Imprimir Comprovante" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 4. Barra Inferior de Ações: Exclusão Segura -->
+        <Border Grid.Row="4" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14,10">
+            <!-- Grupo de Exclusão Segura com Confirmação -->
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <!-- Botão Excluir Selecionado -->
+                <Button Command="{Binding SolicitarExcluirSelecionadoCommand}"
+                        Height="36" Padding="14,0"
+                        GotFocus="BtnDanger_GotFocus"
+                        LostFocus="BtnDanger_LostFocus"
+                        PointerEntered="BtnDanger_PointerEntered"
+                        PointerExited="BtnDanger_PointerExited"
+                        ToolTipService.ToolTip="Excluir o pedido selecionado definitivamente do banco de dados (após confirmação)">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackground" Color="#DC2626"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#B91C1C"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#991B1B"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#DC2626"/>
+                        <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ic:SymbolIcon Symbol="Delete" FontSize="16" Foreground="#FFFFFF"/>
+                        <TextBlock Text="Excluir Selecionado" FontWeight="Bold" Foreground="#FFFFFF"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Botão Excluir Pendentes -->
+                <Button Command="{Binding SolicitarExcluirPendentesCommand}"
+                        Style="{StaticResource BtnSecondary}" Height="36" Padding="14,0"
+                        ToolTipService.ToolTip="Excluir todos os orçamentos e pré-vendas pendentes do seu usuário (após confirmação)">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <ic:SymbolIcon Symbol="DismissCircle" FontSize="16" Foreground="{StaticResource BrushDanger}"/>
+                        <TextBlock Text="Excluir Pendentes" FontWeight="SemiBold" Foreground="{StaticResource BrushDanger}"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
         </Border>
 
+        <!-- 5. Diálogo / Modal de Confirmação de Exclusão Segura -->
+        <Grid Grid.RowSpan="5" Background="#80000000"
+              Visibility="{Binding IsConfirmacaoExclusaoOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="10"
+                    Width="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">
+                <StackPanel Spacing="16">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Border Background="#FEE2E2" CornerRadius="20" Width="40" Height="40" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="Warning" FontSize="20" Foreground="#DC2626" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="{Binding TituloConfirmacaoExclusao}" FontSize="17" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding MensagemConfirmacaoExclusao}" FontSize="13.5" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap" LineHeight="20"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right" Margin="0,8,0,0">
+                        <Button Command="{Binding CancelarExclusaoCommand}" Style="{StaticResource BtnSecondary}" Height="36" Padding="16,0" Content="Cancelar"/>
+                        <Button Command="{Binding ConfirmarExclusaoCommand}" Height="36" Padding="18,0">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#DC2626"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#B91C1C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#991B1B"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#DC2626"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Delete" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Confirmar Exclusão" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

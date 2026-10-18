@@ -26,6 +26,7 @@ public partial class PedidoCadastroView : UserControl
             vm.OnProdutoDefinido = () => FocarQuantidade();
             vm.OnItemAdicionado = () => FocarCodigoProduto();
             vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
+            vm.OnCheckoutAberto = () => FocarCheckoutValor();
 
             vm.PropertyChanged += (s, e) =>
             {
@@ -38,6 +39,17 @@ public partial class PedidoCadastroView : UserControl
                             await Task.Delay(40);
                             BtnConfirmarTipo?.Focus(FocusState.Programmatic);
                         });
+                    }
+                    else
+                    {
+                        FocarCodigoProduto();
+                    }
+                }
+                else if (e.PropertyName == nameof(PedidoViewModel.IsCheckoutOpen))
+                {
+                    if (vm.IsCheckoutOpen)
+                    {
+                        FocarCheckoutValor();
                     }
                     else
                     {
@@ -92,6 +104,11 @@ public partial class PedidoCadastroView : UserControl
         });
     }
 
+    public void FocarCheckoutValor()
+    {
+        CheckoutModal?.FocarValor();
+    }
+
     private void DecimalOnly_BeforeTextChanging(TextBox sender, TextBoxBeforeTextChangingEventArgs args)
     {
         if (string.IsNullOrEmpty(args.NewText))
@@ -120,6 +137,17 @@ public partial class PedidoCadastroView : UserControl
                 else if (e.Key == Windows.System.VirtualKey.Escape)
                 {
                     vm.CancelarAlteracaoTipo();
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            // Se o modal de checkout de condições de pagamento estiver aberto
+            if (vm.IsCheckoutOpen)
+            {
+                if (e.Key == Windows.System.VirtualKey.Escape)
+                {
+                    vm.FecharCheckout();
                     e.Handled = true;
                     return;
                 }
@@ -155,6 +183,17 @@ public partial class PedidoCadastroView : UserControl
                 {
                     vm.NovoCommand.Execute(null);
                     e.Handled = true;
+                }
+            }
+            else if (e.Key == Windows.System.VirtualKey.F6 || e.Key == Windows.System.VirtualKey.F10)
+            {
+                if (!vm.IsCheckoutOpen && !vm.IsConfirmarAlteracaoTipoOpen && !vm.IsCadastroRapidoClienteOpen && !vm.IsConsultaClienteOpen)
+                {
+                    if (vm.SalvarCommand.CanExecute(null))
+                    {
+                        vm.SalvarCommand.Execute(null);
+                        e.Handled = true;
+                    }
                 }
             }
         }
@@ -589,6 +628,90 @@ public partial class PedidoCadastroView : UserControl
             if (letras.Length > 2) letras = letras.Substring(0, 2);
             return letras;
         });
+    }
+
+    #endregion
+
+    #region Interações Visuais do Botão Totalizar e Modal de Observações
+
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush BrushVerdeFoco = new(Windows.UI.Color.FromArgb(255, 22, 163, 74));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush BrushAzulNormal = new(Windows.UI.Color.FromArgb(255, 2, 132, 199));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush BrushAzulEscuroPadrao = new(Windows.UI.Color.FromArgb(255, 11, 25, 44)); // #0B192C
+
+    private void BtnTotalizar_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (BtnTotalizar?.IsEnabled == true)
+        {
+            BtnTotalizar.Background = BrushVerdeFoco;
+        }
+    }
+
+    private void BtnTotalizar_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (BtnTotalizar?.IsEnabled == true)
+        {
+            BtnTotalizar.Background = BrushAzulNormal;
+        }
+    }
+
+    private void BtnTotalizar_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (BtnTotalizar?.IsEnabled == true)
+        {
+            BtnTotalizar.Background = BrushVerdeFoco;
+        }
+    }
+
+    private void BtnTotalizar_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (BtnTotalizar?.IsEnabled == true && BtnTotalizar.FocusState == FocusState.Unfocused)
+        {
+            BtnTotalizar.Background = BrushAzulNormal;
+        }
+    }
+
+    private void BtnConsultarPedidos_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (BtnConsultarPedidos != null)
+        {
+            BtnConsultarPedidos.Background = BrushAzulEscuroPadrao;
+        }
+    }
+
+    private void BtnConsultarPedidos_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (BtnConsultarPedidos != null)
+        {
+            BtnConsultarPedidos.Background = BrushAzulNormal;
+        }
+    }
+
+    private void BtnConsultarPedidos_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (BtnConsultarPedidos != null)
+        {
+            BtnConsultarPedidos.Background = BrushAzulEscuroPadrao;
+        }
+    }
+
+    private void BtnConsultarPedidos_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (BtnConsultarPedidos != null && BtnConsultarPedidos.FocusState == FocusState.Unfocused)
+        {
+            BtnConsultarPedidos.Background = BrushAzulNormal;
+        }
+    }
+
+    private void ModalObservacoes_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            if (this.DataContext is PedidoViewModel vm)
+            {
+                vm.IsObservacoesOpen = false;
+                e.Handled = true;
+            }
+        }
     }
 
     #endregion

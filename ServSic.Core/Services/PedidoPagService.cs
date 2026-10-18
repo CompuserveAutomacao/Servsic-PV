@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace ServSic.Core.Services;
 
 /// <summary>
 /// Serviço responsável exclusivamente pelas formas de pagamento / parcelas do pedido (TabEst3C).
+/// Alimenta a tabela de quitação e contas a receber exatamente como o ERP da CompuServe.
 /// </summary>
 public class PedidoPagService
 {
@@ -22,15 +24,31 @@ public class PedidoPagService
                 tc.PEDIDO as Pedido,
                 tc.RECEBIMENTO as Recebimento,
                 tc.LkTipo,
+                tc.DATA as Data,
+                tc.TOTAL as Total,
                 tc.VALOR as Valor,
                 tc.PARCELA as Parcela,
+                tc.CAIXA as Caixa,
+                tc.LKCAIXA as LkCaixa,
+                tc.OPERADOR as Operador,
+                tc.LKOPERADOR as LkOperador,
+                tc.HORA as Hora,
                 tc.GERACONTA as GeraConta,
                 tc.VENCIMENTO as Vencimento,
-                tc.CAIXA as Caixa,
-                tc.OPERADOR as Operador
+                tc.ATIVATROCO as AtivaTroco,
+                tc.LKTROCO as LkTroco,
+                tc.TIPOTROCO as TipoTroco,
+                tc.VLTROCO as VlTroco,
+                tc.idEmpresa as IdEmpresa,
+                tc.LkConta,
+                tc.Conta,
+                tc.NumDoc,
+                tc.divida as Divida,
+                tc.VlFatura,
+                tc.cAut as CAut
             FROM TabEst3C tc
             WHERE tc.PEDIDO = @pedidoNum
-            ORDER BY tc.Controle";
+            ORDER BY tc.PARCELA, tc.Controle";
 
         var list = await conn.QueryAsync<FormaPagamento>(sqlPagamentos, new { pedidoNum });
         return list.ToList();
@@ -38,11 +56,12 @@ public class PedidoPagService
 
     public async Task SalvarPagamentosAsync(
         int pedidoNum,
+        decimal totalPedido,
         IEnumerable<FormaPagamento> pagamentos,
         IDbConnection conn,
         IDbTransaction trans)
     {
-        // 1. Remove pagamentos anteriores para atualização
+        // 1. Remove pagamentos anteriores para atualização consistente
         await ExcluirPagamentosPorPedidoAsync(pedidoNum, conn, trans);
 
         const string sqlNewCodC = @"
@@ -57,17 +76,42 @@ public class PedidoPagService
 
         const string sqlInsertC = @"
             INSERT INTO TabEst3C (
-                Controle, PEDIDO, RECEBIMENTO, LkTipo, VALOR,
-                PARCELA, GERACONTA, VENCIMENTO, CAIXA, OPERADOR
+                Controle, PEDIDO, RECEBIMENTO, LkTipo, DATA,
+                TOTAL, VALOR, PARCELA, CAIXA, LKCAIXA,
+                OPERADOR, LKOPERADOR, HORA, GERACONTA, VENCIMENTO,
+                ATIVATROCO, LKTROCO, TIPOTROCO, VLTROCO, idEmpresa,
+                LkConta, Conta, NumDoc, divida, VlFatura, cAut
             ) VALUES (
-                @Controle, @Pedido, @Recebimento, @LkTipo, @Valor,
-                @Parcela, @GeraConta, @Vencimento, @Caixa, @Operador
+                @Controle, @Pedido, @Recebimento, @LkTipo, @Data,
+                @Total, @Valor, @Parcela, @Caixa, @LkCaixa,
+                @Operador, @LkOperador, @Hora, @GeraConta, @Vencimento,
+                @AtivaTroco, @LkTroco, @TipoTroco, @VlTroco, @IdEmpresa,
+                @LkConta, @Conta, @NumDoc, @Divida, @VlFatura, @CAut
             );";
 
         foreach (var pag in pagamentos)
         {
             pag.Controle = await conn.ExecuteScalarAsync<int>(sqlNewCodC, transaction: trans);
             pag.Pedido = pedidoNum;
+            pag.Total = totalPedido;
+            pag.NumDoc = pedidoNum.ToString();
+            pag.VlFatura = totalPedido;
+            pag.Divida = pag.Valor;
+
+            if (pag.Data == default) pag.Data = DateTime.Today;
+            if (pag.Vencimento == default) pag.Vencimento = DateTime.Today;
+            if (string.IsNullOrEmpty(pag.Hora)) pag.Hora = DateTime.Now.ToString("HH:mm");
+            if (pag.IdEmpresa <= 0) pag.IdEmpresa = 1;
+
+            // Sanitização de colunas da TabEst3C contra erro de truncamento no SQL Server
+            if (pag.Recebimento?.Length > 40) pag.Recebimento = pag.Recebimento.Substring(0, 40);
+            if (pag.Caixa?.Length > 15) pag.Caixa = pag.Caixa.Substring(0, 15);
+            if (pag.Operador?.Length > 15) pag.Operador = pag.Operador.Substring(0, 15);
+            if (pag.Hora?.Length > 5) pag.Hora = pag.Hora.Substring(0, 5);
+            if (pag.TipoTroco?.Length > 15) pag.TipoTroco = pag.TipoTroco.Substring(0, 15);
+            if (pag.Conta?.Length > 10) pag.Conta = pag.Conta.Substring(0, 10);
+            if (pag.NumDoc?.Length > 20) pag.NumDoc = pag.NumDoc.Substring(0, 20);
+            if (pag.CAut?.Length > 20) pag.CAut = pag.CAut.Substring(0, 20);
 
             await conn.ExecuteAsync(sqlInsertC, pag, transaction: trans);
         }

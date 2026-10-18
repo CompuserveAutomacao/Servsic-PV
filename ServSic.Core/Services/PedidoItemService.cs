@@ -85,6 +85,13 @@ public class PedidoItemService
             item.LkVendedor ??= lkVendedor;
             item.Vendedor ??= vendedor;
 
+            // Sanitização de colunas da TabEst3B
+            if (item.Produto?.Length > 80) item.Produto = item.Produto.Substring(0, 80);
+            if (item.CodInterno?.Length > 20) item.CodInterno = item.CodInterno.Substring(0, 20);
+            if (item.Unidade?.Length > 10) item.Unidade = item.Unidade.Substring(0, 10);
+            if (item.Marca?.Length > 20) item.Marca = item.Marca.Substring(0, 20);
+            if (item.Vendedor?.Length > 30) item.Vendedor = item.Vendedor.Substring(0, 30);
+
             await conn.ExecuteAsync(sqlInsertB, item, transaction: trans);
         }
     }

@@ -1,0 +1,174 @@
+<UserControl
+    x:Class="ServsicPV.Views.ConfiguracaoImpressoraView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+        <!-- Fundo Escurecido Modal Backdrop -->
+        <Border Background="#80000000"/>
+
+        <!-- Janela Modal Centralizada -->
+        <Border Background="#FFFFFF"
+                CornerRadius="12"
+                BorderBrush="{StaticResource BrushBorder}"
+                BorderThickness="1"
+                Width="540"
+                MaxHeight="620"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+            <Grid RowSpacing="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Cabeçalho -->
+                    <RowDefinition Height="*"/>    <!-- Formulário -->
+                    <RowDefinition Height="Auto"/> <!-- Rodapé de Ações -->
+                </Grid.RowDefinitions>
+
+                <!-- Cabeçalho Navy com Ícone -->
+                <Border Grid.Row="0" Background="{StaticResource BrushServsicDark}" CornerRadius="12,12,0,0" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <Border Background="#1E293B" CornerRadius="6" Padding="6">
+                                <ic:SymbolIcon Symbol="Print" Foreground="{StaticResource BrushServsicBlueLight}" FontSize="18"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="CONFIGURAÇÃO DA IMPRESSORA" FontSize="14" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Impressão térmica de Pedido de Venda e Orçamento (Balcão / Pré-Venda)" FontSize="11" Foreground="#94A3B8"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Command="{Binding FecharCommand}" Background="Transparent" BorderThickness="0" Padding="6" CornerRadius="6">
+                            <ic:SymbolIcon Symbol="Dismiss" Foreground="#94A3B8" FontSize="16"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Formulário com Scroll -->
+                <ScrollViewer Grid.Row="1" Padding="20,16" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16">
+
+                        <!-- 1. Seleção de Impressora -->
+                        <StackPanel Spacing="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Impressora Térmica Instalada" Style="{StaticResource TextLabel}"/>
+                                <Button Grid.Column="1" Command="{Binding AtualizarListaCommand}" Background="Transparent" BorderThickness="0" Padding="4,2">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <ic:SymbolIcon Symbol="ArrowSync" FontSize="12" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="Atualizar lista" FontSize="11" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <ComboBox ItemsSource="{Binding ImpressorasDisponiveis}"
+                                      SelectedItem="{Binding SelectedImpressora, Mode=TwoWay}"
+                                      HorizontalAlignment="Stretch"
+                                      Height="38"
+                                      CornerRadius="6"
+                                      PlaceholderText="Selecione a impressora do caixa..."/>
+                            <TextBlock Text="Dica: Selecione a impressora USB ou de Rede configurada no Windows." FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </StackPanel>
+
+                        <!-- 2. Largura da Bobina Térmica -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Largura da Bobina" Style="{StaticResource TextLabel}"/>
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <RadioButton Grid.Column="0" Content="80mm (48 Colunas - Padrão)" IsChecked="{Binding IsBobina80mm, Mode=TwoWay}" FontSize="12.5"/>
+                                <RadioButton Grid.Column="1" Content="58mm (32 Colunas)" IsChecked="{Binding IsBobina58mm, Mode=TwoWay}" FontSize="12.5"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- 3. Ação ao Finalizar Venda / Orçamento -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Comportamento ao Totalizar / Finalizar (F6)" Style="{StaticResource TextLabel}"/>
+                            <StackPanel Spacing="6">
+                                <RadioButton Content="Exibir cupom na tela para conferência (Recomendado)" IsChecked="{Binding IsModoPrevia, Mode=TwoWay}" FontSize="12.5"/>
+                                <RadioButton Content="Imprimir direto na impressora sem parar o operador" IsChecked="{Binding IsModoDireto, Mode=TwoWay}" FontSize="12.5"/>
+                                <RadioButton Content="Não imprimir automaticamente (apenas grava no banco)" IsChecked="{Binding IsModoNaoImprimir, Mode=TwoWay}" FontSize="12.5"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- 4. Recursos Adicionais -->
+                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                            <StackPanel Spacing="8">
+                                <CheckBox Content="Acionar corte de papel (Guilhotina) ao final do cupom" IsChecked="{Binding CortarPapel, Mode=TwoWay}" FontSize="12.5"/>
+                                <CheckBox Content="Imprimir 2 vias automaticamente (Via Loja e Via Cliente)" IsChecked="{Binding DuasVias, Mode=TwoWay}" FontSize="12.5"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 5. Mensagem de Rodapé Personalizada -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Mensagem no Rodapé do Cupom" Style="{StaticResource TextLabel}"/>
+                            <TextBox Text="{Binding MensagemRodape, Mode=TwoWay}" Height="34" CornerRadius="6" PlaceholderText="Ex: OBRIGADO PELA PREFERÊNCIA!"/>
+                        </StackPanel>
+
+                        <!-- Mensagem de Feedback / Status -->
+                        <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="10,8"
+                                Visibility="{Binding StatusMensagem, Converter={StaticResource StringToVisibilityConverter}}">
+                            <TextBlock Text="{Binding StatusMensagem}" FontSize="12" Foreground="{StaticResource BrushServsicDark}" TextWrapping="Wrap"/>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- Rodapé de Ações -->
+                <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="16,12" CornerRadius="0,0,12,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Botão Imprimir Teste -->
+                        <Button Grid.Column="0"
+                                Command="{Binding ImprimirTesteCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="36"
+                                Padding="12,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Print" FontSize="15" Foreground="{StaticResource BrushServsicDark}"/>
+                                <TextBlock Text="Imprimir Teste" FontSize="12.5" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                            <Button Command="{Binding FecharCommand}"
+                                    Style="{StaticResource BtnSecondary}"
+                                    Height="36"
+                                    Padding="14,0">
+                                <TextBlock Text="Cancelar (Esc)" FontSize="12.5"/>
+                            </Button>
+
+                            <Button Command="{Binding SalvarCommand}"
+                                    Style="{StaticResource BtnPrimary}"
+                                    Height="36"
+                                    Padding="16,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Checkmark" FontSize="15" Foreground="#FFFFFF"/>
+                                    <TextBlock Text="Salvar Configurações" FontSize="12.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

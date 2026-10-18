@@ -1,0 +1,118 @@
+<UserControl
+    x:Class="ServsicPV.Views.CupomVisualizacaoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    KeyDown="UserControl_KeyDown">
+
+    <Grid Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+        <!-- Fundo Escurecido Modal Backdrop -->
+        <Border Background="#90000000"/>
+
+        <!-- Janela Modal Centralizada -->
+        <Border Background="#FFFFFF"
+                CornerRadius="12"
+                BorderBrush="{StaticResource BrushBorder}"
+                BorderThickness="1"
+                Width="460"
+                MaxHeight="660"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+            <Grid RowSpacing="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <!-- Cabeçalho -->
+                    <RowDefinition Height="*"/>    <!-- Simulação da Bobina de Papel Térmico -->
+                    <RowDefinition Height="Auto"/> <!-- Rodapé de Ações -->
+                </Grid.RowDefinitions>
+
+                <!-- Cabeçalho Navy com Ícone -->
+                <Border Grid.Row="0" Background="{StaticResource BrushServsicDark}" CornerRadius="12,12,0,0" Padding="16,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <Border Background="#1E293B" CornerRadius="6" Padding="6">
+                                <ic:SymbolIcon Symbol="Receipt" Foreground="{StaticResource BrushServsicBlueLight}" FontSize="18"/>
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TituloModal}" FontSize="13.5" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Conferência para Impressão" FontSize="11" Foreground="#94A3B8"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Command="{Binding FecharCommand}" Background="Transparent" BorderThickness="0" Padding="6" CornerRadius="6">
+                            <ic:SymbolIcon Symbol="Dismiss" Foreground="#94A3B8" FontSize="16"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- Visualização da Bobina Térmica -->
+                <Border Grid.Row="1" Background="#F1F5F9" Padding="14">
+                    <Border Background="#FFFDF9"
+                            BorderBrush="#CBD5E1"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12,14"
+                            MaxHeight="500">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding TextoCupom}"
+                                       FontFamily="Cascadia Mono, Consolas, Courier New"
+                                       FontSize="11.5"
+                                       Foreground="#1E293B"
+                                       LineHeight="16"
+                                       TextWrapping="NoWrap"/>
+                        </ScrollViewer>
+                    </Border>
+                </Border>
+
+                <!-- Rodapé de Ações -->
+                <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="16,12" CornerRadius="0,0,12,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Mensagem de Feedback -->
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding MensagemStatus}"
+                                   FontSize="11.5"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource BrushServsicDark}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,0,10,0"/>
+
+                        <Button Grid.Column="1"
+                                Command="{Binding FecharCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="36"
+                                Padding="14,0"
+                                Margin="0,0,10,0">
+                            <TextBlock Text="Fechar (Esc)" FontSize="12.5"/>
+                        </Button>
+
+                        <Button Grid.Column="2"
+                                Command="{Binding ImprimirCommand}"
+                                Style="{StaticResource BtnPrimary}"
+                                Height="36"
+                                Padding="16,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Print" FontSize="15" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Imprimir (Enter)" FontSize="12.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

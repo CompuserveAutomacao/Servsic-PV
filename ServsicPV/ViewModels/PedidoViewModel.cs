@@ -16,7 +16,21 @@ public class PedidoViewModel : ViewModelBase
     private readonly ClienteService _clienteService;
     private readonly ProdutoService _produtoService;
     private readonly VendedorService _vendedorService;
+    private readonly FormaPagamentoService _formaPagamentoService;
+    private readonly CheckoutViewModel _checkoutViewModel;
     private readonly CnpjLookupService _cnpjLookupService = new();
+    private readonly ConfiguracaoImpressoraViewModel _configuracaoImpressoraViewModel;
+    private readonly CupomVisualizacaoViewModel _cupomVisualizacaoViewModel;
+    private readonly ImpressoraConfigService _impressoraConfigService = new();
+    private readonly ImpressaoTermicaService _impressaoTermicaService = new();
+    private readonly CupomFormatadorService _cupomFormatadorService = new();
+    private readonly ConfiguracaoVendaService _configuracaoVendaService = new();
+
+    // --- Modal: Componente Independente de Checkout ---
+    private bool _isCheckoutOpen;
+    public CheckoutViewModel CheckoutViewModel => _checkoutViewModel;
+    public ConfiguracaoImpressoraViewModel ConfiguracaoImpressoraViewModel => _configuracaoImpressoraViewModel;
+    public CupomVisualizacaoViewModel CupomVisualizacaoViewModel => _cupomVisualizacaoViewModel;
 
     private PedidoVenda _pedido = new();
     private Cliente? _selectedCliente;
@@ -45,8 +59,10 @@ public class PedidoViewModel : ViewModelBase
     private string _descontoGeralInputTexto = "0";
     private string _tipoAcrescimoGeral = "P";
     private string _acrescimoGeralInputTexto = "0";
-
     private Usuario? _usuarioLogado;
+
+    // --- Modal: Observações do Pedido ---
+    private bool _isObservacoesOpen;
 
     // --- Modal: Confirmação de Alteração de Tipo (Orçamento / Pré-Venda) ---
     private bool _isConfirmarAlteracaoTipoOpen;
@@ -128,6 +144,14 @@ public class PedidoViewModel : ViewModelBase
 
     public bool HasClienteSelecionado =>
         SelectedCliente != null || (!string.IsNullOrWhiteSpace(Pedido?.Cliente) && (Pedido?.LkCliente ?? 0) > 0);
+
+    public bool HasItens => Pedido?.Itens?.Count > 0;
+
+    public bool IsObservacoesOpen
+    {
+        get => _isObservacoesOpen;
+        set => SetProperty(ref _isObservacoesOpen, value);
+    }
 
     public Vendedor? SelectedVendedor
     {
@@ -588,8 +612,9 @@ public class PedidoViewModel : ViewModelBase
     public System.Collections.ObjectModel.ObservableCollection<PedidoItem> Itens => Pedido.Itens;
 
     public bool IsOrcamento => Pedido.Status == "O";
-    public bool IsVenda => Pedido.Status == "V";
-    public string TituloTela => IsOrcamento ? "Orçamento de Venda" : "Pedido de Venda";
+    public bool IsVenda => Pedido.Status == "V" || Pedido.Status == "P";
+    public string TituloTela => IsOrcamento ? "Orçamento de Venda" : "Pedido de Venda (Balcão)";
+    public string TextoBotaoSalvar => "Totalizar (F6)";
 
     public Microsoft.UI.Xaml.Media.Brush BrushOrcamentoBackground => IsOrcamento
         ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
@@ -613,8 +638,23 @@ public class PedidoViewModel : ViewModelBase
     public Action? OnProdutoDefinido { get; set; }
     public Action? OnItemAdicionado { get; set; }
     public Action? OnItemAdicaoFalhou { get; set; }
+    public Action? OnCheckoutAberto { get; set; }
     public Action<string>? OnSolicitarConsultaCliente { get; set; }
     public Action<string>? OnSolicitarConsultaProduto { get; set; }
+
+    // --- Propriedades do Modal de Checkout (Condições de Pagamento) ---
+    public bool IsCheckoutOpen
+    {
+        get => _checkoutViewModel?.IsOpen ?? _isCheckoutOpen;
+        set
+        {
+            if (_checkoutViewModel != null && _checkoutViewModel.IsOpen != value)
+            {
+                _checkoutViewModel.IsOpen = value;
+            }
+            SetProperty(ref _isCheckoutOpen, value);
+        }
+    }
 
     // --- Propriedades do Modal de Consulta ---
     public bool IsConsultaClienteOpen
@@ -806,16 +846,23 @@ public class PedidoViewModel : ViewModelBase
     public ICommand SelecionarVendaCommand { get; }
     public ICommand ConfirmarAlteracaoTipoCommand { get; }
     public ICommand CancelarAlteracaoTipoCommand { get; }
-    public ICommand ConverterEmVendaCommand { get; }
     public ICommand AlternarTipoDescontoItemCommand { get; }
     public ICommand AlternarTipoDescontoGeralCommand { get; }
     public ICommand AlternarTipoAcrescimoGeralCommand { get; }
+
+    // Comandos de Checkout (Condições de Pagamento)
+    public ICommand AbrirCheckoutCommand { get; }
+    public ICommand FecharCheckoutCommand { get; }
 
     // Comandos de Consulta de Clientes
     public ICommand AbrirConsultaClienteCommand { get; }
     public ICommand FecharConsultaClienteCommand { get; }
     public ICommand PesquisarConsultaClienteCommand { get; }
     public ICommand ConfirmarSelecaoClienteCommand { get; }
+
+    // Comandos de Observações do Pedido
+    public ICommand AbrirObservacoesCommand { get; }
+    public ICommand FecharObservacoesCommand { get; }
 
     // Comandos de Cadastro Rápido de Cliente
     public ICommand AbrirCadastroRapidoClienteCommand { get; }
@@ -883,15 +930,106 @@ public class PedidoViewModel : ViewModelBase
         PedidoService? pedidoService = null,
         ClienteService? clienteService = null,
         ProdutoService? produtoService = null,
-        VendedorService? vendedorService = null)
+        VendedorService? vendedorService = null,
+        FormaPagamentoService? formaPagamentoService = null)
     {
         _pedidoService = pedidoService ?? new PedidoService();
         _clienteService = clienteService ?? new ClienteService();
         _produtoService = produtoService ?? new ProdutoService();
         _vendedorService = vendedorService ?? new VendedorService();
+        _formaPagamentoService = formaPagamentoService ?? new FormaPagamentoService();
+
+        _configuracaoImpressoraViewModel = new ConfiguracaoImpressoraViewModel(_impressoraConfigService, _impressaoTermicaService);
+        _cupomVisualizacaoViewModel = new CupomVisualizacaoViewModel(_impressoraConfigService, _impressaoTermicaService, _cupomFormatadorService);
+
+        _checkoutViewModel = new CheckoutViewModel(_formaPagamentoService);
+        _checkoutViewModel.PagamentoConfirmado += async (pagamentos) =>
+        {
+            try
+            {
+                IsBusy = true;
+                Pedido.Pagamentos.Clear();
+                foreach (var p in pagamentos)
+                {
+                    Pedido.Pagamentos.Add(p);
+                }
+
+                // Status no balcão: 'O' para Orçamento, 'P' para Pedido de Venda / Pré-Venda
+                Pedido.Status = Pedido.IsOrcamento ? "O" : "P";
+                Pedido.Venda = 0; // Balcão: não finaliza fiscalmente
+
+                decimal troco = _checkoutViewModel.ValorTroco;
+                await ExecutarGravacaoPedidoAsync();
+
+                _checkoutViewModel.IsOpen = false;
+                IsCheckoutOpen = false;
+
+                string tipoDescricao = Pedido.IsOrcamento ? "Orçamento" : "Pedido de Venda";
+                var pedidoFinalizado = Pedido; // Mantém referência para impressão
+                string msgExtra = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
+
+                // Prepara a tela para um novo pedido preservando a mensagem de sucesso
+                NovoPedido(preservarMensagem: true);
+
+                // 🖨️ Fluxo de Impressão de Pedido de Venda / Orçamento
+                var configImpressora = _impressoraConfigService.ObterConfiguracao();
+                if (configImpressora.ModoImpressao == "Direto" && !string.IsNullOrWhiteSpace(configImpressora.NomeImpressora))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var empresa = await _impressoraConfigService.ObterDadosEmpresaAsync();
+                            string textoCupom = _cupomFormatadorService.GerarTextoCupom(pedidoFinalizado, empresa, configImpressora);
+                            int vias = configImpressora.DuasVias ? 2 : 1;
+                            for (int i = 0; i < vias; i++)
+                            {
+                                _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[Impressao] Erro: {ex.Message}");
+                        }
+                    });
+
+                    ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} totalizado e enviado para a impressora!{msgExtra}", true, 6000);
+                }
+                else if (configImpressora.ModoImpressao == "Previa")
+                {
+                    ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} concluído com sucesso!{msgExtra}", true, 6000);
+
+                    // Abre o modal de pré-visualização do documento
+                    _ = _cupomVisualizacaoViewModel.CarregarAsync(pedidoFinalizado);
+                }
+                else
+                {
+                    // Modo NaoImprimir
+                    ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} totalizado e gravado com sucesso!{msgExtra}", true, 6000);
+                }
+            }
+            catch (Exception ex)
+            {
+                _checkoutViewModel.Mensagem = $"Erro ao gravar pedido no banco: {ex.Message}";
+                _checkoutViewModel.IsOpen = true;
+                IsCheckoutOpen = true;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        };
+
+        _checkoutViewModel.CheckoutCancelado += () =>
+        {
+            IsCheckoutOpen = false;
+        };
 
         FecharMensagemCommand = new RelayCommand(_ => LimparMensagem());
         SalvarCommand = new RelayCommand(async _ => await SalvarPedidoAsync());
+        AbrirCheckoutCommand = new RelayCommand(async _ => await AbrirCheckoutAsync());
+        FecharCheckoutCommand = new RelayCommand(_ => FecharCheckout());
+
         NovoCommand = new RelayCommand(_ => NovoPedido());
         AdicionarItemCommand = new RelayCommand(_ => AdicionarItem());
         RemoverItemCommand = new RelayCommand<PedidoItem>(item => RemoverItem(item));
@@ -904,7 +1042,6 @@ public class PedidoViewModel : ViewModelBase
         SelecionarVendaCommand = new RelayCommand(_ => SolicitarAlteracaoTipo("V"));
         ConfirmarAlteracaoTipoCommand = new RelayCommand(_ => ConfirmarAlteracaoTipo());
         CancelarAlteracaoTipoCommand = new RelayCommand(_ => CancelarAlteracaoTipo());
-        ConverterEmVendaCommand = new RelayCommand(async _ => await ConverterEmVendaAsync());
         AlternarTipoDescontoItemCommand = new RelayCommand(_ => AlternarTipoDescontoItem());
         AlternarTipoDescontoGeralCommand = new RelayCommand(_ => AlternarTipoDescontoGeral());
         AlternarTipoAcrescimoGeralCommand = new RelayCommand(_ => AlternarTipoAcrescimoGeral());
@@ -914,6 +1051,9 @@ public class PedidoViewModel : ViewModelBase
         FecharConsultaClienteCommand = new RelayCommand(_ => IsConsultaClienteOpen = false);
         PesquisarConsultaClienteCommand = new RelayCommand(async _ => await PesquisarClientesConsultaAsync());
         ConfirmarSelecaoClienteCommand = new RelayCommand(_ => ConfirmarClienteConsulta());
+
+        AbrirObservacoesCommand = new RelayCommand(_ => IsObservacoesOpen = true);
+        FecharObservacoesCommand = new RelayCommand(_ => IsObservacoesOpen = false);
 
         AbrirCadastroRapidoClienteCommand = new RelayCommand(_ => AbrirCadastroRapido());
         FecharCadastroRapidoClienteCommand = new RelayCommand(_ => IsCadastroRapidoClienteOpen = false);
@@ -951,9 +1091,9 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
-    public void NovoPedido()
+    public void NovoPedido(bool preservarMensagem = false)
     {
-        LimparCliente();
+        LimparCliente(preservarMensagem);
         Pedido = new PedidoVenda
         {
             Status = "O",
@@ -974,8 +1114,73 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(TipoAcrescimoGeralSimbolo));
         OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
         LimparEntradaItem();
-        StatusMensagem = string.Empty;
+        if (!preservarMensagem)
+        {
+            StatusMensagem = string.Empty;
+        }
+        OnPropertyChanged(nameof(HasItens));
         NotificarAlteracaoTipo();
+    }
+
+    public async Task CarregarPedidoAsync(PedidoVenda pedidoCarregado)
+    {
+        Pedido = pedidoCarregado;
+        FiltroCliente = pedidoCarregado.Cliente;
+        _descontoGeralInputTexto = pedidoCarregado.Desconto.ToString("N2");
+        _acrescimoGeralInputTexto = pedidoCarregado.Acrescimo.ToString("N2");
+
+        if (pedidoCarregado.LkCliente.HasValue && pedidoCarregado.LkCliente.Value > 0)
+        {
+            try
+            {
+                var cli = await _clienteService.ObterPorIdAsync(pedidoCarregado.LkCliente.Value);
+                if (cli != null)
+                {
+                    SelectedCliente = cli;
+                }
+                else
+                {
+                    SelectedCliente = new Cliente
+                    {
+                        Controle = pedidoCarregado.LkCliente.Value,
+                        Nome = pedidoCarregado.Cliente ?? string.Empty,
+                        Telefone = pedidoCarregado.Telefone,
+                        Cidade = pedidoCarregado.Cidade,
+                        Estado = pedidoCarregado.UF
+                    };
+                }
+            }
+            catch
+            {
+                SelectedCliente = new Cliente
+                {
+                    Controle = pedidoCarregado.LkCliente.Value,
+                    Nome = pedidoCarregado.Cliente ?? string.Empty,
+                    Telefone = pedidoCarregado.Telefone,
+                    Cidade = pedidoCarregado.Cidade,
+                    Estado = pedidoCarregado.UF
+                };
+            }
+        }
+        else
+        {
+            SelectedCliente = null;
+        }
+
+        OnPropertyChanged(nameof(Pedido));
+        OnPropertyChanged(nameof(Itens));
+        OnPropertyChanged(nameof(HasItens));
+        OnPropertyChanged(nameof(HasClienteSelecionado));
+        OnPropertyChanged(nameof(SelectedCliente));
+        OnPropertyChanged(nameof(TipoDescontoGeral));
+        OnPropertyChanged(nameof(TipoDescontoGeralSimbolo));
+        OnPropertyChanged(nameof(DescontoGeralInputTexto));
+        OnPropertyChanged(nameof(TipoAcrescimoGeral));
+        OnPropertyChanged(nameof(TipoAcrescimoGeralSimbolo));
+        OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
+        NotificarAlteracaoTipo();
+
+        StatusMensagem = $"{(pedidoCarregado.Status == "O" ? "Orçamento" : "Pedido")} #{pedidoCarregado.Pedido} carregado com sucesso.";
     }
 
     public void DefinirTipo(string tipo)
@@ -1000,10 +1205,30 @@ public class PedidoViewModel : ViewModelBase
         IsConfirmarAlteracaoTipoOpen = true;
     }
 
-    public void ConfirmarAlteracaoTipo()
+    public async void ConfirmarAlteracaoTipo()
     {
         if (!string.IsNullOrEmpty(NovoTipoPendente))
         {
+            bool novoIsOrcamento = NovoTipoPendente == "O";
+            bool permite = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(novoIsOrcamento);
+            if (!permite && Pedido.Itens.Count > 0)
+            {
+                var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
+                foreach (var grp in itensPorProduto)
+                {
+                    decimal qtdTotal = grp.Sum(i => i.Quantidade);
+                    decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
+                    if (qtdTotal > estoqueAtual)
+                    {
+                        string nomeDestino = novoIsOrcamento ? "Orçamento" : "Pré-Venda";
+                        ExibirMensagem($"Não é possível alterar para {nomeDestino}: o item '{grp.First().Produto}' possui quantidade ({qtdTotal:N2}) maior que o estoque ({estoqueAtual:N2}). Operação com estoque insuficiente bloqueada pelo ERP.", false, 7000);
+                        IsConfirmarAlteracaoTipoOpen = false;
+                        NovoTipoPendente = string.Empty;
+                        return;
+                    }
+                }
+            }
+
             DefinirTipo(NovoTipoPendente);
         }
         IsConfirmarAlteracaoTipoOpen = false;
@@ -1180,7 +1405,7 @@ public class PedidoViewModel : ViewModelBase
         Pedido.Email = cliente.Email;
     }
 
-    public void LimparCliente()
+    public void LimparCliente(bool preservarMensagem = false)
     {
         _selectedCliente = null;
         Pedido.LkCliente = null;
@@ -1196,7 +1421,10 @@ public class PedidoViewModel : ViewModelBase
         Pedido.Email = null;
         FiltroCliente = string.Empty;
 
-        LimparMensagem();
+        if (!preservarMensagem)
+        {
+            LimparMensagem();
+        }
 
         OnPropertyChanged(nameof(SelectedCliente));
         OnPropertyChanged(nameof(Pedido));
@@ -1518,6 +1746,28 @@ public class PedidoViewModel : ViewModelBase
             }
         }
 
+        // Validação da política de estoque insuficiente do ERP Legado (CFG_ORCAMENTO / CFG_PREVENDA)
+        bool permiteEstoqueInsuficiente = _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(Pedido.IsOrcamento).GetAwaiter().GetResult();
+        if (!permiteEstoqueInsuficiente)
+        {
+            decimal qtdJaNoPedido = Pedido.Itens.Where(i => i.LkProduto == ProdutoSelecionado.Controle).Sum(i => i.Quantidade);
+            decimal qtdTotalDesejada = qtdJaNoPedido + QuantidadeInput;
+            if (qtdTotalDesejada > ProdutoSelecionado.Estoque)
+            {
+                string tipoOperacao = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                if (ProdutoSelecionado.Estoque <= 0)
+                {
+                    ExibirMensagem($"Produto sem estoque! '{ProdutoSelecionado.Descricao}' possui estoque {ProdutoSelecionado.Estoque:N2} {ProdutoSelecionado.Unidade}. {tipoOperacao} com estoque insuficiente está desabilitado no ERP.", false, 6000);
+                }
+                else
+                {
+                    ExibirMensagem($"Estoque insuficiente para '{ProdutoSelecionado.Descricao}'! Disponível: {ProdutoSelecionado.Estoque:N2} | Solicitado: {qtdTotalDesejada:N2} {ProdutoSelecionado.Unidade}. {tipoOperacao} com estoque insuficiente está desabilitado no ERP.", false, 6000);
+                }
+                OnItemAdicaoFalhou?.Invoke();
+                return;
+            }
+        }
+
         var item = new PedidoItem
         {
             LkProduto = ProdutoSelecionado.Controle,
@@ -1542,6 +1792,7 @@ public class PedidoViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(Pedido));
         OnPropertyChanged(nameof(Itens));
+        OnPropertyChanged(nameof(HasItens));
         LimparEntradaItem();
         ExibirMensagem($"Item '{item.Produto}' adicionado com sucesso.", true, 3000);
         OnItemAdicionado?.Invoke();
@@ -1554,6 +1805,7 @@ public class PedidoViewModel : ViewModelBase
             Pedido.Itens.Remove(item);
             Pedido.RecalcularTotais();
             OnPropertyChanged(nameof(Pedido));
+            OnPropertyChanged(nameof(HasItens));
             ExibirMensagem("Item removido do pedido.", true, 2500);
         }
     }
@@ -1626,77 +1878,67 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(VlUnitarioInput));
     }
 
-    public async Task SalvarPedidoAsync()
+    // ==============================================================
+    // CHECKOUT DE CONDIÇÕES DE PAGAMENTO (MODAL BALCÃO / PRÉ-VENDA)
+    // ==============================================================
+
+    public async Task AbrirCheckoutAsync()
     {
-        if (string.IsNullOrWhiteSpace(Pedido.Cliente))
+        if (Pedido.Itens.Count == 0 || Pedido.Total <= 0)
         {
-            StatusMensagem = "Por favor, selecione ou cadastre um cliente para o pedido/orçamento.";
-            IsSucesso = false;
+            ExibirMensagem("Adicione ao menos um item ao pedido antes de totalizar.", false, 4000);
             return;
         }
 
-        if (Pedido.Itens.Count == 0)
+        // Validação da política de Estoque Insuficiente do ERP Legado antes de totalizar
+        bool permiteEstoqueInsuficiente = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(Pedido.IsOrcamento);
+        if (!permiteEstoqueInsuficiente)
         {
-            StatusMensagem = "Adicione ao menos um item ao pedido antes de salvar.";
-            IsSucesso = false;
-            return;
-        }
-
-        try
-        {
-            IsBusy = true;
-            Pedido.LkUsuario = UsuarioLogado?.Controle;
-            Pedido.LkVendedor = UsuarioLogado?.LkVendedor ?? Pedido.LkVendedor;
-            Pedido.Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) ? UsuarioLogado.NomeVendedor : (Pedido.Vendedor ?? UsuarioLogado?.Nome);
-
-            var salvo = await _pedidoService.SalvarAsync(Pedido);
-            Pedido = salvo;
-            StatusMensagem = $"{TituloTela} {Pedido.NumeroFormatado} gravado com sucesso no banco de dados!";
-            IsSucesso = true;
-        }
-        catch (Exception ex)
-        {
-            StatusMensagem = $"Erro ao gravar pedido: {ex.Message}";
-            IsSucesso = false;
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
-    public async Task ConverterEmVendaAsync()
-    {
-        if (Pedido.Controle <= 0)
-        {
-            StatusMensagem = "Salve o orçamento antes de convertê-lo em venda.";
-            IsSucesso = false;
-            return;
-        }
-
-        try
-        {
-            IsBusy = true;
-            bool ok = await _pedidoService.ConverterOrcamentoEmVendaAsync(Pedido.Controle);
-            if (ok)
+            var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
+            foreach (var grp in itensPorProduto)
             {
-                Pedido.Status = "V";
-                Pedido.Venda = 1;
-                OnPropertyChanged(nameof(Pedido));
-                OnPropertyChanged(nameof(IsOrcamento));
-                OnPropertyChanged(nameof(IsVenda));
-                StatusMensagem = "Orçamento convertido em Pedido de Venda com sucesso!";
-                IsSucesso = true;
+                decimal qtdTotal = grp.Sum(i => i.Quantidade);
+                decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
+                if (qtdTotal > estoqueAtual)
+                {
+                    string nomeProduto = grp.First().Produto;
+                    string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                    ExibirMensagem($"Não é possível totalizar este {tipoNome}: o produto '{nomeProduto}' possui estoque insuficiente (Disponível: {estoqueAtual:N2} | Solicitado: {qtdTotal:N2}). Operação bloqueada pelas regras do ERP.", false, 7000);
+                    return;
+                }
             }
         }
-        catch (Exception ex)
-        {
-            StatusMensagem = $"Erro ao converter orçamento: {ex.Message}";
-            IsSucesso = false;
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+
+        // Garante que o status atual seja refletido ('O' = Orçamento, 'P' = Pedido de Venda)
+        Pedido.Status = Pedido.IsOrcamento ? "O" : "P";
+        Pedido.Venda = 0;
+
+        IsCheckoutOpen = true;
+        await _checkoutViewModel.IniciarAsync(Pedido, UsuarioLogado);
+        OnCheckoutAberto?.Invoke();
+    }
+
+    public void FecharCheckout()
+    {
+        IsCheckoutOpen = false;
+        _checkoutViewModel.CancelarCheckout();
+    }
+
+    private async Task ExecutarGravacaoPedidoAsync()
+    {
+        Pedido.LkUsuario = UsuarioLogado?.Controle;
+        Pedido.LkVendedor = UsuarioLogado?.LkVendedor ?? Pedido.LkVendedor;
+        Pedido.Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) 
+            ? UsuarioLogado.NomeVendedor 
+            : (Pedido.Vendedor ?? UsuarioLogado?.Nome);
+
+        var salvo = await _pedidoService.SalvarAsync(Pedido);
+        Pedido = salvo;
+        OnPropertyChanged(nameof(Pedido));
+    }
+
+    public async Task SalvarPedidoAsync()
+    {
+        await AbrirCheckoutAsync();
     }
 }

@@ -63,6 +63,42 @@ public static class DatabaseMigrationService
                 END";
             await conn.ExecuteAsync(sqlCfgVenda);
 
+            // 3b. CFG_ORCAMENTO.ESTOQUEINSUFICIENTE VARCHAR(1) default 'N'
+            const string sqlCfgOrcamento = @"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'CFG_ORCAMENTO')
+                BEGIN
+                    CREATE TABLE CFG_ORCAMENTO (
+                        ESTOQUEINSUFICIENTE VARCHAR(1) NULL CONSTRAINT DF_CFG_ORCAMENTO_ESTOQUEINSUFICIENTE DEFAULT 'N'
+                    );
+                    INSERT INTO CFG_ORCAMENTO (ESTOQUEINSUFICIENTE) VALUES ('N');
+                END
+                ELSE
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CFG_ORCAMENTO' AND COLUMN_NAME = 'ESTOQUEINSUFICIENTE')
+                    BEGIN
+                        ALTER TABLE CFG_ORCAMENTO ADD ESTOQUEINSUFICIENTE VARCHAR(1) NULL CONSTRAINT DF_CFG_ORCAMENTO_ESTOQUEINSUFICIENTE DEFAULT 'N';
+                    END
+                END";
+            await conn.ExecuteAsync(sqlCfgOrcamento);
+
+            // 3c. CFG_PREVENDA.ESTOQUEINSUFICIENTE VARCHAR(1) default 'N'
+            const string sqlCfgPreVenda = @"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'CFG_PREVENDA')
+                BEGIN
+                    CREATE TABLE CFG_PREVENDA (
+                        ESTOQUEINSUFICIENTE VARCHAR(1) NULL CONSTRAINT DF_CFG_PREVENDA_ESTOQUEINSUFICIENTE DEFAULT 'N'
+                    );
+                    INSERT INTO CFG_PREVENDA (ESTOQUEINSUFICIENTE) VALUES ('N');
+                END
+                ELSE
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'CFG_PREVENDA' AND COLUMN_NAME = 'ESTOQUEINSUFICIENTE')
+                    BEGIN
+                        ALTER TABLE CFG_PREVENDA ADD ESTOQUEINSUFICIENTE VARCHAR(1) NULL CONSTRAINT DF_CFG_PREVENDA_ESTOQUEINSUFICIENTE DEFAULT 'N';
+                    END
+                END";
+            await conn.ExecuteAsync(sqlCfgPreVenda);
+
             // 4. TabEst3B.LkVendedor int NULL
             const string sqlTabEst3B = @"
                 IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabEst3B')
@@ -74,7 +110,23 @@ public static class DatabaseMigrationService
                 END";
             await conn.ExecuteAsync(sqlTabEst3B);
 
-            // 5. Índices de performance para busca ultra rápida de produtos na TabEst1
+            // 5. TabEst3C.RECEBIMENTO VARCHAR(40) para acomodar formas e parcelas completas
+            const string sqlTabEst3C = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'TabEst3C' AND COLUMN_NAME = 'RECEBIMENTO' AND CHARACTER_MAXIMUM_LENGTH < 40)
+                BEGIN
+                    ALTER TABLE TabEst3C ALTER COLUMN RECEBIMENTO VARCHAR(40);
+                END";
+            await conn.ExecuteAsync(sqlTabEst3C);
+
+            // 6. TabEst3B.Unidade VARCHAR(10) para acomodar unidades como PT100, UNID, PCTE
+            const string sqlTabEst3BUnid = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'TabEst3B' AND COLUMN_NAME = 'Unidade' AND CHARACTER_MAXIMUM_LENGTH < 10)
+                BEGIN
+                    ALTER TABLE TabEst3B ALTER COLUMN Unidade VARCHAR(10);
+                END";
+            await conn.ExecuteAsync(sqlTabEst3BUnid);
+
+            // 7. Índices de performance para busca ultra rápida de produtos na TabEst1
             const string sqlIndicesTabEst1 = @"
                 IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabEst1')
                 BEGIN

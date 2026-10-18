@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:views="using:ServsicPV.Views"
     mc:Ignorable="d"
     Title="ServsicPV - Pedido de Venda e Orçamento">
 
@@ -56,6 +57,11 @@
                         <TextBlock x:Name="TxtUsuarioNivel" Text="Operador" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right"/>
                     </StackPanel>
 
+                    <!-- Botão de Configurações / Impressora (Engrenagem) -->
+                    <Button x:Name="BtnConfiguracoes" Click="BtnConfiguracoes_Click" IsTabStop="False" Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6" ToolTipService.ToolTip="Configurar Impressora Térmica">
+                        <ic:SymbolIcon Symbol="Settings" FontSize="20" Foreground="#CBD5E1"/>
+                    </Button>
+
                     <Button Click="BtnSair_Click" IsTabStop="False" Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6" ToolTipService.ToolTip="Encerrar Sessão">
                         <ic:SymbolIcon Symbol="SignOut" FontSize="20" Foreground="#CBD5E1"/>
                     </Button>
@@ -66,6 +72,22 @@
 
         <!-- Área de Conteúdo -->
         <ContentControl x:Name="ContentArea" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+
+        <!-- ============================================================== -->
+        <!-- MODAL DE CONFIGURAÇÃO DE IMPRESSORA TÉRMICA                    -->
+        <!-- ============================================================== -->
+        <views:ConfiguracaoImpressoraView 
+            Grid.Row="0" Grid.RowSpan="2"
+            DataContext="{Binding ConfiguracaoImpressoraViewModel}"
+            Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+        <!-- ============================================================== -->
+        <!-- MODAL DE PRÉ-VISUALIZAÇÃO DO CUPOM NÃO-FISCAL                  -->
+        <!-- ============================================================== -->
+        <views:CupomVisualizacaoView 
+            Grid.Row="0" Grid.RowSpan="2"
+            DataContext="{Binding CupomVisualizacaoViewModel}"
+            Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
     </Grid>
 </Window>
