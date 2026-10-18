@@ -16,7 +16,7 @@ public partial class LoginView : Window
 
         // Configura tamanho e ícone da janela
         this.AppWindow.SetIcon("Assets/icoservsicpv.ico");
-        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(860, 540));
+        this.AppWindow.Resize(new Windows.Graphics.SizeInt32(820, 620));
 
         // Centraliza na tela
         var displayArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(
@@ -45,6 +45,21 @@ public partial class LoginView : Window
             mainView.Activate();
             this.Close();
         };
+
+        // Foco inicial automático na senha quando a janela for ativada
+        this.Activated += (s, e) =>
+        {
+            TxtPassword?.Focus(FocusState.Programmatic);
+        };
+    }
+
+    private void CboUsuario_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            TxtPassword.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
     }
 
     private void TxtPassword_KeyDown(object sender, KeyRoutedEventArgs e)
