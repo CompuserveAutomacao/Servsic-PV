@@ -17,8 +17,16 @@ public class Produto
     public string? Fabricante { get; set; }
     public string? Unidade { get; set; } = "UN";
     public decimal PrVenda { get; set; }
+    public decimal PrPrazo { get; set; }
+    public decimal PrAtacado { get; set; }
+    public decimal PrMinimo { get; set; }
+    public decimal PrAtacado1 { get; set; }
+    public decimal QtdAtacado { get; set; }
+    public string? UnAtacado { get; set; }
     public decimal PrCusto { get; set; }
     public decimal Estoque { get; set; }
+    public decimal EstoqueLoja { get; set; }
+    public decimal EstoqueDeposito { get; set; }
     public decimal EstMinimo { get; set; }
     public string? Localizacao { get; set; } // Campo Moeda na TabEst1
     public int? LkSetor { get; set; }
@@ -75,10 +83,21 @@ public class Produto
     // Preços e Estoque Formatados
     public string PrVendaFormatado => PrVenda.ToString("C2");
     public string PrVendaValorFormatado => PrVenda.ToString("N2");
+    public string PrPrazoFormatado => PrPrazo > 0 ? PrPrazo.ToString("C2") : "Não informado";
+    public string PrAtacadoFormatado => PrAtacado > 0 ? PrAtacado.ToString("C2") : (PrAtacado1 > 0 ? PrAtacado1.ToString("C2") : "Não informado");
+    public string PrMinimoFormatado => PrMinimo > 0 ? PrMinimo.ToString("C2") : "Não informado";
+    public string RegraAtacadoDescricao => QtdAtacado > 0 
+        ? $"A partir de {QtdAtacado:N0} {(string.IsNullOrWhiteSpace(UnAtacado) ? Unidade : UnAtacado)}"
+        : "Sem quantidade mínima fixada";
     public string PrCustoFormatado => PrCusto.ToString("C2");
+
     public string EstoqueFormatado => $"{Estoque:N2} {Unidade}";
+    public string EstoqueLojaFormatado => $"{EstoqueLoja:N2} {Unidade}";
+    public string EstoqueDepositoFormatado => $"{EstoqueDeposito:N2} {Unidade}";
+    public string EstMinimoFormatado => $"{EstMinimo:N2} {Unidade}";
     public string EstoqueNumeroFormatado => Estoque.ToString("N2");
     public bool HasEstoque => Estoque > 0;
+    public bool HasEstoqueDeposito => EstoqueDeposito > 0;
     public string StatusEstoqueDescricao => HasEstoque ? $"{Estoque:N2} {Unidade}" : "Sem Estoque (0)";
 
     // Helpers visuais modernos para badges de estoque
