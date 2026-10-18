@@ -1071,6 +1071,7 @@ public class PedidoViewModel : ViewModelBase
         try
         {
             IsBusy = true;
+            _ = _configuracaoVendaService.ObterConfiguracaoAsync();
             Vendedores.Clear();
             var listaVend = await _vendedorService.ListarAsync();
             foreach (var v in listaVend) Vendedores.Add(v);
@@ -1747,7 +1748,7 @@ public class PedidoViewModel : ViewModelBase
         }
 
         // Validação da política de estoque insuficiente do ERP Legado (CFG_ORCAMENTO / CFG_PREVENDA)
-        bool permiteEstoqueInsuficiente = _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(Pedido.IsOrcamento).GetAwaiter().GetResult();
+        bool permiteEstoqueInsuficiente = _configuracaoVendaService.PermiteEstoqueInsuficiente(Pedido.IsOrcamento);
         if (!permiteEstoqueInsuficiente)
         {
             decimal qtdJaNoPedido = Pedido.Itens.Where(i => i.LkProduto == ProdutoSelecionado.Controle).Sum(i => i.Quantidade);
