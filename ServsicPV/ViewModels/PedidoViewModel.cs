@@ -59,6 +59,8 @@ public class PedidoViewModel : ViewModelBase
     private string _novoClienteEmail = string.Empty;
     private string _cadastroRapidoMensagem = string.Empty;
     private bool _isConsultandoCnpj;
+    private bool _isCadastroDuplicadoBloqueado;
+    private Cliente? _clienteDuplicadoEncontrado;
 
     public Usuario? UsuarioLogado
     {
@@ -208,6 +210,7 @@ public class PedidoViewModel : ViewModelBase
     public Action? OnTipoDocumentoAlterado { get; set; }
     public Action? OnConsultaClienteAberta { get; set; }
     public Action? OnClienteDefinido { get; set; }
+    public Action<string>? OnSolicitarConsultaCliente { get; set; }
 
     // --- Propriedades do Modal de Consulta ---
     public bool IsConsultaClienteOpen
@@ -354,6 +357,18 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _isConsultandoCnpj, value);
     }
 
+    public bool IsCadastroDuplicadoBloqueado
+    {
+        get => _isCadastroDuplicadoBloqueado;
+        set => SetProperty(ref _isCadastroDuplicadoBloqueado, value);
+    }
+
+    public Cliente? ClienteDuplicadoEncontrado
+    {
+        get => _clienteDuplicadoEncontrado;
+        set => SetProperty(ref _clienteDuplicadoEncontrado, value);
+    }
+
     // --- Comandos ---
     public ICommand SalvarCommand { get; }
     public ICommand NovoCommand { get; }
@@ -380,6 +395,7 @@ public class PedidoViewModel : ViewModelBase
     public ICommand SelecionarPessoaJuridicaCommand { get; }
     public ICommand ConsultarCnpjCommand { get; }
     public ICommand SalvarCadastroRapidoClienteCommand { get; }
+    public ICommand UsarClienteDuplicadoExistenteCommand { get; }
 
     // Notificação / Mensagem de Status
     public ICommand FecharMensagemCommand { get; }
@@ -470,6 +486,7 @@ public class PedidoViewModel : ViewModelBase
         SelecionarPessoaJuridicaCommand = new RelayCommand(_ => TipoPessoa = "J");
         ConsultarCnpjCommand = new RelayCommand(async _ => await ConsultarCnpjAsync());
         SalvarCadastroRapidoClienteCommand = new RelayCommand(async _ => await SalvarCadastroRapidoClienteAsync());
+        UsarClienteDuplicadoExistenteCommand = new RelayCommand(_ => UsarClienteDuplicadoExistente());
 
         _ = CarregarDadosIniciaisAsync();
     }
@@ -544,7 +561,7 @@ public class PedidoViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(FiltroCliente))
         {
-            await AbrirConsultaClienteAsync();
+            AbrirConsultaCliente();
             return;
         }
 
@@ -556,13 +573,11 @@ public class PedidoViewModel : ViewModelBase
             {
                 SelecionarCliente(list[0]);
                 FiltroCliente = string.Empty;
+                OnClienteDefinido?.Invoke();
             }
             else
             {
-                FiltroConsultaCliente = FiltroCliente;
-                ClientesConsulta.Clear();
-                foreach (var c in list) ClientesConsulta.Add(c);
-                IsConsultaClienteOpen = true;
+                AbrirConsultaCliente(FiltroCliente);
             }
         }
         catch (Exception ex)
@@ -576,12 +591,15 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
+    public void AbrirConsultaCliente(string? filtro = null)
+    {
+        OnSolicitarConsultaCliente?.Invoke(filtro ?? FiltroCliente);
+    }
+
     public async Task AbrirConsultaClienteAsync()
     {
-        FiltroConsultaCliente = FiltroCliente;
-        IsConsultaClienteOpen = true;
-        await PesquisarClientesConsultaAsync();
-        OnConsultaClienteAberta?.Invoke();
+        AbrirConsultaCliente(FiltroCliente);
+        await Task.CompletedTask;
     }
 
     private async Task DispararPesquisaAutomaticaClientesAsync()
@@ -758,6 +776,22 @@ public class PedidoViewModel : ViewModelBase
         NovoClienteUF = string.Empty;
         NovoClienteEmail = string.Empty;
         CadastroRapidoMensagem = string.Empty;
+        IsCadastroDuplicadoBloqueado = false;
+        ClienteDuplicadoEncontrado = null;
+    }
+
+    public void UsarClienteDuplicadoExistente()
+    {
+        if (ClienteDuplicadoEncontrado != null)
+        {
+            var cli = ClienteDuplicadoEncontrado;
+            SelecionarCliente(cli);
+            IsCadastroRapidoClienteOpen = false;
+            LimparCamposCadastroRapido();
+            StatusMensagem = $"Cliente existente '{cli.Nome}' vinculado ao pedido!";
+            IsSucesso = true;
+            OnClienteDefinido?.Invoke();
+        }
     }
 
     public async Task ConsultarCnpjAsync()
@@ -815,6 +849,23 @@ public class PedidoViewModel : ViewModelBase
         try
         {
             IsBusy = true;
+            CadastroRapidoMensagem = "Verificando dados cadastrais no banco...";
+            IsCadastroDuplicadoBloqueado = false;
+            ClienteDuplicadoEncontrado = null;
+
+            // 1. Verificação prévia de duplicidade por CPF/CNPJ ou Nome
+            string? docLimpo = NovoClienteDocumento?.Trim();
+            string? nomeLimpo = NovoClienteNome.Trim();
+            var duplicado = await _clienteService.VerificarDuplicidadeAsync(docLimpo, nomeLimpo);
+            if (duplicado != null)
+            {
+                ClienteDuplicadoEncontrado = duplicado;
+                IsCadastroDuplicadoBloqueado = true;
+                string docInfo = !string.IsNullOrWhiteSpace(duplicado.DocumentoFormatado) ? $" ({duplicado.DocumentoFormatado})" : "";
+                CadastroRapidoMensagem = $"Cliente já cadastrado: '{duplicado.Nome}' - Cód: {duplicado.Codigo}{docInfo}.";
+                return;
+            }
+
             CadastroRapidoMensagem = "Gravando cliente no banco de dados...";
 
             var novo = new Cliente
@@ -842,10 +893,19 @@ public class PedidoViewModel : ViewModelBase
 
             StatusMensagem = $"Cliente '{gravado.Nome}' cadastrado (Cód: {gravado.Codigo}) e vinculado ao pedido!";
             IsSucesso = true;
+            OnClienteDefinido?.Invoke();
         }
         catch (Exception ex)
         {
-            CadastroRapidoMensagem = $"Erro ao cadastrar cliente: {ex.Message}";
+            if (ex.Message.Contains("Bloqueado: Já existe cliente cadastrado", StringComparison.OrdinalIgnoreCase))
+            {
+                CadastroRapidoMensagem = ex.Message;
+                IsCadastroDuplicadoBloqueado = true;
+            }
+            else
+            {
+                CadastroRapidoMensagem = $"Erro ao cadastrar cliente: {ex.Message}";
+            }
         }
         finally
         {

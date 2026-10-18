@@ -13,6 +13,8 @@ public partial class MainView : Window
     private readonly PedidoViewModel _pedidoViewModel;
     private readonly PedidoConsultaView _consultaView;
     private readonly PedidoConsultaViewModel _consultaViewModel;
+    private readonly ClienteConsultaView _clienteConsultaView;
+    private readonly ClienteConsultaViewModel _clienteConsultaViewModel;
     private readonly PedidoService _pedidoService;
 
     public MainView(Usuario usuario)
@@ -46,7 +48,7 @@ public partial class MainView : Window
         _pedidoViewModel.UsuarioLogado = usuario;
         _pedidoViewModel.OnTipoDocumentoAlterado = () =>
         {
-            if (ReferenceEquals(ContentArea.Content, _consultaView))
+            if (ReferenceEquals(ContentArea.Content, _consultaView) || ReferenceEquals(ContentArea.Content, _clienteConsultaView))
             {
                 MostrarCadastro();
             }
@@ -62,6 +64,32 @@ public partial class MainView : Window
         _consultaView = new PedidoConsultaView { DataContext = _consultaViewModel };
         _consultaView.OnVoltarAoPedido = () => MostrarCadastro();
 
+        // Tela Cheia Dedicada de Consulta de Clientes
+        _clienteConsultaViewModel = new ClienteConsultaViewModel(new ClienteService());
+        _clienteConsultaViewModel.OnClienteSelecionado = (cliente) =>
+        {
+            _pedidoViewModel.SelecionarCliente(cliente);
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+        };
+        _clienteConsultaViewModel.OnVoltarAoPedido = () =>
+        {
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+        };
+        _clienteConsultaViewModel.OnSolicitarNovoCliente = () =>
+        {
+            MostrarCadastro();
+            _pedidoViewModel.AbrirCadastroRapido();
+        };
+
+        _clienteConsultaView = new ClienteConsultaView { DataContext = _clienteConsultaViewModel };
+
+        _pedidoViewModel.OnSolicitarConsultaCliente = (filtro) =>
+        {
+            MostrarConsultaCliente(filtro);
+        };
+
         // Exibe tela de cadastro inicialmente
         MostrarCadastro();
     }
@@ -75,6 +103,13 @@ public partial class MainView : Window
     {
         ContentArea.Content = _consultaView;
         _ = _consultaViewModel.PesquisarAsync();
+    }
+
+    private void MostrarConsultaCliente(string? filtro = null)
+    {
+        ContentArea.Content = _clienteConsultaView;
+        _clienteConsultaViewModel.Abrir(filtro);
+        _clienteConsultaView.FocarBarraPesquisa();
     }
 
     private async void CarregarPedidoParaEdicao(int controle)
@@ -96,11 +131,15 @@ public partial class MainView : Window
 
     private void OnF3GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (_pedidoViewModel.BuscarClienteRapidoCommand.CanExecute(null))
+        if (ReferenceEquals(ContentArea.Content, _clienteConsultaView))
         {
-            _pedidoViewModel.BuscarClienteRapidoCommand.Execute(null);
+            _clienteConsultaView.FocarBarraPesquisa();
             args.Handled = true;
+            return;
         }
+
+        MostrarConsultaCliente(_pedidoViewModel.FiltroCliente);
+        args.Handled = true;
     }
 
     private void OnF2GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)

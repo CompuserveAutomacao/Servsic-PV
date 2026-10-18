@@ -448,175 +448,7 @@
             </Border>
         </Grid>
 
-        <!-- ============================================================== -->
-        <!-- MODAL 1: CONSULTA DE CLIENTES OVERLAY                          -->
-        <!-- ============================================================== -->
-        <Grid x:Name="ModalConsultaOverlay"
-              Background="#750B192C" 
-              KeyDown="ModalConsulta_KeyDown"
-              Visibility="{Binding IsConsultaClienteOpen, Converter={StaticResource BoolToVisibilityConverter}}"
-              Padding="32">
-            
-            <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12"
-                    MaxWidth="840" MaxHeight="620" HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Padding="24">
-                <Grid RowSpacing="16">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/> <!-- Cabeçalho -->
-                        <RowDefinition Height="Auto"/> <!-- Barra de Busca -->
-                        <RowDefinition Height="*"/>    <!-- Grade de Clientes -->
-                        <RowDefinition Height="Auto"/> <!-- Rodapé com Botões -->
-                    </Grid.RowDefinitions>
 
-                    <!-- Cabeçalho do Modal -->
-                    <Grid Grid.Row="0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
-                            <ic:SymbolIcon Symbol="People" FontSize="22" Foreground="{StaticResource BrushServsicBlue}"/>
-                            <TextBlock Text="Consulta de Clientes" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Command="{Binding FecharConsultaClienteCommand}" Background="Transparent" BorderThickness="0" Padding="6">
-                            <ic:SymbolIcon Symbol="Dismiss" FontSize="16" Foreground="{StaticResource BrushTextSubtle}"/>
-                        </Button>
-                    </Grid>
-
-                    <!-- Barra de Pesquisa de Clientes -->
-                    <Grid Grid.Row="1" ColumnSpacing="10">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBox Grid.Column="0" 
-                                 x:Name="TxtFiltroConsulta"
-                                 Text="{Binding FiltroConsultaCliente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                 KeyDown="FiltroConsulta_KeyDown"
-                                 PlaceholderText="Buscar por Nome, Razão Social, CPF/CNPJ ou Código e aperte Enter..."
-                                 Height="38"/>
-
-                        <Button Grid.Column="1" Command="{Binding PesquisarConsultaClienteCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <ic:SymbolIcon Symbol="Search" FontSize="16"/>
-                                <TextBlock Text="Pesquisar" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <Button Grid.Column="2" Command="{Binding AbrirCadastroRapidoClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="14,0">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <ic:SymbolIcon Symbol="Add" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
-                                <TextBlock Text="Novo Cliente" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-
-                    <!-- Grade de Resultados -->
-                    <Grid Grid.Row="2">
-                        <ProgressBar IsIndeterminate="True" 
-                                     Visibility="{Binding IsBuscandoClientesConsulta, Converter={StaticResource BoolToVisibilityConverter}}"
-                                     VerticalAlignment="Top"/>
-
-                        <ListView x:Name="ListaClientesConsulta"
-                                  ItemsSource="{Binding ClientesConsulta}" 
-                                  SelectedItem="{Binding ClienteConsultaSelecionado, Mode=TwoWay}"
-                                  SingleSelectionFollowsFocus="True"
-                                  IsItemClickEnabled="True"
-                                  ItemClick="ListaClientesConsulta_ItemClick"
-                                  DoubleTapped="ListaClientesConsulta_DoubleTapped"
-                                  BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6"
-                                  SelectionMode="Single">
-                            <ListView.HeaderTemplate>
-                                <DataTemplate>
-                                    <Grid Background="#F1F5F9" Padding="12,8" CornerRadius="4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="65"/>
-                                            <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="1.1*"/>
-                                            <ColumnDefinition Width="105"/>
-                                            <ColumnDefinition Width="110"/>
-                                            <ColumnDefinition Width="125"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="1" Text="NOME / RAZÃO SOCIAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="2" Text="CPF / CNPJ" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="3" Text="TELEFONE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="4" Text="CIDADE/UF" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Grid.Column="5" Text="CRÉDITO A PRAZO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" TextAlignment="Right"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListView.HeaderTemplate>
-                            <ListView.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid Padding="12,8" BorderBrush="#F1F5F9" BorderThickness="0,0,0,1">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="65"/>
-                                            <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="1.1*"/>
-                                            <ColumnDefinition Width="105"/>
-                                            <ColumnDefinition Width="110"/>
-                                            <ColumnDefinition Width="125"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Controle}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding Nome}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding DocumentoFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="3" Text="{Binding Telefone}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="4" Text="{Binding CidadeUF}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                        <StackPanel Grid.Column="5" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="2">
-                                            <TextBlock Text="{Binding LimiteFormatado}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right"/>
-                                            <Border CornerRadius="3" Padding="5,1" HorizontalAlignment="Right"
-                                                    Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
-                                                    Visibility="{Binding IsBloqueado, Converter={StaticResource BoolToVisibilityConverter}}">
-                                                <TextBlock Text="BLOQUEADO" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource BrushDanger}"/>
-                                            </Border>
-                                            <Border CornerRadius="3" Padding="5,1" HorizontalAlignment="Right"
-                                                    Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1"
-                                                    Visibility="{Binding IsBloqueado, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-                                                <TextBlock Text="LIBERADO" FontSize="8.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
-                                            </Border>
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
-                        </ListView>
-                    </Grid>
-
-                    <!-- Rodapé do Modal -->
-                    <Grid Grid.Row="3">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0" Text="* Dê duplo clique no cliente ou clique em 'Selecionar' para confirmar." FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
-
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                            <Button x:Name="BtnCancelarConsulta"
-                                    Command="{Binding FecharConsultaClienteCommand}" 
-                                    KeyDown="BotoesRodape_KeyDown"
-                                    Style="{StaticResource BtnSecondary}" 
-                                    Height="38" 
-                                    Padding="18,0">
-                                <TextBlock Text="Cancelar" FontWeight="SemiBold"/>
-                            </Button>
-                            <Button x:Name="BtnSelecionarCliente"
-                                    Command="{Binding ConfirmarSelecaoClienteCommand}" 
-                                    KeyDown="BotoesRodape_KeyDown"
-                                    Style="{StaticResource BtnPrimary}" 
-                                    Height="38" 
-                                    Padding="20,0">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <ic:SymbolIcon Symbol="Checkmark" FontSize="16"/>
-                                    <TextBlock Text="Selecionar Cliente" FontWeight="Bold"/>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Grid>
-            </Border>
-        </Grid>
 
         <!-- ============================================================== -->
         <!-- MODAL 2: CADASTRO RÁPIDO DE CLIENTE COM OPÇÃO DE PESSOA & CNPJ  -->
@@ -851,10 +683,32 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!-- Mensagem de Retorno / Validação do Cadastro Rápido -->
-                    <Border Grid.Row="3" CornerRadius="6" Padding="12,8" Background="#F1F5F9"
-                            Visibility="{Binding CadastroRapidoMensagem, Converter={StaticResource StringToVisibilityConverter}}">
-                        <TextBlock Text="{Binding CadastroRapidoMensagem}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                    <!-- Mensagem Normal de Retorno -->
+                    <Border Grid.Row="3" CornerRadius="6" Padding="12,8" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1"
+                            Visibility="{Binding IsCadastroDuplicadoBloqueado, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                        <TextBlock Text="{Binding CadastroRapidoMensagem}" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"
+                                   Visibility="{Binding CadastroRapidoMensagem, Converter={StaticResource StringToVisibilityConverter}}"/>
+                    </Border>
+
+                    <!-- Mensagem de Alerta: Bloqueio por Duplicidade com Ação Imediata -->
+                    <Border Grid.Row="3" CornerRadius="6" Padding="12,8" Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1"
+                            Visibility="{Binding IsCadastroDuplicadoBloqueado, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <ic:SymbolIcon Symbol="DismissCircle" FontSize="18" Foreground="{StaticResource BrushDanger}"/>
+                                <TextBlock Text="{Binding CadastroRapidoMensagem}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushDanger}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Command="{Binding UsarClienteDuplicadoExistenteCommand}" Style="{StaticResource BtnPrimary}" Height="30" Padding="12,0" Margin="10,0,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ic:SymbolIcon Symbol="Checkmark" FontSize="14"/>
+                                    <TextBlock Text="Usar Cliente Existente" FontSize="11.5" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
                     </Border>
 
                     <!-- Botões de Ação do Modal -->

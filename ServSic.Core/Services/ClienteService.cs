@@ -121,10 +121,64 @@ public class ClienteService
         return await conn.QueryFirstOrDefaultAsync<Cliente>(sql, new { controle });
     }
 
+    public async Task<Cliente?> VerificarDuplicidadeAsync(string? documento, string? nome)
+    {
+        using var conn = DbConnectionFactory.CreateConnection();
+
+        // 1. Verificação por Documento (CPF ou CNPJ)
+        if (!string.IsNullOrWhiteSpace(documento))
+        {
+            string digitosDoc = new string(documento.Where(char.IsDigit).ToArray());
+            if (digitosDoc.Length >= 11)
+            {
+                const string sqlDoc = @"
+                    SELECT TOP 1 
+                        c.Controle, c.Codigo, c.Nome, c.Cpf, c.CGC, c.Telefone, c.Celular, c.Cidade, c.Estado,
+                        ISNULL(c.LimiteCred, 0) as LimiteCred, ISNULL(c.Inativo, 'N') as Inativo
+                    FROM TabCli c
+                    WHERE REPLACE(REPLACE(REPLACE(ISNULL(c.Cpf, ''), '.', ''), '-', ''), '/', '') = @digitosDoc
+                       OR REPLACE(REPLACE(REPLACE(ISNULL(c.CGC, ''), '.', ''), '-', ''), '/', '') = @digitosDoc
+                       OR c.Cpf = @docOriginal
+                       OR c.CGC = @docOriginal";
+
+                var existenteDoc = await conn.QueryFirstOrDefaultAsync<Cliente>(sqlDoc, new { digitosDoc, docOriginal = documento.Trim() });
+                if (existenteDoc != null) return existenteDoc;
+            }
+        }
+
+        // 2. Verificação por Nome Exato
+        if (!string.IsNullOrWhiteSpace(nome))
+        {
+            const string sqlNome = @"
+                SELECT TOP 1 
+                    c.Controle, c.Codigo, c.Nome, c.Cpf, c.CGC, c.Telefone, c.Celular, c.Cidade, c.Estado,
+                    ISNULL(c.LimiteCred, 0) as LimiteCred, ISNULL(c.Inativo, 'N') as Inativo
+                FROM TabCli c
+                WHERE LTRIM(RTRIM(c.Nome)) = @nome";
+
+            var existenteNome = await conn.QueryFirstOrDefaultAsync<Cliente>(sqlNome, new { nome = nome.Trim() });
+            if (existenteNome != null) return existenteNome;
+        }
+
+        return null;
+    }
+
     public async Task<Cliente> CadastrarRapidoAsync(Cliente cliente)
     {
         if (string.IsNullOrWhiteSpace(cliente.Nome))
             throw new System.ArgumentException("O nome do cliente é obrigatório.", nameof(cliente.Nome));
+
+        var duplicado = await VerificarDuplicidadeAsync(cliente.Documento, cliente.Nome);
+        if (duplicado != null)
+        {
+            string motivo = !string.IsNullOrWhiteSpace(cliente.Documento) &&
+                (duplicado.Cpf?.Contains(new string(cliente.Documento.Where(char.IsDigit).ToArray())) == true ||
+                 duplicado.CGC?.Contains(new string(cliente.Documento.Where(char.IsDigit).ToArray())) == true)
+                ? $"CPF/CNPJ '{cliente.Documento}'"
+                : $"Nome '{cliente.Nome}'";
+
+            throw new System.InvalidOperationException($"Bloqueado: Já existe cliente cadastrado com este {motivo} (Cód: {duplicado.Codigo} - {duplicado.Nome}).");
+        }
 
         using var conn = DbConnectionFactory.CreateConnection();
         conn.Open();
@@ -144,10 +198,11 @@ public class ClienteService
         cliente.Codigo = novoControle.ToString().PadLeft(6, '0');
 
         string doc = cliente.Documento?.Trim() ?? string.Empty;
-        bool isCnpj = doc.Length > 11;
+        string digitos = new string(doc.Where(char.IsDigit).ToArray());
+        bool isCnpj = digitos.Length > 11;
 
-        string? cpf = !isCnpj ? doc : cliente.Cpf;
-        string? cgc = isCnpj ? doc : cliente.CGC;
+        string? cpf = !isCnpj && digitos.Length > 0 ? digitos : null;
+        string? cgc = isCnpj ? digitos : null;
 
         const string sqlInsert = @"
             INSERT INTO TabCli (
