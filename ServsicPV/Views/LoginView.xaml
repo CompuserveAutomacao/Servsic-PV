@@ -8,8 +8,8 @@
     mc:Ignorable="d"
     Title="ServsicPV - Autenticação">
 
-    <!-- Borda externa da tela para acabamento sem janela padrão -->
-    <Border BorderBrush="#1E293B" BorderThickness="1" CornerRadius="12" Background="{StaticResource BrushCardBackground}">
+    <!-- Borda externa da tela para acabamento sem janela padrão (Formato Quadrado) -->
+    <Border BorderBrush="#1E293B" BorderThickness="1" Background="{StaticResource BrushCardBackground}">
         <Grid x:Name="RootGrid" KeyDown="RootGrid_KeyDown">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho Executivo Navy (Permite Arrastar) -->
@@ -22,7 +22,6 @@
             <!-- ============================================================== -->
             <Border Grid.Row="0" 
                     Background="{StaticResource BrushServsicDark}" 
-                    CornerRadius="11,11,0,0" 
                     Padding="20,16,16,14"
                     PointerPressed="Header_PointerPressed">
                 <Grid>
@@ -206,7 +205,7 @@
             <!-- ============================================================== -->
             <!-- 2. RODAPÉ DE STATUS E CONEXÃO                                   -->
             <!-- ============================================================== -->
-            <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" CornerRadius="0,0,11,11" Padding="18,10">
+            <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,1,0,0" Padding="18,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
