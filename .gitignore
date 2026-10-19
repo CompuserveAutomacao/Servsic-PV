@@ -50,3 +50,5 @@ $RECYCLE.BIN/
 Release-*/
 Publish*/
 Servcom.dll
+publish-release.ps1
+
