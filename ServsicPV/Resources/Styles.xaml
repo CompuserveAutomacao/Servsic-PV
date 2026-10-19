@@ -39,6 +39,7 @@
     <SolidColorBrush x:Key="BrushServsicDark" Color="{StaticResource ColorServsicDark}" />
     <SolidColorBrush x:Key="BrushServsicNavyLight" Color="{StaticResource ColorServsicNavyLight}" />
     <SolidColorBrush x:Key="BrushServsicBlue" Color="{StaticResource ColorServsicBlue}" />
+    <SolidColorBrush x:Key="BrushCorporateBlue" Color="{StaticResource ColorServsicBlue}" />
     <SolidColorBrush x:Key="BrushServsicBlueHover" Color="{StaticResource ColorServsicBlueHover}" />
     <SolidColorBrush x:Key="BrushServsicBlueLight" Color="{StaticResource ColorServsicBlueLight}" />
     <SolidColorBrush x:Key="BrushServsicBlueSoft" Color="{StaticResource ColorServsicBlueSoft}" />

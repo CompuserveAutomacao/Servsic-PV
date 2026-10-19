@@ -820,7 +820,26 @@ public class PedidoViewModel : ViewModelBase
         || (!string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) && !string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase));
     public bool IsVenda => string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) || string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase);
     public string TituloTela => "Pedido de Venda";
-    public string TextoBotaoSalvar => "Totalizar (F6)";
+
+    private bool _lancarPagamentos = false; // Novo padrão: Desativado (Apenas Finalizar direto sem TabEst3C)
+    public bool LancarPagamentos
+    {
+        get => _lancarPagamentos;
+        set
+        {
+            if (SetProperty(ref _lancarPagamentos, value))
+            {
+                OnPropertyChanged(nameof(TextoBotaoSalvar));
+                OnPropertyChanged(nameof(StatusPagamentoModoTexto));
+            }
+        }
+    }
+
+    public string TextoBotaoSalvar => LancarPagamentos ? "Totalizar (F6)" : "Finalizar (F6)";
+
+    public string StatusPagamentoModoTexto => LancarPagamentos 
+        ? "Abrir checkout de pagamentos e parcelas" 
+        : "Finalizar e imprimir direto";
 
     public Microsoft.UI.Xaml.Media.Brush BrushOrcamentoBackground => IsOrcamento
         ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
@@ -1325,57 +1344,8 @@ public class PedidoViewModel : ViewModelBase
                 _checkoutViewModel.IsOpen = false;
                 IsCheckoutOpen = false;
 
-                string tipoDescricao = Pedido.IsOrcamento ? "Orçamento" : "Pedido de Venda";
                 var pedidoFinalizado = Pedido; // Mantém referência para impressão
-                string msgExtra = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
-
-                // Prepara a tela para um novo pedido preservando a mensagem de sucesso
-                NovoPedido(preservarMensagem: true);
-
-                // 🖨️ Fluxo de Impressão de Pedido de Venda / Orçamento
-                var configImpressora = _impressoraConfigService.ObterConfiguracao();
-                if (configImpressora.ModoImpressao == "Direto" && !string.IsNullOrWhiteSpace(configImpressora.NomeImpressora))
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            var empresa = await _impressoraConfigService.ObterDadosEmpresaAsync();
-                            string textoCupom = _cupomFormatadorService.GerarTextoCupom(pedidoFinalizado, empresa, configImpressora);
-                            int vias = configImpressora.DuasVias ? 2 : 1;
-                            for (int i = 0; i < vias; i++)
-                            {
-                                _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
-                            }
-
-                            // 🚚 Impressão Automática de Itens para Entrega conforme configuração do ERP (CFG_VENDA)
-                            var configVenda = await _configuracaoVendaService.ObterConfiguracaoAsync();
-                            if (configVenda.ImprimeItensEntregaAutomaticamente && pedidoFinalizado.TemItensEntrega)
-                            {
-                                string textoEntrega = _cupomFormatadorService.GerarTextoCupomEntrega(pedidoFinalizado, empresa, configImpressora);
-                                _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"[Impressao] Erro: {ex.Message}");
-                        }
-                    });
-
-                    ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} totalizado e enviado para a impressora!{msgExtra}", true, 6000);
-                }
-                else if (configImpressora.ModoImpressao == "Previa")
-                {
-                    ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} concluído com sucesso!{msgExtra}", true, 6000);
-
-                    // Abre o modal de pré-visualização do documento
-                    _ = _cupomVisualizacaoViewModel.CarregarAsync(pedidoFinalizado);
-                }
-                else
-                {
-                    // Modo NaoImprimir
-                    ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} totalizado e gravado com sucesso!{msgExtra}", true, 6000);
-                }
+                ProcessarImpressaoEResetar(pedidoFinalizado, troco);
             }
             catch (Exception ex)
             {
@@ -1742,6 +1712,7 @@ public class PedidoViewModel : ViewModelBase
     {
         _selectedCliente = null;
         FiltroCliente = string.Empty;
+        LancarPagamentos = false; // Novo padrão: Fechamento rápido direto
 
         var novoPedido = new PedidoVenda
         {
@@ -1798,6 +1769,10 @@ public class PedidoViewModel : ViewModelBase
         FiltroCliente = pedidoCarregado.Cliente;
         _descontoGeralInputTexto = pedidoCarregado.Desconto.ToString("N2");
         _acrescimoGeralInputTexto = pedidoCarregado.Acrescimo.ToString("N2");
+
+        // Se o pedido já possui pagamentos lançados no banco, ativa automaticamente para preservar os dados
+        bool temPagamentos = pedidoCarregado.Pagamentos != null && pedidoCarregado.Pagamentos.Count > 0;
+        LancarPagamentos = temPagamentos;
 
         if (pedidoCarregado.LkCliente.HasValue && pedidoCarregado.LkCliente.Value > 0)
         {
@@ -2630,6 +2605,36 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
+    public bool AtualizarQuantidadeItem(PedidoItem item, decimal novaQuantidade)
+    {
+        if (item == null) return false;
+
+        if (novaQuantidade <= 0)
+        {
+            ExibirMensagem("A quantidade deve ser maior que zero.", false, 4000);
+            return false;
+        }
+
+        item.Quantidade = novaQuantidade;
+
+        // Se o desconto em reais ficou superior ao subtotal bruto com a nova quantidade, ajusta
+        if (item.Desconto > item.SubtotalBruto)
+        {
+            item.Desconto = item.SubtotalBruto;
+        }
+
+        item.RecalcularTotal();
+        Pedido.RecalcularTotais();
+
+        OnPropertyChanged(nameof(Pedido));
+        OnPropertyChanged(nameof(Itens));
+        OnPropertyChanged(nameof(HasItens));
+        RecalcularMargemDescontoGeral();
+
+        ExibirMensagem($"Quantidade de '{item.Produto}' atualizada para {novaQuantidade:N2} {item.Unidade}.", true, 3000);
+        return true;
+    }
+
     public bool AtualizarDescontoItem(PedidoItem item, decimal novoDesconto)
     {
         if (item == null) return false;
@@ -2730,74 +2735,73 @@ public class PedidoViewModel : ViewModelBase
     }
 
     // ==============================================================
+    // IMPRESSÃO E CONCLUSÃO DE FLUXO DE PEDIDO / ORÇAMENTO
+    // ==============================================================
+
+    private void ProcessarImpressaoEResetar(PedidoVenda pedidoFinalizado, decimal troco = 0)
+    {
+        string tipoDescricao = pedidoFinalizado.IsOrcamento ? "Orçamento" : "Pedido de Venda";
+        string msgExtra = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
+
+        // Prepara a tela para um novo pedido preservando a mensagem de sucesso
+        NovoPedido(preservarMensagem: true);
+
+        // 🖨️ Fluxo de Impressão de Pedido de Venda / Orçamento
+        var configImpressora = _impressoraConfigService.ObterConfiguracao();
+        if (configImpressora.ModoImpressao == "Direto" && !string.IsNullOrWhiteSpace(configImpressora.NomeImpressora))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var empresa = await _impressoraConfigService.ObterDadosEmpresaAsync();
+                    string textoCupom = _cupomFormatadorService.GerarTextoCupom(pedidoFinalizado, empresa, configImpressora);
+                    int vias = configImpressora.DuasVias ? 2 : 1;
+                    for (int i = 0; i < vias; i++)
+                    {
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
+                    }
+
+                    // 🚚 Impressão Automática de Itens para Entrega conforme configuração do ERP (CFG_VENDA)
+                    var configVenda = await _configuracaoVendaService.ObterConfiguracaoAsync();
+                    if (configVenda.ImprimeItensEntregaAutomaticamente && pedidoFinalizado.TemItensEntrega)
+                    {
+                        string textoEntrega = _cupomFormatadorService.GerarTextoCupomEntrega(pedidoFinalizado, empresa, configImpressora);
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Impressao] Erro: {ex.Message}");
+                }
+            });
+
+            string acaoNome = troco > 0 || (pedidoFinalizado.Pagamentos != null && pedidoFinalizado.Pagamentos.Count > 0) ? "totalizado" : "finalizado";
+            ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} {acaoNome} e enviado para a impressora!{msgExtra}", true, 6000);
+        }
+        else if (configImpressora.ModoImpressao == "Previa")
+        {
+            ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} concluído com sucesso!{msgExtra}", true, 6000);
+
+            // Abre o modal de pré-visualização do documento
+            _ = _cupomVisualizacaoViewModel.CarregarAsync(pedidoFinalizado);
+        }
+        else
+        {
+            // Modo NaoImprimir
+            string acaoNome = troco > 0 || (pedidoFinalizado.Pagamentos != null && pedidoFinalizado.Pagamentos.Count > 0) ? "totalizado" : "finalizado";
+            ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} {acaoNome} e gravado com sucesso!{msgExtra}", true, 6000);
+        }
+    }
+
+    // ==============================================================
     // CHECKOUT DE CONDIÇÕES DE PAGAMENTO (MODAL BALCÃO / PRÉ-VENDA)
     // ==============================================================
 
     public async Task AbrirCheckoutAsync()
     {
-        if (Pedido.Itens.Count == 0 || Pedido.Total <= 0)
-        {
-            ExibirMensagem("Adicione ao menos um item ao pedido antes de totalizar.", false, 4000);
-            return;
-        }
-
-        // Validação da política de Estoque Insuficiente do ERP Legado antes de totalizar
-        bool permiteEstoqueInsuficiente = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(Pedido.IsOrcamento);
-        if (!permiteEstoqueInsuficiente)
-        {
-            var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
-            var itensComEstoqueInsuficiente = new System.Collections.Generic.List<string>();
-
-            foreach (var grp in itensPorProduto)
-            {
-                decimal qtdTotal = grp.Sum(i => i.Quantidade);
-                decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
-                if (qtdTotal > estoqueAtual)
-                {
-                    itensComEstoqueInsuficiente.Add($"• '{grp.First().Produto}' (Disp: {estoqueAtual:N2} | Pedido: {qtdTotal:N2})");
-                }
-            }
-
-            if (itensComEstoqueInsuficiente.Count > 0)
-            {
-                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
-                string titulo = "Liberação: Estoque Insuficiente";
-                string subtitulo = $"{tipoNome} • Totalização do Pedido";
-                string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
-                string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + "\n\nAutorização de Gerente requerida para totalizar.";
-
-                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
-                {
-                    await IniciarCheckoutModalAsync();
-                });
-                return;
-            }
-        }
-
-        // Validação de Desconto Geral antes de totalizar
-        if (DescontoGeralPercAtual > LimiteDescontoUsuario && LimiteDescontoUsuario > 0)
-        {
-            if (UsuarioLogado?.Nivel >= 2)
-            {
-                // Gerente logado prossegue
-            }
-            else
-            {
-                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
-                string titulo = "Liberação: Desconto Geral Excedente";
-                string subtitulo = $"{tipoNome} • Totalização do Pedido";
-                string motivo = $"Desconto geral de {DescontoGeralPercAtual:N2}% ({Pedido.Desconto:C2}) ultrapassa o teto permitido do vendedor ({LimiteDescontoUsuario:N2}%).";
-                string detalhe = $"Subtotal: {Pedido.Subtotal:C2} | Desconto Geral: {Pedido.Desconto:C2} ({DescontoGeralPercAtual:N2}%)\nInforme a senha de Gerente para autorizar.";
-
-                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
-                {
-                    await IniciarCheckoutModalAsync();
-                });
-                return;
-            }
-        }
-
-        await IniciarCheckoutModalAsync();
+        LancarPagamentos = true;
+        await SalvarPedidoAsync();
     }
 
     private async Task IniciarCheckoutModalAsync()
@@ -2829,8 +2833,119 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(Pedido));
     }
 
+    public async Task FinalizarPedidoDiretoAsync()
+    {
+        try
+        {
+            IsBusy = true;
+            Pedido.Pagamentos.Clear();
+
+            // Status no balcão: 'O' para Orçamento, 'P' para Pedido de Venda / Pré-Venda
+            Pedido.Status = Pedido.IsOrcamento ? "O" : "P";
+            Pedido.Venda = 0;
+
+            await ExecutarGravacaoPedidoAsync();
+
+            var pedidoFinalizado = Pedido;
+            ProcessarImpressaoEResetar(pedidoFinalizado, troco: 0);
+        }
+        catch (Exception ex)
+        {
+            ExibirMensagem($"Erro ao gravar pedido no banco: {ex.Message}", false, 7000);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     public async Task SalvarPedidoAsync()
     {
-        await AbrirCheckoutAsync();
+        string acaoNome = LancarPagamentos ? "totalizar" : "finalizar";
+
+        if (Pedido.Itens.Count == 0 || Pedido.Total <= 0)
+        {
+            ExibirMensagem($"Adicione ao menos um item ao pedido antes de {acaoNome}.", false, 4000);
+            return;
+        }
+
+        // Validação da política de Estoque Insuficiente do ERP Legado
+        bool permiteEstoqueInsuficiente = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(Pedido.IsOrcamento);
+        if (!permiteEstoqueInsuficiente)
+        {
+            var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
+            var itensComEstoqueInsuficiente = new System.Collections.Generic.List<string>();
+
+            foreach (var grp in itensPorProduto)
+            {
+                decimal qtdTotal = grp.Sum(i => i.Quantidade);
+                decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
+                if (qtdTotal > estoqueAtual)
+                {
+                    itensComEstoqueInsuficiente.Add($"• '{grp.First().Produto}' (Disp: {estoqueAtual:N2} | Pedido: {qtdTotal:N2})");
+                }
+            }
+
+            if (itensComEstoqueInsuficiente.Count > 0)
+            {
+                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                string titulo = "Liberação: Estoque Insuficiente";
+                string subtitulo = $"{tipoNome} • {(LancarPagamentos ? "Totalização" : "Finalização")} do Pedido";
+                string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
+                string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + $"\n\nAutorização de Gerente requerida para {acaoNome}.";
+
+                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                {
+                    if (LancarPagamentos)
+                    {
+                        await IniciarCheckoutModalAsync();
+                    }
+                    else
+                    {
+                        await FinalizarPedidoDiretoAsync();
+                    }
+                });
+                return;
+            }
+        }
+
+        // Validação de Desconto Geral
+        if (DescontoGeralPercAtual > LimiteDescontoUsuario && LimiteDescontoUsuario > 0)
+        {
+            if (UsuarioLogado?.Nivel >= 2)
+            {
+                // Gerente logado prossegue
+            }
+            else
+            {
+                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                string titulo = "Liberação: Desconto Geral Excedente";
+                string subtitulo = $"{tipoNome} • {(LancarPagamentos ? "Totalização" : "Finalização")} do Pedido";
+                string motivo = $"Desconto geral de {DescontoGeralPercAtual:N2}% ({Pedido.Desconto:C2}) ultrapassa o teto permitido do vendedor ({LimiteDescontoUsuario:N2}%).";
+                string detalhe = $"Subtotal: {Pedido.Subtotal:C2} | Desconto Geral: {Pedido.Desconto:C2} ({DescontoGeralPercAtual:N2}%)\nInforme a senha de Gerente para autorizar.";
+
+                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                {
+                    if (LancarPagamentos)
+                    {
+                        await IniciarCheckoutModalAsync();
+                    }
+                    else
+                    {
+                        await FinalizarPedidoDiretoAsync();
+                    }
+                });
+                return;
+            }
+        }
+
+        if (LancarPagamentos)
+        {
+            await IniciarCheckoutModalAsync();
+        }
+        else
+        {
+            await FinalizarPedidoDiretoAsync();
+        }
     }
 }

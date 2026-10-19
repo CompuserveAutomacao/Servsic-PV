@@ -138,9 +138,11 @@
                         </Button>
 
                         <!-- Botão Atualizar Agora -->
-                        <Button Grid.Column="2" 
+                        <Button x:Name="BtnAtualizarAgora"
+                                Grid.Column="2" 
                                 Command="{Binding AtualizarCommand}" 
-                                IsEnabled="{Binding CanClose}"
+                                IsEnabled="{Binding CanAtualizar}"
+                                Click="BtnAtualizarAgora_Click"
                                 Style="{StaticResource BtnPrimary}" 
                                 Height="36" 
                                 Padding="18,0">

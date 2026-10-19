@@ -388,6 +388,173 @@ public partial class PedidoCadastroView : UserControl
         }
     }
 
+    // --- Edição de Quantidade do Item já Lançado ---
+    private Flyout? _activeQtdFlyout;
+
+    private void BtnAbrirEdicaoQuantidade_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Flyout is Flyout flyout)
+        {
+            _activeQtdFlyout = flyout;
+            if (btn.DataContext is PedidoItem item)
+            {
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    await Task.Delay(50);
+                    if (flyout.Content is StackPanel panel)
+                    {
+                        var txtQtd = panel.FindName("TxtModalQuantidade") as TextBox;
+                        var txtSubtotal = panel.FindName("TxtModalNovoSubtotal") as TextBlock;
+                        if (txtQtd != null)
+                        {
+                            txtQtd.Text = item.Quantidade.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                            txtQtd.Focus(FocusState.Programmatic);
+                            txtQtd.SelectAll();
+                        }
+                        if (txtSubtotal != null)
+                        {
+                            txtSubtotal.Text = item.SubtotalBruto.ToString("C2");
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private void BtnModalDiminuirQtd_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is PedidoItem)
+        {
+            var panel = ObterPainelFlyoutQuantidade(fe);
+            if (panel != null)
+            {
+                var txtQtd = panel.FindName("TxtModalQuantidade") as TextBox;
+                if (txtQtd != null)
+                {
+                    decimal.TryParse(txtQtd.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var atual);
+                    if (atual > 1m)
+                    {
+                        atual = Math.Max(1m, atual - 1m);
+                        txtQtd.Text = atual.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                        txtQtd.Focus(FocusState.Programmatic);
+                        txtQtd.SelectAll();
+                    }
+                }
+            }
+        }
+    }
+
+    private void BtnModalAumentarQtd_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is PedidoItem)
+        {
+            var panel = ObterPainelFlyoutQuantidade(fe);
+            if (panel != null)
+            {
+                var txtQtd = panel.FindName("TxtModalQuantidade") as TextBox;
+                if (txtQtd != null)
+                {
+                    decimal.TryParse(txtQtd.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var atual);
+                    atual += 1m;
+                    txtQtd.Text = atual.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                    txtQtd.Focus(FocusState.Programmatic);
+                    txtQtd.SelectAll();
+                }
+            }
+        }
+    }
+
+    private void TxtModalQuantidade_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is TextBox txtQtd && txtQtd.DataContext is PedidoItem item)
+        {
+            var panel = ObterPainelFlyoutQuantidade(txtQtd);
+            if (panel != null)
+            {
+                var txtSubtotal = panel.FindName("TxtModalNovoSubtotal") as TextBlock;
+                if (txtSubtotal != null)
+                {
+                    if (decimal.TryParse(txtQtd.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var qtdInformada) && qtdInformada > 0)
+                    {
+                        decimal subtotalPrevisto = Math.Round(qtdInformada * item.VlUnitario, 2);
+                        txtSubtotal.Text = subtotalPrevisto.ToString("C2");
+                    }
+                    else
+                    {
+                        txtSubtotal.Text = "R$ 0,00";
+                    }
+                }
+            }
+        }
+    }
+
+    private void ModalQtd_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            e.Handled = true;
+            if (sender is TextBox tb && tb.DataContext is PedidoItem item && this.DataContext is PedidoViewModel vm)
+            {
+                SalvarQuantidadeModal(tb, item, vm);
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            _activeQtdFlyout?.Hide();
+            FocarCodigoProduto();
+            e.Handled = true;
+        }
+    }
+
+    private void BtnSalvarQtdItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is PedidoItem item && this.DataContext is PedidoViewModel vm)
+        {
+            SalvarQuantidadeModal(btn, item, vm);
+        }
+    }
+
+    private void SalvarQuantidadeModal(FrameworkElement sender, PedidoItem item, PedidoViewModel vm)
+    {
+        var panel = ObterPainelFlyoutQuantidade(sender);
+        if (panel != null)
+        {
+            var txtQtd = panel.FindName("TxtModalQuantidade") as TextBox;
+            if (txtQtd != null)
+            {
+                if (decimal.TryParse(txtQtd.Text.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var novaQtd))
+                {
+                    if (novaQtd <= 0)
+                    {
+                        vm.ExibirMensagem("A quantidade deve ser maior que zero.", false, 4000);
+                        return;
+                    }
+
+                    bool ok = vm.AtualizarQuantidadeItem(item, novaQtd);
+                    if (ok)
+                    {
+                        _activeQtdFlyout?.Hide();
+                        FocarCodigoProduto();
+                    }
+                }
+                else
+                {
+                    vm.ExibirMensagem("Informe uma quantidade válida.", false, 3000);
+                }
+            }
+        }
+    }
+
+    private StackPanel? ObterPainelFlyoutQuantidade(FrameworkElement sender)
+    {
+        if (sender is StackPanel sp) return sp;
+        if (sender.Parent is StackPanel p1) return p1;
+        if (sender.Parent is Grid g && g.Parent is StackPanel p2) return p2;
+        if (sender.Parent is Border b && b.Parent is StackPanel p3) return p3;
+        if (sender.Parent is Grid g2 && g2.Parent is Border b2 && b2.Parent is StackPanel p4) return p4;
+        return null;
+    }
+
     // --- Edição de Desconto do Item já Lançado ---
     private Flyout? _activeItemFlyout;
     private string _modalTipoDesconto = "P"; // P = %, V = R$
@@ -740,7 +907,6 @@ public partial class PedidoCadastroView : UserControl
 
     #region Interações Visuais do Botão Totalizar e Modal de Observações
 
-    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush BrushVerdeFoco = new(Windows.UI.Color.FromArgb(255, 22, 163, 74));
     private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush BrushAzulNormal = new(Windows.UI.Color.FromArgb(255, 2, 132, 199));
     private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush BrushAzulEscuroPadrao = new(Windows.UI.Color.FromArgb(255, 11, 25, 44)); // #0B192C
 
@@ -748,7 +914,7 @@ public partial class PedidoCadastroView : UserControl
     {
         if (BtnTotalizar?.IsEnabled == true)
         {
-            BtnTotalizar.Background = BrushVerdeFoco;
+            BtnTotalizar.Background = BrushAzulEscuroPadrao;
         }
     }
 
@@ -764,7 +930,7 @@ public partial class PedidoCadastroView : UserControl
     {
         if (BtnTotalizar?.IsEnabled == true)
         {
-            BtnTotalizar.Background = BrushVerdeFoco;
+            BtnTotalizar.Background = BrushAzulEscuroPadrao;
         }
     }
 

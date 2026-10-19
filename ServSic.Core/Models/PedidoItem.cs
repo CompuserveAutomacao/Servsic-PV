@@ -38,6 +38,11 @@ public class PedidoItem : INotifyPropertyChanged
                 _quantidade = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SubtotalBruto));
+                OnPropertyChanged(nameof(PercentualDesconto));
+                OnPropertyChanged(nameof(PercentualDescontoFormatado));
+                OnPropertyChanged(nameof(MaxDescontoValor));
+                OnPropertyChanged(nameof(MaxDescontoValorFormatado));
+                OnPropertyChanged(nameof(Lucro));
                 RecalcularTotal();
             }
         }

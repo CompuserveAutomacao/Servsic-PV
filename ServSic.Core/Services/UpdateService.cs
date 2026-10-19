@@ -154,18 +154,35 @@ public static class UpdateService
         // O script batch aguarda o encerramento do processo, descompacta sobrescrevendo e preservando Servcom.dll
         string batContent = $@"@echo off
 title Atualizando SERVSIC PV...
-echo Aguardando o encerramento do SERVSIC PV...
+echo ========================================================
+echo       ATUALIZANDO SERVSIC PV PARA NOVA VERSAO
+echo ========================================================
+echo Aguardando encerramento do SERVSIC PV...
 timeout /t 2 /nobreak >nul
 
 :: Forca o encerramento do SERVSIC PV se ainda estiver aberto
 taskkill /f /im {appExeName} >nul 2>&1
 
-:: Descompacta por cima da pasta de instalacao atual preservando Servcom.dll
-echo Aplicando arquivos da nova versao...
-tar -xf ""{zipPath}"" -C ""{currentDir}"" --exclude=""Servcom.dll""
+:: Preserva Servcom.dll se existir
+if exist ""{currentDir}\Servcom.dll"" (
+    copy /y ""{currentDir}\Servcom.dll"" ""{tempDir}\Servcom.dll.bak"" >nul 2>&1
+)
 
-:: Reabre a nova versao do SERVSIC PV
+echo Extraindo arquivos da nova versao...
+tar -xf ""{zipPath}"" -C ""{currentDir}"" --exclude=""Servcom.dll"" >nul 2>&1
+if errorlevel 1 (
+    echo Tentando metodo alternativo de extracao...
+    powershell -NoProfile -Command ""Expand-Archive -Path '{zipPath}' -DestinationPath '{currentDir}' -Force""
+)
+
+:: Restaura Servcom.dll original
+if exist ""{tempDir}\Servcom.dll.bak"" (
+    copy /y ""{tempDir}\Servcom.dll.bak"" ""{currentDir}\Servcom.dll"" >nul 2>&1
+    del /q ""{tempDir}\Servcom.dll.bak"" >nul 2>&1
+)
+
 echo Iniciando versao atualizada...
+timeout /t 1 /nobreak >nul
 start """" /d ""{currentDir}"" ""{appExeName}""
 
 :: Limpa o zip e agenda a auto-exclusao do proprio script .bat

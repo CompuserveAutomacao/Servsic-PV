@@ -135,6 +135,15 @@ public class CupomFormatadorService
                 string qtdUnit = $"{item.Quantidade:N3} {item.Unidade} x {item.VlUnitario:N2}";
                 string totItem = item.Total.ToString("N2", PtBr);
                 sb.AppendLine(AlinharEsquerdaDireita($"      {qtdUnit}", totItem, colunas));
+
+                if (item.Desconto > 0)
+                {
+                    decimal percDesc = item.PercentualDesconto;
+                    string descTexto = percDesc > 0
+                        ? $"      DESCONTO ITEM ({percDesc:N2}%):"
+                        : "      DESCONTO ITEM:";
+                    sb.AppendLine(AlinharEsquerdaDireita(descTexto, $"- {item.Desconto:N2}", colunas));
+                }
             }
             else
             {
@@ -142,6 +151,11 @@ public class CupomFormatadorService
                 string qtdUnit = $"{item.Quantidade:N2} {item.Unidade} x {item.VlUnitario:N2}";
                 string totItem = item.Total.ToString("N2", PtBr);
                 sb.AppendLine(AlinharEsquerdaDireita(qtdUnit, totItem, colunas));
+
+                if (item.Desconto > 0)
+                {
+                    sb.AppendLine(AlinharEsquerdaDireita("  DESC. ITEM:", $"- {item.Desconto:N2}", colunas));
+                }
             }
             seq++;
         }
@@ -153,8 +167,14 @@ public class CupomFormatadorService
         sb.AppendLine(AlinharEsquerdaDireita("QTD. TOTAL DE ITENS:", totalQtdItens.ToString(), colunas));
         sb.AppendLine(AlinharEsquerdaDireita("SUBTOTAL (R$):", pedido.Subtotal.ToString("N2", PtBr), colunas));
 
+        decimal totalDescontosItens = System.Linq.Enumerable.Sum(pedido.Itens, i => i.Desconto);
+        if (totalDescontosItens > 0)
+        {
+            sb.AppendLine(AlinharEsquerdaDireita("DESC. ITENS (R$):", $"- {totalDescontosItens:N2}", colunas));
+        }
+
         if (pedido.Desconto > 0)
-            sb.AppendLine(AlinharEsquerdaDireita("DESCONTO (R$):", $"- {pedido.Desconto:N2}", colunas));
+            sb.AppendLine(AlinharEsquerdaDireita("DESCONTO GERAL (R$):", $"- {pedido.Desconto:N2}", colunas));
 
         if (pedido.Acrescimo > 0)
             sb.AppendLine(AlinharEsquerdaDireita("ACRESCIMO / FRETE (R$):", $"+ {pedido.Acrescimo:N2}", colunas));

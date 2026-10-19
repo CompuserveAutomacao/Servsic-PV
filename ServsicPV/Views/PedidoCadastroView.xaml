@@ -494,7 +494,7 @@
                                     <ColumnDefinition Width="130"/> <!-- CÓDIGO -->
                                     <ColumnDefinition Width="*"/>   <!-- DESCRIÇÃO -->
                                     <ColumnDefinition Width="38"/>  <!-- UN -->
-                                    <ColumnDefinition Width="45"/>  <!-- QTD -->
+                                    <ColumnDefinition Width="54"/>  <!-- QTD -->
                                     <ColumnDefinition Width="80"/>  <!-- UNITÁRIO -->
                                     <ColumnDefinition Width="72"/>  <!-- DESCONTO -->
                                     <ColumnDefinition Width="85"/>  <!-- TOTAL -->
@@ -547,7 +547,7 @@
                                                 <ColumnDefinition Width="130"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="38"/>
-                                                <ColumnDefinition Width="45"/>
+                                                <ColumnDefinition Width="54"/>
                                                 <ColumnDefinition Width="80"/>
                                                 <ColumnDefinition Width="72"/>
                                                 <ColumnDefinition Width="85"/>
@@ -565,10 +565,93 @@
                                             <!-- 2. Unidade -->
                                             <TextBlock Grid.Column="2" Text="{Binding Unidade}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
-                                            <!-- 3. Quantidade -->
-                                            <Border Grid.Column="3" Background="#F1F5F9" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Quantidade}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
-                                            </Border>
+                                            <!-- 3. Quantidade com Badge Interativo e Flyout Compacto -->
+                                            <Button Grid.Column="3" 
+                                                    Click="BtnAbrirEdicaoQuantidade_Click"
+                                                    Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="1"
+                                                    CornerRadius="4" Padding="4,1" Height="24" MinWidth="0" MinHeight="0"
+                                                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                    ToolTipService.ToolTip="Clique para alterar a quantidade deste item">
+                                                <Grid ColumnSpacing="3">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" 
+                                                               Text="{Binding Quantidade}" 
+                                                               FontSize="11.5" FontWeight="Bold" 
+                                                               Foreground="{StaticResource BrushTextDark}" 
+                                                               VerticalAlignment="Center"/>
+                                                    <ic:SymbolIcon Grid.Column="1" Symbol="Edit" FontSize="9" Foreground="#64748B" VerticalAlignment="Center"/>
+                                                </Grid>
+                                                <Button.Flyout>
+                                                    <Flyout x:Name="FlyoutEdicaoQuantidade">
+                                                        <StackPanel Width="270" Spacing="10" Padding="4">
+                                                            <TextBlock Text="Alterar Quantidade do Item" FontWeight="Bold" FontSize="13" Foreground="{StaticResource BrushTextDark}"/>
+                                                            
+                                                            <TextBlock FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}" TextWrapping="Wrap">
+                                                                <Run Text="Produto: "/><Run Text="{Binding Produto}" FontWeight="SemiBold"/>
+                                                                <LineBreak/>
+                                                                <Run Text="Valor Unitário: "/><Run Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}" FontWeight="SemiBold"/>
+                                                            </TextBlock>
+
+                                                            <Grid ColumnSpacing="6">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="38"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="38"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <Button Grid.Column="0" 
+                                                                        Content="-" 
+                                                                        Click="BtnModalDiminuirQtd_Click"
+                                                                        Width="38" Height="34" 
+                                                                        CornerRadius="4" 
+                                                                        Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1"
+                                                                        FontWeight="Bold" FontSize="15" Foreground="{StaticResource BrushTextDark}"
+                                                                        ToolTipService.ToolTip="Diminuir 1 unidade"/>
+
+                                                                <TextBox x:Name="TxtModalQuantidade" 
+                                                                         Grid.Column="1" 
+                                                                         Height="34" 
+                                                                         FontSize="13.5" 
+                                                                         FontWeight="Bold" 
+                                                                         TextAlignment="Center"
+                                                                         VerticalContentAlignment="Center"
+                                                                         BeforeTextChanging="DecimalOnly_BeforeTextChanging"
+                                                                         KeyDown="ModalQtd_KeyDown"
+                                                                         TextChanged="TxtModalQuantidade_TextChanged"/>
+
+                                                                <Button Grid.Column="2" 
+                                                                        Content="+" 
+                                                                        Click="BtnModalAumentarQtd_Click"
+                                                                        Width="38" Height="34" 
+                                                                        CornerRadius="4" 
+                                                                        Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1"
+                                                                        FontWeight="Bold" FontSize="15" Foreground="{StaticResource BrushTextDark}"
+                                                                        ToolTipService.ToolTip="Aumentar 1 unidade"/>
+                                                            </Grid>
+
+                                                            <!-- Prévia do Subtotal Recalculado -->
+                                                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="8,6">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Grid.Column="0" Text="Novo Subtotal Previsto:" FontSize="11" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                                                    <TextBlock x:Name="TxtModalNovoSubtotal" Grid.Column="1" Text="R$ 0,00" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                                                </Grid>
+                                                            </Border>
+
+                                                            <Button Content="Salvar Quantidade" 
+                                                                    Click="BtnSalvarQtdItem_Click"
+                                                                    Style="{StaticResource BtnPrimary}" 
+                                                                    HorizontalAlignment="Stretch" Height="34" FontWeight="Bold"/>
+                                                        </StackPanel>
+                                                    </Flyout>
+                                                </Button.Flyout>
+                                            </Button>
 
                                             <!-- 4. Preço Unitário -->
                                             <TextBlock Grid.Column="4" Text="{Binding VlUnitario, Converter={StaticResource CurrencyConverter}}" FontSize="12" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
@@ -900,34 +983,62 @@
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Botão Totalizar (F6) -> Habilitado somente quando houver itens e verde ao focar -->
-                        <Button x:Name="BtnTotalizar"
-                                Grid.Row="2"
-                                Command="{Binding SalvarCommand}"
-                                IsEnabled="{Binding HasItens}"
-                                Style="{StaticResource BtnPrimary}"
-                                Height="48"
-                                FontSize="15"
-                                FontWeight="Bold"
-                                GotFocus="BtnTotalizar_GotFocus"
-                                LostFocus="BtnTotalizar_LostFocus"
-                                PointerEntered="BtnTotalizar_PointerEntered"
-                                PointerExited="BtnTotalizar_PointerExited">
-                            <Button.Resources>
-                                <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
-                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#16A34A"/>
-                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#15803D"/>
-                                <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#E2E8F0"/>
-                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
-                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
-                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
-                                <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#94A3B8"/>
-                            </Button.Resources>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <ic:SymbolIcon Symbol="Wallet" FontSize="18"/>
-                                <TextBlock Text="{Binding TextoBotaoSalvar}"/>
-                            </StackPanel>
-                        </Button>
+                        <!-- Alternador: Lançar Pagamentos (Botão Tomada) e Botão de Ação (Totalizar / Finalizar F6) -->
+                        <StackPanel Grid.Row="2" Spacing="8">
+                            <!-- Botão Tomada: Lançar Pagamentos Opcional -->
+                            <Border Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12,8">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="Payment" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <TextBlock Text="Lançar Pagamentos" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding StatusPagamentoModoTexto}" FontSize="10.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1"
+                                                  x:Name="TglLancarPagamentos"
+                                                  IsOn="{Binding LancarPagamentos, Mode=TwoWay}"
+                                                  OnContent=""
+                                                  OffContent=""
+                                                  MinWidth="0"
+                                                  VerticalAlignment="Center"
+                                                  ToolTipService.ToolTip="Ative para informar pagamentos e parcelas no balcão (Totalizar). Desative para finalizar e imprimir direto."/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Botão Finalizar / Totalizar (F6) -> Habilitado somente quando houver itens -->
+                            <Button x:Name="BtnTotalizar"
+                                    Command="{Binding SalvarCommand}"
+                                    IsEnabled="{Binding HasItens}"
+                                    Style="{StaticResource BtnPrimary}"
+                                    Height="48"
+                                    FontSize="15"
+                                    FontWeight="Bold"
+                                    GotFocus="BtnTotalizar_GotFocus"
+                                    LostFocus="BtnTotalizar_LostFocus"
+                                    PointerEntered="BtnTotalizar_PointerEntered"
+                                    PointerExited="BtnTotalizar_PointerExited">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0B192C"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#E2E8F0"/>
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#94A3B8"/>
+                                </Button.Resources>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <ic:SymbolIcon Symbol="Wallet" FontSize="18" Visibility="{Binding LancarPagamentos, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="18" Visibility="{Binding LancarPagamentos, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
+                                    <TextBlock Text="{Binding TextoBotaoSalvar}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
 
                     </Grid>
                 </Border>

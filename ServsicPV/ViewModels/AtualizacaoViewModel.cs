@@ -19,6 +19,22 @@ public class AtualizacaoViewModel : ViewModelBase
     private string _errorMessage = string.Empty;
     private string _downloadUrl = string.Empty;
 
+    public string DownloadUrl
+    {
+        get => _downloadUrl;
+        set
+        {
+            if (SetProperty(ref _downloadUrl, value))
+            {
+                OnPropertyChanged(nameof(CanAtualizar));
+                (AtualizarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool CanAtualizar => !IsDownloading && !string.IsNullOrEmpty(DownloadUrl);
+    public bool CanClose => !IsDownloading;
+
     public bool IsOpen
     {
         get => _isOpen;
@@ -39,13 +55,12 @@ public class AtualizacaoViewModel : ViewModelBase
             if (SetProperty(ref _isDownloading, value))
             {
                 OnPropertyChanged(nameof(CanClose));
+                OnPropertyChanged(nameof(CanAtualizar));
                 (AtualizarCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 (FecharCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
         }
     }
-
-    public bool CanClose => !IsDownloading;
 
     public string CurrentVersion
     {
@@ -89,7 +104,7 @@ public class AtualizacaoViewModel : ViewModelBase
 
     public AtualizacaoViewModel()
     {
-        AtualizarCommand = new RelayCommand(async _ => await ExecutarAtualizacaoAsync(), _ => !IsDownloading && !string.IsNullOrEmpty(_downloadUrl));
+        AtualizarCommand = new RelayCommand(async _ => await ExecutarAtualizacaoAsync(), _ => CanAtualizar);
         FecharCommand = new RelayCommand(_ => Fechar(), _ => CanClose);
         VerificarCommand = new RelayCommand(async _ => await VerificarComFeedbackAsync());
     }
@@ -113,11 +128,15 @@ public class AtualizacaoViewModel : ViewModelBase
                 CurrentVersion = updateInfo.CurrentVersion;
                 NewVersion = updateInfo.NewVersion;
                 Changelog = updateInfo.Changelog;
-                _downloadUrl = updateInfo.DownloadUrl;
+                DownloadUrl = updateInfo.DownloadUrl;
                 ErrorMessage = string.Empty;
                 StatusText = string.Empty;
                 Progress = 0;
                 IsOpen = true;
+                OnPropertyChanged(nameof(CanAtualizar));
+                OnPropertyChanged(nameof(CanClose));
+                (AtualizarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (FecharCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 return true;
             }
         }
@@ -145,11 +164,15 @@ public class AtualizacaoViewModel : ViewModelBase
                 CurrentVersion = updateInfo.CurrentVersion;
                 NewVersion = updateInfo.NewVersion;
                 Changelog = updateInfo.Changelog;
-                _downloadUrl = updateInfo.DownloadUrl;
+                DownloadUrl = updateInfo.DownloadUrl;
                 ErrorMessage = string.Empty;
                 StatusText = string.Empty;
                 Progress = 0;
                 IsOpen = true;
+                OnPropertyChanged(nameof(CanAtualizar));
+                OnPropertyChanged(nameof(CanClose));
+                (AtualizarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (FecharCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
             else
             {
