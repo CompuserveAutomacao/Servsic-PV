@@ -10,10 +10,12 @@ public class Cliente
     public string? CGC { get; set; }
     public string? Endereco { get; set; }
     public string? Numero { get; set; }
+    public string? ComplEnd { get; set; }
     public string? Bairro { get; set; }
     public string? Cidade { get; set; }
     public string? Estado { get; set; }
     public string? CEP { get; set; }
+    public string? Cep { get => CEP; set => CEP = value; }
     public string? Telefone { get; set; }
     public string? Celular { get; set; }
     public string? Email { get; set; }
@@ -23,6 +25,65 @@ public class Cliente
     public decimal SaldoDevedor { get; set; } = 0m;
     public decimal TotalVencido { get; set; } = 0m;
     public int TitulosVencidos { get; set; } = 0;
+
+    public bool HasEndereco => !string.IsNullOrWhiteSpace(Endereco) || !string.IsNullOrWhiteSpace(Bairro) || !string.IsNullOrWhiteSpace(Cidade);
+
+    public string EnderecoFormatado
+    {
+        get
+        {
+            var partes = new System.Collections.Generic.List<string>();
+
+            // Logradouro, Número e Complemento
+            if (!string.IsNullOrWhiteSpace(Endereco))
+            {
+                string logradouro = Endereco.Trim();
+                if (!string.IsNullOrWhiteSpace(Numero))
+                    logradouro += $", {Numero.Trim()}";
+                if (!string.IsNullOrWhiteSpace(ComplEnd) &&
+                    !string.Equals(ComplEnd.Trim(), Endereco.Trim(), System.StringComparison.OrdinalIgnoreCase) &&
+                    !Endereco.Trim().Contains(ComplEnd.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                {
+                    logradouro += $" ({ComplEnd.Trim()})";
+                }
+                partes.Add(logradouro);
+            }
+            else if (!string.IsNullOrWhiteSpace(Numero))
+            {
+                string num = $"Nº {Numero.Trim()}";
+                if (!string.IsNullOrWhiteSpace(ComplEnd))
+                    num += $" ({ComplEnd.Trim()})";
+                partes.Add(num);
+            }
+            else if (!string.IsNullOrWhiteSpace(ComplEnd))
+            {
+                partes.Add(ComplEnd.Trim());
+            }
+
+            // Bairro
+            if (!string.IsNullOrWhiteSpace(Bairro))
+                partes.Add($"Bairro: {Bairro.Trim()}");
+
+            // Cidade / UF
+            if (!string.IsNullOrWhiteSpace(Cidade))
+            {
+                string cidUf = Cidade.Trim();
+                if (!string.IsNullOrWhiteSpace(Estado))
+                    cidUf += $" - {Estado.Trim()}";
+                partes.Add(cidUf);
+            }
+            else if (!string.IsNullOrWhiteSpace(Estado))
+            {
+                partes.Add(Estado.Trim());
+            }
+
+            // CEP
+            if (!string.IsNullOrWhiteSpace(CEP))
+                partes.Add($"CEP: {CEP.Trim()}");
+
+            return partes.Count > 0 ? string.Join(" • ", partes) : "Endereço não cadastrado";
+        }
+    }
 
     public decimal LimiteDisponivel => LimiteCred > 0 ? Math.Max(0m, LimiteCred - SaldoDevedor) : 0m;
     public bool HasDividaAberta => SaldoDevedor > 0;

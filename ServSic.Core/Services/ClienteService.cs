@@ -54,6 +54,7 @@ public class ClienteService
                 c.CGC,
                 c.Endereco,
                 c.Numero,
+                c.ComplEnd,
                 c.Bairro,
                 c.Cidade,
                 c.Estado,
@@ -95,6 +96,7 @@ public class ClienteService
                 c.CGC,
                 c.Endereco,
                 c.Numero,
+                c.ComplEnd,
                 c.Bairro,
                 c.Cidade,
                 c.Estado,
@@ -207,11 +209,11 @@ public class ClienteService
         const string sqlInsert = @"
             INSERT INTO TabCli (
                 Controle, Codigo, Nome, FANTASIA_APELIDO, Cpf, CGC,
-                Telefone, Celular, Endereco, Numero, Bairro, Cidade, Estado, Cep, eMail,
+                Telefone, Celular, Endereco, Numero, ComplEnd, Bairro, Cidade, Estado, Cep, eMail,
                 Data, Inativo
             ) VALUES (
                 @Controle, @Codigo, @Nome, @Fantasia, @Cpf, @CGC,
-                @Telefone, @Celular, @Endereco, @Numero, @Bairro, @Cidade, @Estado, @CEP, @Email,
+                @Telefone, @Celular, @Endereco, @Numero, @ComplEnd, @Bairro, @Cidade, @Estado, @CEP, @Email,
                 @Data, 'N'
             );";
 
@@ -227,6 +229,7 @@ public class ClienteService
             Celular = cliente.Celular?.Trim(),
             Endereco = cliente.Endereco?.Trim(),
             Numero = cliente.Numero?.Trim(),
+            ComplEnd = cliente.ComplEnd?.Trim(),
             Bairro = cliente.Bairro?.Trim(),
             Cidade = cliente.Cidade?.Trim(),
             Estado = cliente.Estado?.Trim(),

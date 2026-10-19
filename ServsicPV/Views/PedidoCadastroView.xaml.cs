@@ -38,10 +38,37 @@ public partial class PedidoCadastroView : UserControl
             };
             vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
             vm.OnCheckoutAberto = () => FocarCheckoutValor();
+            vm.OnSolicitarFocoSenhaGerente = () => FocarSenhaGerente();
 
             vm.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(PedidoViewModel.IsConfirmarAlteracaoTipoOpen))
+                if (e.PropertyName == nameof(PedidoViewModel.IsLiberacaoGerenteOpen))
+                {
+                    if (vm.IsLiberacaoGerenteOpen)
+                    {
+                        FocarSenhaGerente();
+                    }
+                    else
+                    {
+                        FocarCodigoProduto();
+                    }
+                }
+                else if (e.PropertyName == nameof(PedidoViewModel.IsConfirmarSalvarPendenteOpen))
+                {
+                    if (vm.IsConfirmarSalvarPendenteOpen)
+                    {
+                        DispatcherQueue.TryEnqueue(async () =>
+                        {
+                            await Task.Delay(40);
+                            BtnConfirmarSalvarPendente?.Focus(FocusState.Programmatic);
+                        });
+                    }
+                    else
+                    {
+                        FocarCodigoProduto();
+                    }
+                }
+                else if (e.PropertyName == nameof(PedidoViewModel.IsConfirmarAlteracaoTipoOpen))
                 {
                     if (vm.IsConfirmarAlteracaoTipoOpen)
                     {
@@ -120,6 +147,16 @@ public partial class PedidoCadastroView : UserControl
         CheckoutModal?.FocarValor();
     }
 
+    public void FocarSenhaGerente()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            await Task.Delay(50);
+            TxtSenhaGerente?.Focus(FocusState.Programmatic);
+            TxtSenhaGerente?.SelectAll();
+        });
+    }
+
     private void DecimalOnly_BeforeTextChanging(TextBox sender, TextBoxBeforeTextChangingEventArgs args)
     {
         if (string.IsNullOrEmpty(args.NewText))
@@ -136,6 +173,46 @@ public partial class PedidoCadastroView : UserControl
     {
         if (this.DataContext is PedidoViewModel vm)
         {
+            // Se o modal de liberação de gerente estiver aberto
+            if (vm.IsLiberacaoGerenteOpen)
+            {
+                if (e.Key == Windows.System.VirtualKey.Enter)
+                {
+                    vm.ConfirmarLiberacaoGerenteCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Windows.System.VirtualKey.Escape)
+                {
+                    vm.CancelarLiberacaoGerenteCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            // Se o modal de confirmação de salvar pendente estiver aberto
+            if (vm.IsConfirmarSalvarPendenteOpen)
+            {
+                if (e.Key == Windows.System.VirtualKey.Enter)
+                {
+                    vm.ConfirmarSalvarPendenteCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Windows.System.VirtualKey.Delete)
+                {
+                    vm.DescartarEContinuarCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Windows.System.VirtualKey.Escape)
+                {
+                    vm.CancelarSalvarPendenteCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+            }
+
             // Se o modal de confirmação de tipo estiver aberto, atalhos prioritários Enter / Esc
             if (vm.IsConfirmarAlteracaoTipoOpen)
             {
@@ -172,6 +249,16 @@ public partial class PedidoCadastroView : UserControl
                 return;
             }
 
+            // Atalho Ctrl+F: Abrir Consulta de Pedidos
+            var ctrlState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control);
+            bool isCtrlPressed = (ctrlState & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+            if (isCtrlPressed && e.Key == Windows.System.VirtualKey.F)
+            {
+                OnSolicitarHistorico?.Invoke();
+                e.Handled = true;
+                return;
+            }
+
             if (e.Key == Windows.System.VirtualKey.F3)
             {
                 if (vm.BuscarClienteRapidoCommand.CanExecute(null))
@@ -188,7 +275,7 @@ public partial class PedidoCadastroView : UserControl
                     e.Handled = true;
                 }
             }
-            else if (e.Key == Windows.System.VirtualKey.F2)
+            else if (e.Key == Windows.System.VirtualKey.F7)
             {
                 if (vm.NovoCommand.CanExecute(null))
                 {
@@ -196,9 +283,17 @@ public partial class PedidoCadastroView : UserControl
                     e.Handled = true;
                 }
             }
+            else if (e.Key == Windows.System.VirtualKey.F9)
+            {
+                if (vm.AlternarTipoCommand.CanExecute(null))
+                {
+                    vm.AlternarTipoCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
             else if (e.Key == Windows.System.VirtualKey.F6 || e.Key == Windows.System.VirtualKey.F10)
             {
-                if (!vm.IsCheckoutOpen && !vm.IsConfirmarAlteracaoTipoOpen && !vm.IsCadastroRapidoClienteOpen && !vm.IsConsultaClienteOpen)
+                if (!vm.IsCheckoutOpen && !vm.IsConfirmarAlteracaoTipoOpen && !vm.IsConfirmarSalvarPendenteOpen && !vm.IsCadastroRapidoClienteOpen && !vm.IsConsultaClienteOpen)
                 {
                     if (vm.SalvarCommand.CanExecute(null))
                     {
@@ -722,6 +817,88 @@ public partial class PedidoCadastroView : UserControl
                 vm.IsObservacoesOpen = false;
                 e.Handled = true;
             }
+        }
+    }
+
+    private void ModalSalvarPendente_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                vm.ConfirmarSalvarPendenteCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Windows.System.VirtualKey.Delete)
+            {
+                vm.DescartarEContinuarCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Windows.System.VirtualKey.Escape)
+            {
+                vm.CancelarSalvarPendenteCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
+    }
+
+
+
+    private void ModalLiberacaoGerente_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                vm.ConfirmarLiberacaoGerenteCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Windows.System.VirtualKey.Escape)
+            {
+                vm.CancelarLiberacaoGerenteCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void TxtSenhaGerente_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                vm.ConfirmarLiberacaoGerenteCommand.Execute(null);
+                e.Handled = true;
+            }
+            else if (e.Key == Windows.System.VirtualKey.Escape)
+            {
+                vm.CancelarLiberacaoGerenteCommand.Execute(null);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void BtnCancelarLiberacao_Click(object sender, RoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            vm.CancelarLiberacaoGerenteCommand.Execute(null);
+        }
+    }
+
+    private void BtnConfirmarLiberacao_Click(object sender, RoutedEventArgs e)
+    {
+        if (this.DataContext is PedidoViewModel vm)
+        {
+            vm.ConfirmarLiberacaoGerenteCommand.Execute(null);
+        }
+    }
+
+    private void BtnAlternarEntregaItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is PedidoItem item)
+        {
+            item.IsEntrega = !item.IsEntrega;
         }
     }
 

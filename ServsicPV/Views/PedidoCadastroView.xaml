@@ -23,6 +23,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- 0. Card Compacto de Cliente -->
                     <RowDefinition Height="*"/>    <!-- 1. Grade de Produtos e Inserção de Itens -->
+                    <RowDefinition Height="Auto"/> <!-- 2. Card de Ações Rápidas (Novo, Salvar, Obs, Consultar) -->
                 </Grid.RowDefinitions>
 
                 <!-- 0. Card de Identificação do Cliente -->
@@ -41,39 +42,75 @@
 
                         <!-- Conteúdo: ESTADO A ou ESTADO B -->
                         <Grid Grid.Row="1">
-                            <!-- ESTADO A: Nenhum cliente selecionado (Campo de Pesquisa + Ações) -->
-                            <Grid Visibility="{Binding HasClienteSelecionado, Converter={StaticResource InverseBoolToVisibilityConverter}}" ColumnSpacing="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                            <!-- ESTADO A: Nenhum cliente selecionado (Campo de Pesquisa + Ações + Entrega) -->
+                            <StackPanel Visibility="{Binding HasClienteSelecionado, Converter={StaticResource InverseBoolToVisibilityConverter}}" Spacing="6">
+                                <Grid ColumnSpacing="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
 
-                                <!-- Input de Busca Rápida -->
-                                <TextBox Grid.Column="0"
-                                         x:Name="TxtFiltroCliente"
-                                         Text="{Binding FiltroCliente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         KeyDown="FiltroCliente_KeyDown"
-                                         PlaceholderText="Digite Código, CPF/CNPJ ou Nome do Cliente e aperte Enter ou F3..."
-                                         Height="38"
-                                         VerticalAlignment="Center"/>
+                                    <!-- Input de Busca Rápida -->
+                                    <TextBox Grid.Column="0"
+                                             x:Name="TxtFiltroCliente"
+                                             Text="{Binding FiltroCliente, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             KeyDown="FiltroCliente_KeyDown"
+                                             PlaceholderText="Digite Código, CPF/CNPJ ou Nome do Cliente e aperte Enter ou F3..."
+                                             Height="38"
+                                             VerticalAlignment="Center"/>
 
-                                <!-- Botão Buscar com Atalho F3 -->
-                                <Button Grid.Column="1" Command="{Binding BuscarClienteRapidoCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0" ToolTipService.ToolTip="Buscar ou Consultar Clientes (F3)">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <ic:SymbolIcon Symbol="Search" FontSize="16"/>
-                                        <TextBlock Text="Buscar (F3)" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Button>
+                                    <!-- Botão Buscar com Atalho F3 -->
+                                    <Button Grid.Column="1" Command="{Binding BuscarClienteRapidoCommand}" Style="{StaticResource BtnPrimary}" Height="38" Padding="16,0" ToolTipService.ToolTip="Buscar ou Consultar Clientes (F3)">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <ic:SymbolIcon Symbol="Search" FontSize="16"/>
+                                            <TextBlock Text="Buscar (F3)" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <!-- Botão Cadastrar Rápido -->
-                                <Button Grid.Column="2" Command="{Binding AbrirCadastroRapidoClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="14,0" ToolTipService.ToolTip="Cadastro Rápido de Novo Cliente">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <ic:SymbolIcon Symbol="Add" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
-                                        <TextBlock Text="Novo Cliente" FontWeight="SemiBold"/>
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
+                                    <!-- Botão Cadastrar Rápido -->
+                                    <Button Grid.Column="2" Command="{Binding AbrirCadastroRapidoClienteCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="14,0" ToolTipService.ToolTip="Cadastro Rápido de Novo Cliente">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <ic:SymbolIcon Symbol="Add" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <TextBlock Text="Novo Cliente" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- Botão Endereço de Entrega Avulsa (Ctrl+E) -->
+                                    <Button Grid.Column="3" Command="{Binding AbrirEnderecoEntregaCommand}" Style="{StaticResource BtnSecondary}" Height="38" Padding="12,0" ToolTipService.ToolTip="Informar Endereço de Entrega para este Pedido (Ctrl+E)">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <ic:SymbolIcon Symbol="VehicleTruck" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <TextBlock Text="Entrega (Ctrl+E)" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+
+                                <!-- Chip Informativo de Endereço de Entrega Avulso no Pedido -->
+                                <Border Visibility="{Binding HasEnderecoEntregaDefinido, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="10,5">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ic:SymbolIcon Grid.Column="0" Symbol="VehicleTruck" FontSize="15" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource BrushTextDark}">
+                                            <Run Text="Entrega no Pedido: " FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <Run Text="{Binding ResumoEnderecoEntrega}"/>
+                                        </TextBlock>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                                            <Button Command="{Binding AbrirEnderecoEntregaCommand}" Style="{StaticResource BtnSecondary}" Height="26" Padding="8,0" ToolTipService.ToolTip="Alterar dados da entrega (Ctrl+E)">
+                                                <TextBlock Text="Alterar" FontSize="11" FontWeight="SemiBold"/>
+                                            </Button>
+                                            <Button Command="{Binding RemoverEnderecoEntregaCommand}" Style="{StaticResource BtnSecondary}" Height="26" Padding="6,0" ToolTipService.ToolTip="Remover entrega deste pedido">
+                                                <ic:SymbolIcon Symbol="Dismiss" FontSize="12" Foreground="{StaticResource BrushDanger}"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
 
                             <!-- ESTADO B: Cliente Selecionado (Exibição Elegante dos Dados + Crédito + Botão Trocar) -->
                             <Grid Visibility="{Binding HasClienteSelecionado, Converter={StaticResource BoolToVisibilityConverter}}" ColumnSpacing="14">
@@ -89,21 +126,55 @@
                                     <ic:SymbolIcon Symbol="Person" FontSize="20" Foreground="{StaticResource BrushServsicBlue}"/>
                                 </Border>
 
-                                <!-- Dados Cadastrais do Cliente -->
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                <!-- Dados Cadastrais e Endereço do Cliente -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                    <!-- Linha 1: Nome, Código, Documento, Telefone -->
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Pedido.Cliente}" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                                         <Border Background="#F1F5F9" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
                                             <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}">
                                                 <Run Text="Cód: "/><Run Text="{Binding Pedido.LkCliente}"/>
                                             </TextBlock>
                                         </Border>
+
+                                        <!-- Documento (CPF / CNPJ) -->
+                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center"
+                                                Visibility="{Binding Pedido.DocFormatado, Converter={StaticResource StringToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding Pedido.DocFormatado}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        </Border>
+
+                                        <!-- Telefone / Celular -->
+                                        <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,1" VerticalAlignment="Center"
+                                                Visibility="{Binding Pedido.TelFormatado, Converter={StaticResource StringToVisibilityConverter}}">
+                                            <TextBlock Text="{Binding Pedido.TelFormatado}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                        </Border>
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <TextBlock Text="{Binding Pedido.DocFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Text="{Binding Pedido.TelFormatado}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                        <TextBlock Text="{Binding Pedido.CidadeFormatada}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
-                                    </StackPanel>
+
+                                    <!-- Linha 2: Endereço Completo com Ícone de Localização, Quebra Automática de Linha e Botão + Destinos -->
+                                    <Grid ColumnSpacing="8" VerticalAlignment="Center" Margin="0,1,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ic:SymbolIcon Grid.Column="0" Symbol="Location" FontSize="12" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                        <TextBlock Grid.Column="1" 
+                                                   Text="{Binding EnderecoClienteExibicao}" 
+                                                   FontSize="12" 
+                                                   Foreground="{StaticResource BrushTextSubtle}" 
+                                                   TextWrapping="Wrap"
+                                                   ToolTipService.ToolTip="{Binding EnderecoClienteExibicao}"/>
+                                        <Button Grid.Column="2" Command="{Binding AbrirEnderecoEntregaCommand}" Style="{StaticResource BtnSecondary}" Height="26" Padding="8,0" ToolTipService.ToolTip="Escolher ou cadastrar locais de entrega/obras do cliente (Ctrl+E)">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <ic:SymbolIcon Symbol="Building" FontSize="12" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                <TextBlock Text="+ Locais (Ctrl+E)" FontSize="11" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Grid.Column="3" Command="{Binding EnderecoEntregaViewModel.AbrirGoogleMapsCommand}" Style="{StaticResource BtnSecondary}" Height="26" Padding="6,0" ToolTipService.ToolTip="Ver rota no Google Maps">
+                                            <ic:SymbolIcon Symbol="Map" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        </Button>
+                                    </Grid>
                                 </StackPanel>
 
                                 <!-- DADOS DE CRÉDITO E STATUS A PRAZO (Como no ERP Legado) -->
@@ -356,14 +427,14 @@
                         <Border Grid.Row="3" Background="{StaticResource BrushServsicDark}" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,4,0,2">
                             <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="140"/> <!-- CÓDIGO -->
+                                    <ColumnDefinition Width="130"/> <!-- CÓDIGO -->
                                     <ColumnDefinition Width="*"/>   <!-- DESCRIÇÃO -->
                                     <ColumnDefinition Width="38"/>  <!-- UN -->
                                     <ColumnDefinition Width="45"/>  <!-- QTD -->
                                     <ColumnDefinition Width="80"/>  <!-- UNITÁRIO -->
                                     <ColumnDefinition Width="72"/>  <!-- DESCONTO -->
                                     <ColumnDefinition Width="85"/>  <!-- TOTAL -->
-                                    <ColumnDefinition Width="36"/>  <!-- AÇÕES -->
+                                    <ColumnDefinition Width="34"/>  <!-- AÇÕES -->
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="CÓDIGO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="DESCRIÇÃO DO PRODUTO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
@@ -409,14 +480,14 @@
                                             Margin="0,0,0,6">
                                         <Grid ColumnSpacing="8">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="140"/>
+                                                <ColumnDefinition Width="130"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="38"/>
                                                 <ColumnDefinition Width="45"/>
                                                 <ColumnDefinition Width="80"/>
                                                 <ColumnDefinition Width="72"/>
                                                 <ColumnDefinition Width="85"/>
-                                                <ColumnDefinition Width="36"/>
+                                                <ColumnDefinition Width="34"/>
                                             </Grid.ColumnDefinitions>
 
                                             <!-- 0. Código -->
@@ -520,6 +591,44 @@
 
                     </Grid>
                 </Border>
+
+                <!-- 2. Card de Ações Rápidas do Atendimento (Abaixo de Produtos) -->
+                <Border Grid.Row="2" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14,10">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Novo Pedido / Orçamento (F7) -->
+                        <Button Grid.Column="0"
+                                Command="{Binding NovoCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="36"
+                                HorizontalAlignment="Stretch"
+                                Padding="0"
+                                ToolTipService.ToolTip="Iniciar Novo Pedido ou Orçamento (F7)">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Add" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Novo Pedido (F7)" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Observações -->
+                        <Button Grid.Column="1"
+                                Command="{Binding AbrirObservacoesCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="36"
+                                HorizontalAlignment="Stretch"
+                                Padding="0"
+                                ToolTipService.ToolTip="Inserir ou editar observações do pedido">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Note" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Observações" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
             </Grid>
 
             <!-- ============================================================== -->
@@ -556,14 +665,15 @@
                                             CornerRadius="6"
                                             HorizontalAlignment="Stretch"
                                             VerticalAlignment="Stretch"
-                                            Padding="0">
+                                            Padding="0"
+                                            ToolTipService.ToolTip="Orçamento (F9 para alternar)">
                                         <Button.Resources>
                                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
                                             <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
                                         </Button.Resources>
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                            <ic:SymbolIcon Symbol="DocumentText" FontSize="15" Foreground="{Binding BrushOrcamentoForeground}"/>
-                                            <TextBlock Text="Orçamento" FontWeight="Bold" FontSize="12.5" Foreground="{Binding BrushOrcamentoForeground}"/>
+                                            <ic:SymbolIcon Symbol="DocumentText" FontSize="14" Foreground="{Binding BrushOrcamentoForeground}"/>
+                                            <TextBlock Text="Orçamento (F9)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="12" Foreground="{Binding BrushOrcamentoForeground}"/>
                                         </StackPanel>
                                     </Button>
                                 </Border>
@@ -582,14 +692,15 @@
                                             CornerRadius="6"
                                             HorizontalAlignment="Stretch"
                                             VerticalAlignment="Stretch"
-                                            Padding="0">
+                                            Padding="0"
+                                            ToolTipService.ToolTip="Pré-Venda (F9 para alternar)">
                                         <Button.Resources>
                                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
                                             <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
                                         </Button.Resources>
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                            <ic:SymbolIcon Symbol="Cart" FontSize="15" Foreground="{Binding BrushVendaForeground}"/>
-                                            <TextBlock Text="Pré-Venda" FontWeight="Bold" FontSize="12.5" Foreground="{Binding BrushVendaForeground}"/>
+                                            <ic:SymbolIcon Symbol="Cart" FontSize="14" Foreground="{Binding BrushVendaForeground}"/>
+                                            <TextBlock Text="Pré-Venda (F9)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="12" Foreground="{Binding BrushVendaForeground}"/>
                                         </StackPanel>
                                     </Button>
                                 </Border>
@@ -619,41 +730,7 @@
                             </Grid>
                         </Border>
 
-                        <!-- Botões de Ação do Pedido: Novo Pedido e Observações (Lado a Lado) -->
-                        <Grid ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Button Grid.Column="0"
-                                    Command="{Binding NovoCommand}"
-                                    Style="{StaticResource BtnSecondary}"
-                                    Height="36"
-                                    HorizontalAlignment="Stretch"
-                                    Padding="0"
-                                    ToolTipService.ToolTip="Iniciar Novo Pedido ou Orçamento (F2)">
-                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                    <ic:SymbolIcon Symbol="Add" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    <TextBlock Text="Novo Pedido (F2)" FontSize="11.5" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </Button>
-
-                            <Button Grid.Column="1"
-                                    Command="{Binding AbrirObservacoesCommand}"
-                                    Style="{StaticResource BtnSecondary}"
-                                    Height="36"
-                                    HorizontalAlignment="Stretch"
-                                    Padding="0"
-                                    ToolTipService.ToolTip="Inserir ou editar observações do pedido">
-                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                    <ic:SymbolIcon Symbol="Note" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    <TextBlock Text="Observações" FontSize="11.5" FontWeight="SemiBold"/>
-                                </StackPanel>
-                            </Button>
-                        </Grid>
-
-                        <!-- Botão Consultar Pedidos em Destaque -->
+                        <!-- Botão Consultar Pedidos em Destaque (Acima do Resumo Financeiro) -->
                         <Button x:Name="BtnConsultarPedidos"
                                 Click="BtnConsultarHistorico_Click"
                                 BorderThickness="0"
@@ -665,7 +742,7 @@
                                 LostFocus="BtnConsultarPedidos_LostFocus"
                                 PointerEntered="BtnConsultarPedidos_PointerEntered"
                                 PointerExited="BtnConsultarPedidos_PointerExited"
-                                ToolTipService.ToolTip="Consultar Pedidos e Orçamentos Gravados">
+                                ToolTipService.ToolTip="Consultar Pedidos e Orçamentos Gravados (Ctrl+F)">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
@@ -678,7 +755,7 @@
                             </Button.Resources>
                             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                                 <ic:SymbolIcon Symbol="DocumentSearch" FontSize="16" Foreground="#FFFFFF"/>
-                                <TextBlock Text="Consultar Pedidos" FontSize="12.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Consultar Pedidos (Ctrl+F)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="12.5" Foreground="#FFFFFF"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -714,6 +791,19 @@
                                     <TextBlock Text="{Binding Pedido.Subtotal, Converter={StaticResource CurrencyConverter}}" HorizontalAlignment="Right" FontWeight="SemiBold" FontSize="13"/>
                                 </Grid>
 
+                                <!-- Margem Disponível do Desconto Geral (Antes dos edits) -->
+                                <Border Visibility="{Binding HasMargemDescontoGeralVisivel, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6"
+                                        Padding="8,5" Margin="0,0,0,2">
+                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <ic:SymbolIcon Symbol="Tag" FontSize="13" Foreground="{Binding BrushMargemDescontoGeral}"/>
+                                        <TextBlock Text="{Binding TextoMargemDescontoGeralRestante}"
+                                                   FontSize="10.5" FontWeight="SemiBold"
+                                                   Foreground="{Binding BrushMargemDescontoGeral}"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- Desconto Geral com alternância % / R$ -->
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
@@ -741,19 +831,6 @@
                                             BorderThickness="1"
                                             ToolTipService.ToolTip="Alternar Desconto Geral entre % e R$"/>
                                 </Grid>
-
-                                <!-- Margem Disponível do Desconto Geral -->
-                                <Border Visibility="{Binding HasMargemDescontoGeralVisivel, Converter={StaticResource BoolToVisibilityConverter}}"
-                                        Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6"
-                                        Padding="8,5" Margin="0,2,0,4">
-                                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                        <ic:SymbolIcon Symbol="Tag" FontSize="13" Foreground="{Binding BrushMargemDescontoGeral}"/>
-                                        <TextBlock Text="{Binding TextoMargemDescontoGeralRestante}"
-                                                   FontSize="10.5" FontWeight="SemiBold"
-                                                   Foreground="{Binding BrushMargemDescontoGeral}"
-                                                   TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </Border>
 
                                 <!-- Acréscimo / Frete com alternância % / R$ -->
                                 <Grid ColumnSpacing="8">
@@ -1279,12 +1356,231 @@
         </Grid>
 
         <!-- ============================================================== -->
+        <!-- MODAL: CONFIRMAÇÃO DE SALVAMENTO DE PEDIDO PENDENTE            -->
+        <!-- ============================================================== -->
+        <Grid x:Name="ModalSalvarPendenteOverlay"
+              Grid.RowSpan="2"
+              Background="#750B192C"
+              Visibility="{Binding IsConfirmarSalvarPendenteOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+              KeyDown="ModalSalvarPendente_KeyDown"
+              Padding="16">
+            <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12"
+                    MaxWidth="480" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                <StackPanel Spacing="16">
+                    <!-- Cabeçalho Responsivo -->
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#E0F2FE" Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="Save" FontSize="20" Foreground="{StaticResource BrushServsicBlue}"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="Atendimento em Andamento" FontSize="15" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap"/>
+                            <TextBlock Text="Itens não gravados no banco de dados" FontSize="12" FontFamily="Segoe UI" Foreground="{StaticResource BrushTextSubtle}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding MensagemConfirmacaoSalvarPendente}" FontSize="13" FontFamily="Segoe UI" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap" LineHeight="19"/>
+
+                    <Grid ColumnSpacing="10" Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="1.1*"/>
+                            <ColumnDefinition Width="1.3*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Cancelar / Voltar -->
+                        <Button x:Name="BtnCancelarSalvarPendente"
+                                Grid.Column="0"
+                                Command="{Binding CancelarSalvarPendenteCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="38"
+                                Padding="0"
+                                HorizontalAlignment="Stretch"
+                                ToolTipService.ToolTip="Voltar ao atendimento atual (Esc)">
+                            <TextBlock Text="Voltar" FontSize="12.5" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
+                        </Button>
+
+                        <!-- Descartar -->
+                        <Button x:Name="BtnDescartarPedido"
+                                Grid.Column="1"
+                                Command="{Binding DescartarEContinuarCommand}"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="38"
+                                Padding="0"
+                                HorizontalAlignment="Stretch"
+                                ToolTipService.ToolTip="Descartar itens sem salvar (Del)">
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Delete" FontSize="14" Foreground="#DC2626"/>
+                                <TextBlock Text="Descartar" FontSize="12.5" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" Foreground="#DC2626"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Salvar como Pendente -->
+                        <Button x:Name="BtnConfirmarSalvarPendente"
+                                Grid.Column="2"
+                                Command="{Binding ConfirmarSalvarPendenteCommand}"
+                                Style="{StaticResource BtnPrimary}"
+                                Height="38"
+                                Padding="0"
+                                HorizontalAlignment="Stretch"
+                                ToolTipService.ToolTip="Salvar no banco como pendente e prosseguir (Enter)">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0284C7"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0369A1"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Save" FontSize="15" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Salvar Pendente" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
+        <!-- MODAL DE LIBERAÇÃO DE GERENTE (DESCONTOS EXCEDENTES / ESTOQUE)  -->
+        <!-- ============================================================== -->
+        <Grid x:Name="ModalLiberacaoGerenteOverlay"
+              Grid.RowSpan="2"
+              Background="#750B192C"
+              Visibility="{Binding IsLiberacaoGerenteOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+              KeyDown="ModalLiberacaoGerente_KeyDown"
+              Padding="16">
+            <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="12"
+                    MaxWidth="490" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20">
+                <StackPanel Spacing="14">
+                    <!-- Cabeçalho Responsivo com quebra automática de texto -->
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#FEF3C7" Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="ShieldKeyhole" FontSize="20" Foreground="#D97706"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="{Binding TituloLiberacaoGerente}" FontSize="15" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap" LineHeight="19"/>
+                            <TextBlock Text="{Binding SubtituloLiberacaoGerente}" FontSize="11.5" FontFamily="Segoe UI" Foreground="{StaticResource BrushTextSubtle}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Card de Detalhe da Exceção -->
+                    <Border Background="#FFFBEB" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="{Binding MotivoLiberacaoGerente}" FontSize="12.5" FontWeight="Bold" Foreground="#B45309" TextWrapping="Wrap" LineHeight="17"/>
+                            <TextBlock Text="{Binding DetalheLiberacaoGerente}" FontSize="11.5" Foreground="#475569" TextWrapping="Wrap" LineHeight="16"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Formulário de Autenticação do Gerente -->
+                    <StackPanel Spacing="10">
+                        <!-- Seleção do Gerente -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="GERENTE / SUPERVISOR RESPONSÁVEL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="40"/>
+                            <ComboBox x:Name="CmbGerenteLiberacao"
+                                      ItemsSource="{Binding GerentesDisponiveis}"
+                                      SelectedItem="{Binding GerenteSelecionado, Mode=TwoWay}"
+                                      HorizontalAlignment="Stretch"
+                                      Height="38"
+                                      CornerRadius="6">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <ic:SymbolIcon Symbol="Person" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                            <TextBlock Text="{Binding Nome}" FontWeight="SemiBold" FontSize="13"/>
+                                            <TextBlock Text="{Binding NivelDescricao}" Foreground="#64748B" FontSize="11.5" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!-- Senha do Gerente -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="SENHA DO GERENTE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="40"/>
+                            <PasswordBox x:Name="TxtSenhaGerente"
+                                         Password="{Binding SenhaGerenteInput, Mode=TwoWay}"
+                                         KeyDown="TxtSenhaGerente_KeyDown"
+                                         PlaceholderText="Digite a senha para autorizar"
+                                         Height="38"
+                                         CornerRadius="6"
+                                         FontSize="13.5"/>
+                        </StackPanel>
+
+                        <!-- Mensagem de Erro de Validação -->
+                        <TextBlock Text="{Binding MensagemErroLiberacao}"
+                                   Visibility="{Binding MensagemErroLiberacao, Converter={StaticResource StringToVisibilityConverter}}"
+                                   Foreground="#DC2626"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- Botões de Ação na Base -->
+                    <Grid ColumnSpacing="12" Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1.4*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Botão Cancelar -->
+                        <Button x:Name="BtnCancelarLiberacao"
+                                Grid.Column="0"
+                                Command="{Binding CancelarLiberacaoGerenteCommand}"
+                                Click="BtnCancelarLiberacao_Click"
+                                Style="{StaticResource BtnSecondary}"
+                                Height="38"
+                                HorizontalAlignment="Stretch"
+                                ToolTipService.ToolTip="Cancelar liberação e voltar (Esc)">
+                            <TextBlock Text="Cancelar (Esc)" FontSize="12" FontWeight="SemiBold"/>
+                        </Button>
+
+                        <!-- Botão Liberar Operação -->
+                        <Button x:Name="BtnConfirmarLiberacao"
+                                Grid.Column="1"
+                                Command="{Binding ConfirmarLiberacaoGerenteCommand}"
+                                Click="BtnConfirmarLiberacao_Click"
+                                Style="{StaticResource BtnPrimary}"
+                                Height="38"
+                                HorizontalAlignment="Stretch"
+                                ToolTipService.ToolTip="Confirmar liberação da operação (Enter)">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0284C7"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0369A1"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Checkmark" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Liberar Operação (Enter)" FontSize="12" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
         <!-- COMPONENTE INDEPENDENTE: CHECKOUT MODAL DE CONDIÇÕES DE PAGAMENTO-->
         <!-- ============================================================== -->
         <views:CheckoutView x:Name="CheckoutModal"
                             Grid.RowSpan="2"
                             DataContext="{Binding CheckoutViewModel}"
                             Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+        <!-- ============================================================== -->
+        <!-- COMPONENTE INDEPENDENTE: MODAL DE ENDEREÇO DE ENTREGA (CTRL+E)  -->
+        <!-- ============================================================== -->
+        <views:EnderecoEntregaView x:Name="EnderecoEntregaModal"
+                                   Grid.RowSpan="2"
+                                   DataContext="{Binding EnderecoEntregaViewModel}"
+                                   Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}" />
 
     </Grid>
 </UserControl>

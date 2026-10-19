@@ -15,6 +15,8 @@ public class PedidoVenda
     public string? Cliente { get; set; }
     public int? LkVendedor { get; set; }
     public string? Vendedor { get; set; }
+    public string? VendedorCelular { get; set; }
+    public string? VendedorTelefone { get; set; }
 
     public decimal Subtotal { get; set; } = 0m;
     public decimal Desconto { get; set; } = 0m;
@@ -36,7 +38,13 @@ public class PedidoVenda
     public int Cancelada { get; set; } = 0;
     public int? LkUsuario { get; set; }
     public int LkCaixa { get; set; } = 1;
-    public int IdEmpresa { get; set; } = 1;
+    public int IdEmpresa { get; set; } = 2;
+    public int Bloqueado { get; set; } = 0;
+    public decimal SaldoLimite { get; set; } = 0m;
+    public int LkConvenio { get; set; } = 999;
+    public decimal ComissaoNota { get; set; } = 0m;
+    public decimal ComissaoItemValor { get; set; } = 0m;
+    public int LkTipo { get; set; } = 0;
     public string? Codigo { get; set; }
 
     public string? Endereco { get; set; }
@@ -50,6 +58,40 @@ public class PedidoVenda
     public string? Email { get; set; }
     public string? ComplEnd { get; set; }
     public string? Obs { get; set; }
+
+    public int? LkEnderecoCli { get; set; }
+    public int? Entrega { get; set; }
+    public DateTime? DataEntrega { get; set; }
+    public int? LkEntregador { get; set; }
+    public int? LkEntregaTx { get; set; }
+    public decimal VlEntregaTx { get; set; } = 0m;
+
+    public bool TemItensEntrega => Itens != null && System.Linq.Enumerable.Any(Itens, i => i.Entrega == 1);
+    public bool TemEnderecoEntrega => !string.IsNullOrWhiteSpace(Endereco);
+
+    public string EnderecoCompletoFormatado
+    {
+        get
+        {
+            var partes = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrWhiteSpace(Endereco))
+            {
+                string endNum = Endereco;
+                if (!string.IsNullOrWhiteSpace(Numero)) endNum += $", {Numero}";
+                partes.Add(endNum);
+            }
+            if (!string.IsNullOrWhiteSpace(ComplEnd)) partes.Add(ComplEnd);
+            if (!string.IsNullOrWhiteSpace(Bairro)) partes.Add(Bairro);
+            if (!string.IsNullOrWhiteSpace(Cidade))
+            {
+                string cidUf = Cidade;
+                if (!string.IsNullOrWhiteSpace(UF)) cidUf += $" - {UF}";
+                partes.Add(cidUf);
+            }
+            if (!string.IsNullOrWhiteSpace(CEP)) partes.Add($"CEP: {CEP}");
+            return partes.Count > 0 ? string.Join(" - ", partes) : string.Empty;
+        }
+    }
 
     public ObservableCollection<PedidoItem> Itens { get; set; } = new();
     public List<FormaPagamento> Pagamentos { get; set; } = new();
@@ -141,6 +183,65 @@ public class PedidoVenda
     public string DocFormatado => !string.IsNullOrWhiteSpace(CPF_CNPJ) ? $"Doc: {CPF_CNPJ}" : "";
     public string TelFormatado => !string.IsNullOrWhiteSpace(Telefone) ? $"Tel: {Telefone}" : "";
     public string CidadeFormatada => !string.IsNullOrWhiteSpace(Cidade) ? $"Cidade: {Cidade}" : "";
+
+    public bool HasEndereco => !string.IsNullOrWhiteSpace(Endereco) || !string.IsNullOrWhiteSpace(Bairro) || !string.IsNullOrWhiteSpace(Cidade);
+
+    public string EnderecoFormatado
+    {
+        get
+        {
+            var partes = new System.Collections.Generic.List<string>();
+
+            // Logradouro, Número e Complemento
+            if (!string.IsNullOrWhiteSpace(Endereco))
+            {
+                string logradouro = Endereco.Trim();
+                if (!string.IsNullOrWhiteSpace(Numero))
+                    logradouro += $", {Numero.Trim()}";
+                if (!string.IsNullOrWhiteSpace(ComplEnd) &&
+                    !string.Equals(ComplEnd.Trim(), Endereco.Trim(), System.StringComparison.OrdinalIgnoreCase) &&
+                    !Endereco.Trim().Contains(ComplEnd.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                {
+                    logradouro += $" ({ComplEnd.Trim()})";
+                }
+                partes.Add(logradouro);
+            }
+            else if (!string.IsNullOrWhiteSpace(Numero))
+            {
+                string num = $"Nº {Numero.Trim()}";
+                if (!string.IsNullOrWhiteSpace(ComplEnd))
+                    num += $" ({ComplEnd.Trim()})";
+                partes.Add(num);
+            }
+            else if (!string.IsNullOrWhiteSpace(ComplEnd))
+            {
+                partes.Add(ComplEnd.Trim());
+            }
+
+            // Bairro
+            if (!string.IsNullOrWhiteSpace(Bairro))
+                partes.Add($"Bairro: {Bairro.Trim()}");
+
+            // Cidade / UF
+            if (!string.IsNullOrWhiteSpace(Cidade))
+            {
+                string cidUf = Cidade.Trim();
+                if (!string.IsNullOrWhiteSpace(UF))
+                    cidUf += $" - {UF.Trim()}";
+                partes.Add(cidUf);
+            }
+            else if (!string.IsNullOrWhiteSpace(UF))
+            {
+                partes.Add(UF.Trim());
+            }
+
+            // CEP
+            if (!string.IsNullOrWhiteSpace(CEP))
+                partes.Add($"CEP: {CEP.Trim()}");
+
+            return partes.Count > 0 ? string.Join(" • ", partes) : "Endereço não cadastrado";
+        }
+    }
 
     public void RecalcularTotais()
     {

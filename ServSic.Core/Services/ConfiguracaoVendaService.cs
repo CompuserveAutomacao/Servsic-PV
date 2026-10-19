@@ -50,7 +50,9 @@ public class ConfiguracaoVendaService
                     @"SELECT TOP 1 
                         ESTOQUEINSUFICIENTE, 
                         BloqueiaTotalizacaoEstoqueInsuficiente, 
-                        PRECOMENOR 
+                        PRECOMENOR,
+                        ImpParaEntregaAutomaticamente,
+                        BloqueiaAlteracaoCliente
                       FROM CFG_VENDA").ConfigureAwait(false);
 
                 if (vendaRow != null)
@@ -58,10 +60,84 @@ public class ConfiguracaoVendaService
                     string? vEst = vendaRow.ESTOQUEINSUFICIENTE?.ToString();
                     string? vBloq = vendaRow.BloqueiaTotalizacaoEstoqueInsuficiente?.ToString();
                     string? vPrec = vendaRow.PRECOMENOR?.ToString();
+                    string? vEntregaAuto = vendaRow.ImpParaEntregaAutomaticamente?.ToString();
+                    string? vBloqCli = vendaRow.BloqueiaAlteracaoCliente?.ToString();
 
                     config.HabilitaVendaComEstoqueInsuficiente = string.Equals(vEst?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
                     config.BloqueiaTotalizacaoEstoqueInsuficiente = string.Equals(vBloq?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
                     config.HabilitaPrecoMenorQueTabela = string.Equals(vPrec?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                    config.ImprimeItensEntregaAutomaticamente = string.Equals(vEntregaAuto?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                    config.BloqueiaAlteracaoCliente = string.Equals(vBloqCli?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            catch { }
+
+            _cachedConfig = config;
+            _lastLoadTime = DateTime.UtcNow;
+            return config;
+        }
+        catch
+        {
+            return _cachedConfig ?? config;
+        }
+    }
+
+    public ConfiguracaoVenda ObterConfiguracao(bool forceRefresh = false)
+    {
+        if (!forceRefresh && _cachedConfig != null && (DateTime.UtcNow - _lastLoadTime) < CacheDuration)
+        {
+            return _cachedConfig;
+        }
+
+        var config = new ConfiguracaoVenda();
+
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+
+            // 1. CFG_ORCAMENTO: ESTOQUEINSUFICIENTE ('S' / 'N')
+            try
+            {
+                var orcEst = conn.QueryFirstOrDefault<string>(
+                    "SELECT TOP 1 ESTOQUEINSUFICIENTE FROM CFG_ORCAMENTO WHERE ESTOQUEINSUFICIENTE IS NOT NULL");
+                config.HabilitaOrcamentoComEstoqueInsuficiente = string.Equals(orcEst?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { }
+
+            // 2. CFG_PREVENDA: ESTOQUEINSUFICIENTE ('S' / 'N')
+            try
+            {
+                var prevEst = conn.QueryFirstOrDefault<string>(
+                    "SELECT TOP 1 ESTOQUEINSUFICIENTE FROM CFG_PREVENDA WHERE ESTOQUEINSUFICIENTE IS NOT NULL");
+                config.HabilitaPreVendaComEstoqueInsuficiente = string.Equals(prevEst?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { }
+
+            // 3. CFG_VENDA: ESTOQUEINSUFICIENTE, BloqueiaTotalizacaoEstoqueInsuficiente, PRECOMENOR
+            try
+            {
+                var vendaRow = conn.QueryFirstOrDefault<dynamic>(
+                    @"SELECT TOP 1 
+                        ESTOQUEINSUFICIENTE, 
+                        BloqueiaTotalizacaoEstoqueInsuficiente, 
+                        PRECOMENOR,
+                        ImpParaEntregaAutomaticamente,
+                        BloqueiaAlteracaoCliente
+                      FROM CFG_VENDA");
+
+                if (vendaRow != null)
+                {
+                    string? vEst = vendaRow.ESTOQUEINSUFICIENTE?.ToString();
+                    string? vBloq = vendaRow.BloqueiaTotalizacaoEstoqueInsuficiente?.ToString();
+                    string? vPrec = vendaRow.PRECOMENOR?.ToString();
+                    string? vEntregaAuto = vendaRow.ImpParaEntregaAutomaticamente?.ToString();
+                    string? vBloqCli = vendaRow.BloqueiaAlteracaoCliente?.ToString();
+
+                    config.HabilitaVendaComEstoqueInsuficiente = string.Equals(vEst?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                    config.BloqueiaTotalizacaoEstoqueInsuficiente = string.Equals(vBloq?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                    config.HabilitaPrecoMenorQueTabela = string.Equals(vPrec?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                    config.ImprimeItensEntregaAutomaticamente = string.Equals(vEntregaAuto?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
+                    config.BloqueiaAlteracaoCliente = string.Equals(vBloqCli?.Trim(), "S", StringComparison.OrdinalIgnoreCase);
                 }
             }
             catch { }
@@ -88,19 +164,13 @@ public class ConfiguracaoVendaService
     }
 
     /// <summary>
-    /// Retorna imediatamente da memória se permite estoque insuficiente, sem risco de deadlock na UI.
-    /// Caso ainda não esteja em cache, dispara carga em background e retorna true por segurança.
+    /// Retorna imediatamente se permite estoque insuficiente conforme parâmetro do ERP Legado (CFG_ORCAMENTO / CFG_PREVENDA).
     /// </summary>
     public bool PermiteEstoqueInsuficiente(bool isOrcamento)
     {
-        if (_cachedConfig == null)
-        {
-            _ = Task.Run(async () => await ObterConfiguracaoAsync().ConfigureAwait(false));
-            return true;
-        }
-
+        var cfg = _cachedConfig ?? ObterConfiguracao();
         return isOrcamento
-            ? _cachedConfig.HabilitaOrcamentoComEstoqueInsuficiente
-            : _cachedConfig.HabilitaPreVendaComEstoqueInsuficiente;
+            ? cfg.HabilitaOrcamentoComEstoqueInsuficiente
+            : cfg.HabilitaPreVendaComEstoqueInsuficiente;
     }
 }

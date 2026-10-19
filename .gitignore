@@ -45,3 +45,8 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+
+# Release and publish output folders
+Release-*/
+Publish*/
+

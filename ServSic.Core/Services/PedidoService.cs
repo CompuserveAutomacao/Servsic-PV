@@ -94,6 +94,32 @@ public class PedidoService
                 }
             }
 
+            // Regra de Entrega: Se a venda tem dados de entrega informados (por cliente ou avulso),
+            // marca automaticamente todos os itens com Entrega = 1 para a TabEst3B
+            bool temEntrega = pedido.TemEnderecoEntrega 
+                || (pedido.Entrega.HasValue && pedido.Entrega.Value == 1) 
+                || (pedido.LkEnderecoCli.HasValue && pedido.LkEnderecoCli.Value > 0);
+
+            if (temEntrega)
+            {
+                pedido.Entrega = 1;
+                if (!pedido.DataEntrega.HasValue) pedido.DataEntrega = DateTime.Today;
+                foreach (var it in pedido.Itens)
+                {
+                    it.Entrega = 1;
+                    it.IsEntrega = true;
+                }
+            }
+            else
+            {
+                pedido.Entrega = 0;
+                foreach (var it in pedido.Itens)
+                {
+                    it.Entrega = 0;
+                    it.IsEntrega = false;
+                }
+            }
+
             // 1. Salva cabeçalho na TabEst3A via PedidoCabService
             pedido.Controle = await _cabService.SalvarCabecalhoAsync(pedido, conn, trans);
 
@@ -104,13 +130,14 @@ public class PedidoService
                 pedido.Itens,
                 pedido.LkVendedor,
                 pedido.Vendedor,
+                pedido.IdEmpresa,
                 conn,
                 trans);
 
             // 3. Salva pagamentos na TabEst3C via PedidoPagService se houver
             if (pedido.Pagamentos != null && pedido.Pagamentos.Count > 0)
             {
-                await _pagService.SalvarPagamentosAsync(pedido.Pedido, pedido.Total, pedido.Pagamentos, conn, trans);
+                await _pagService.SalvarPagamentosAsync(pedido.Pedido, pedido.Total, pedido.Pagamentos, pedido.IdEmpresa, conn, trans);
             }
 
             trans.Commit();
@@ -144,7 +171,7 @@ public class PedidoService
         try
         {
             await _pagService.ExcluirPagamentosPorPedidoAsync(numeroPedido, conn, trans);
-            await _itemService.ExcluirItensPorPedidoAsync(controle, conn, trans);
+            await _itemService.ExcluirItensPorPedidoAsync(controle, numeroPedido, conn, trans);
             await conn.ExecuteAsync("DELETE FROM TabEst3A WHERE Controle = @controle", new { controle }, trans);
             trans.Commit();
             return true;
@@ -157,27 +184,74 @@ public class PedidoService
     }
 
     /// <summary>
-    /// Exclui todos os orçamentos e pré-vendas pendentes vinculados ao operador logado.
+    /// Exclui todos os orçamentos e pré-vendas estritamente PENDENTES (não fechados, sem pagamentos) vinculados ao operador/vendedor logado.
+    /// Nunca exclui pedidos fechados, concluídos, faturados ou que possuam formas de pagamento em TabEst3C.
     /// </summary>
     public async Task<int> ExcluirPendentesAsync(int? lkUsuario, int? lkVendedor)
     {
+        // Trava de segurança: Se não houver operador nem vendedor definido, aborta para não apagar a base inteira
+        if ((!lkUsuario.HasValue || lkUsuario.Value <= 0) && (!lkVendedor.HasValue || lkVendedor.Value <= 0))
+        {
+            return 0;
+        }
+
         using var conn = DbConnectionFactory.CreateConnection();
         conn.Open();
         using var trans = conn.BeginTransaction();
         try
         {
-            const string sqlBusca = @"
-                SELECT Controle, Codigo FROM TabEst3A 
-                WHERE Status IN ('O', 'P') AND Cancelada = 0
-                AND ((@lkUsuario IS NULL OR LkUsuario = @lkUsuario) OR (@lkVendedor IS NULL OR LkVendedor = @lkVendedor))";
+            // Monta o filtro estrito de usuário/vendedor
+            string userFilter;
+            var param = new DynamicParameters();
 
-            var pendentes = (await conn.QueryAsync<(int Controle, int Codigo)>(sqlBusca, new { lkUsuario, lkVendedor }, trans)).ToList();
+            if (lkUsuario.HasValue && lkUsuario.Value > 0 && lkVendedor.HasValue && lkVendedor.Value > 0)
+            {
+                userFilter = "(ta.LkUsuario = @lkUsuario OR ta.LkVendedor = @lkVendedor)";
+                param.Add("lkUsuario", lkUsuario.Value);
+                param.Add("lkVendedor", lkVendedor.Value);
+            }
+            else if (lkUsuario.HasValue && lkUsuario.Value > 0)
+            {
+                userFilter = "ta.LkUsuario = @lkUsuario";
+                param.Add("lkUsuario", lkUsuario.Value);
+            }
+            else
+            {
+                userFilter = "ta.LkVendedor = @lkVendedor";
+                param.Add("lkVendedor", lkVendedor!.Value);
+            }
+
+            // Regra estrita de PENDENTE:
+            // 1. Status 'O' (Orçamento) ou 'P' (Pré-venda)
+            // 2. Não cancelado (Cancelada = 0 e Status <> 'C')
+            // 3. Não convertido em venda direta (Venda = 0 e Status <> 'V')
+            // 4. Saldo em aberto (Subtotal > 0)
+            // 5. Sem fechamento de caixa ou faturamento (LkCxFecha = 0, Entrada = 0, Faturado = 0, Vlpago = 0)
+            // 6. JAMAIS ter registros em TabEst3C (sem pagamentos!)
+            string sqlBusca = $@"
+                SELECT ta.Controle, ta.Pedido 
+                FROM TabEst3A ta
+                WHERE ta.Status IN ('O', 'P')
+                  AND ISNULL(ta.Cancelada, 0) = 0
+                  AND ISNULL(ta.Venda, 0) = 0
+                  AND ISNULL(ta.LkCxFecha, 0) = 0
+                  AND ISNULL(ta.Entrada, 0) = 0
+                  AND ISNULL(ta.Faturado, 0) = 0
+                  AND ISNULL(ta.Vlpago, 0) = 0
+                  AND ISNULL(ta.Subtotal, 0) > 0
+                  AND NOT EXISTS (SELECT 1 FROM TabEst3C tc WHERE tc.PEDIDO = ta.Pedido)
+                  AND {userFilter}";
+
+            var pendentes = (await conn.QueryAsync<(int Controle, int Pedido)>(sqlBusca, param, trans)).ToList();
             foreach (var p in pendentes)
             {
-                await _pagService.ExcluirPagamentosPorPedidoAsync(p.Codigo, conn, trans);
-                await _itemService.ExcluirItensPorPedidoAsync(p.Controle, conn, trans);
+                await _pagService.ExcluirPagamentosPorPedidoAsync(p.Pedido, conn, trans);
+                await _itemService.ExcluirItensPorPedidoAsync(p.Controle, p.Pedido, conn, trans);
                 await conn.ExecuteAsync("DELETE FROM TabEst3A WHERE Controle = @controle", new { controle = p.Controle }, trans);
             }
+
+            // Limpa eventuais pagamentos órfãos que possam ter sobrado
+            await _pagService.LimparPagamentosOrfaosAsync(conn, trans);
 
             trans.Commit();
             return pendentes.Count;

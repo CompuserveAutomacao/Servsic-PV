@@ -109,6 +109,44 @@ public class PedidoItem : INotifyPropertyChanged
     public string? Marca { get; set; }
     public int? LkVendedor { get; set; }
     public string? Vendedor { get; set; }
+    public int? Cfop { get; set; }
+    public string? Cst { get; set; }
+    public string? CstEcf { get; set; }
+    public string? CodOrigem { get; set; }
+    public decimal QtdSaldo { get; set; } = 0m;
+    public decimal Lucro => Math.Round(Total - (PrCusto * Quantidade), 2);
+    public double Peso { get; set; } = 0;
+    public int? IdEmpresa { get; set; }
+
+    private int? _entrega = 0;
+    public int? Entrega
+    {
+        get => _entrega;
+        set
+        {
+            if (_entrega != value)
+            {
+                _entrega = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsEntrega));
+                OnPropertyChanged(nameof(EntregaIconForeground));
+                OnPropertyChanged(nameof(EntregaBackground));
+                OnPropertyChanged(nameof(EntregaBorderBrush));
+                OnPropertyChanged(nameof(EntregaTooltip));
+            }
+        }
+    }
+
+    public bool IsEntrega
+    {
+        get => Entrega == 1;
+        set => Entrega = value ? 1 : 0;
+    }
+
+    public string EntregaIconForeground => IsEntrega ? "#0284C7" : "#94A3B8";
+    public string EntregaBackground => IsEntrega ? "#EFF6FF" : "Transparent";
+    public string EntregaBorderBrush => IsEntrega ? "#BAE6FD" : "#E2E8F0";
+    public string EntregaTooltip => IsEntrega ? "Marcado para ENTREGA (Clique para mudar para Retirada)" : "RETIRADA no Balcão (Clique para marcar Entrega)";
 
     public string CodigoExibicao => !string.IsNullOrWhiteSpace(CodInterno) 
         ? CodInterno 

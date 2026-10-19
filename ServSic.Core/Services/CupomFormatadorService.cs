@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
 using System.Text;
+using Dapper;
+using ServSic.Core.Data;
 using ServSic.Core.Models;
 
 namespace ServSic.Core.Services;
@@ -60,7 +62,18 @@ public class CupomFormatadorService
         sb.AppendLine(AlinharEsquerdaDireita($"EMISSAO: {dataHora}", $"STATUS: {(pedido.IsOrcamento ? "ORC" : "PED")}", colunas));
         
         string vendedor = !string.IsNullOrWhiteSpace(pedido.Vendedor) ? pedido.Vendedor : "BALCAO";
-        sb.AppendLine($"VENDEDOR: {Truncar(vendedor, colunas - 10)}");
+        string telVendRaw = ObterTelefoneVendedor(pedido);
+        string telVendFormatado = FormatarTelefone(telVendRaw);
+
+        if (!string.IsNullOrWhiteSpace(telVendFormatado))
+        {
+            sb.AppendLine($"VENDEDOR: {Truncar(vendedor, colunas - 10)}");
+            sb.AppendLine($"FONE VENDEDOR: {telVendFormatado}");
+        }
+        else
+        {
+            sb.AppendLine($"VENDEDOR: {Truncar(vendedor, colunas - 10)}");
+        }
         sb.AppendLine(linhaDiv);
 
         // 4. Identificação do Cliente
@@ -71,9 +84,23 @@ public class CupomFormatadorService
             sb.AppendLine($"CPF/CNPJ: {FormatarCpfCnpj(pedido.CPF_CNPJ)}");
 
         if (!string.IsNullOrWhiteSpace(pedido.Telefone))
-            sb.AppendLine($"FONE: {pedido.Telefone}");
+            sb.AppendLine($"FONE: {FormatarTelefone(pedido.Telefone)}");
 
-        if (!string.IsNullOrWhiteSpace(pedido.Endereco))
+        // Endereço de Entrega ou Endereço do Cliente
+        if (pedido.TemEnderecoEntrega || pedido.Entrega == 1)
+        {
+            sb.AppendLine(linhaDiv);
+            sb.AppendLine(Centralizar("*** ENDERECO PARA ENTREGA ***", colunas));
+            string endCompleto = !string.IsNullOrWhiteSpace(pedido.EnderecoCompletoFormatado)
+                ? pedido.EnderecoCompletoFormatado
+                : pedido.Endereco!;
+            sb.AppendLine(QuebrarTexto(endCompleto, colunas));
+            if (!string.IsNullOrWhiteSpace(pedido.Obs))
+            {
+                sb.AppendLine(QuebrarTexto($"REF/OBS: {pedido.Obs.Trim()}", colunas));
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(pedido.Endereco))
         {
             string end = pedido.Endereco;
             if (!string.IsNullOrWhiteSpace(pedido.Numero)) end += $", {pedido.Numero}";
@@ -223,6 +250,56 @@ public class CupomFormatadorService
         return sb.ToString().TrimEnd();
     }
 
+    public static string ObterTelefoneVendedor(PedidoVenda pedido)
+    {
+        string cel = pedido.VendedorCelular ?? string.Empty;
+        string tel = pedido.VendedorTelefone ?? string.Empty;
+
+        // Se ambos vazios mas houver LkVendedor, tenta buscar no banco via fallback rápido
+        if (string.IsNullOrWhiteSpace(cel) && string.IsNullOrWhiteSpace(tel) && pedido.LkVendedor.HasValue && pedido.LkVendedor.Value > 0)
+        {
+            try
+            {
+                using var conn = DbConnectionFactory.CreateConnection();
+                var dadosVend = conn.QueryFirstOrDefault<(string? Celular, string? Telefone)>(
+                    "SELECT TOP 1 Celular, Telefone FROM TabVend WHERE CONTROLE = @lk",
+                    new { lk = pedido.LkVendedor.Value });
+                cel = dadosVend.Celular ?? string.Empty;
+                tel = dadosVend.Telefone ?? string.Empty;
+            }
+            catch { }
+        }
+
+        string celDig = System.Text.RegularExpressions.Regex.Replace(cel, @"\D", "");
+        string telDig = System.Text.RegularExpressions.Regex.Replace(tel, @"\D", "");
+
+        if (celDig.Length >= 10) return celDig;
+        if (telDig.Length >= 10) return telDig;
+
+        if (telDig.Length == 2 && (celDig.Length == 8 || celDig.Length == 9))
+            return telDig + celDig;
+
+        if (celDig.Length >= 8) return celDig;
+        if (telDig.Length >= 8) return telDig;
+
+        return !string.IsNullOrWhiteSpace(cel) ? cel : tel;
+    }
+
+    public static string FormatarTelefone(string? tel)
+    {
+        if (string.IsNullOrWhiteSpace(tel)) return string.Empty;
+        string d = System.Text.RegularExpressions.Regex.Replace(tel, @"\D", "");
+        if (d.Length == 11)
+            return $"({d.Substring(0, 2)}) {d.Substring(2, 5)}-{d.Substring(7, 4)}";
+        if (d.Length == 10)
+            return $"({d.Substring(0, 2)}) {d.Substring(2, 4)}-{d.Substring(6, 4)}";
+        if (d.Length == 9)
+            return $"{d.Substring(0, 5)}-{d.Substring(5, 4)}";
+        if (d.Length == 8)
+            return $"{d.Substring(0, 4)}-{d.Substring(4, 4)}";
+        return tel.Trim();
+    }
+
     private static string FormatarCnpj(string cnpj)
     {
         string d = System.Text.RegularExpressions.Regex.Replace(cnpj, @"\D", "");
@@ -239,5 +316,110 @@ public class CupomFormatadorService
         if (d.Length == 14)
             return $"{d.Substring(0, 2)}.{d.Substring(2, 3)}.{d.Substring(5, 3)}/{d.Substring(8, 4)}-{d.Substring(12, 2)}";
         return doc;
+    }
+
+    public string GerarTextoCupomEntrega(PedidoVenda pedido, DadosEmpresa empresa, ConfiguracaoImpressora config)
+    {
+        int colunas = config.LarguraColunas >= 40 ? 48 : 32;
+        string linhaDiv = new('-', colunas);
+        string linhaDupla = new('=', colunas);
+
+        var sb = new StringBuilder();
+
+        // 1. Cabeçalho da Empresa
+        if (!string.IsNullOrWhiteSpace(empresa.NomeFantasia))
+            sb.AppendLine(Centralizar(empresa.NomeFantasia.ToUpperInvariant(), colunas));
+
+        if (!string.IsNullOrWhiteSpace(empresa.Telefone))
+            sb.AppendLine(Centralizar($"FONE: {empresa.Telefone}", colunas));
+
+        sb.AppendLine(linhaDupla);
+
+        // 2. Identificação da Ordem de Entrega
+        sb.AppendLine(Centralizar("*** ORDEM DE ENTREGA / SEPARACAO ***", colunas));
+        int numPedido = pedido.Pedido > 0 ? pedido.Pedido : pedido.Controle;
+        sb.AppendLine(Centralizar($"PEDIDO: {numPedido:D6}", colunas));
+        sb.AppendLine(linhaDiv);
+
+        // 3. Dados de Emissão e Vendedor
+        string dataHora = $"{pedido.Data:dd/MM/yyyy}  {pedido.HoraIni}";
+        string vendEntrega = !string.IsNullOrWhiteSpace(pedido.Vendedor) ? pedido.Vendedor : "BALCAO";
+        string telVendEnt = FormatarTelefone(ObterTelefoneVendedor(pedido));
+        if (!string.IsNullOrWhiteSpace(telVendEnt))
+        {
+            vendEntrega += $" ({telVendEnt})";
+        }
+        sb.AppendLine(AlinharEsquerdaDireita($"EMISSAO: {dataHora}", $"VEND: {Truncar(vendEntrega, colunas - 18)}", colunas));
+
+        // 4. Identificação do Cliente
+        string nomeCli = !string.IsNullOrWhiteSpace(pedido.Cliente) ? pedido.Cliente : "CONSUMIDOR / BALCAO";
+        sb.AppendLine($"CLIENTE: {Truncar(nomeCli, colunas - 9)}");
+        if (!string.IsNullOrWhiteSpace(pedido.Telefone))
+            sb.AppendLine($"FONE: {FormatarTelefone(pedido.Telefone)}");
+
+        sb.AppendLine(linhaDiv);
+
+        // 5. LOCAL / ENDEREÇO DE ENTREGA
+        sb.AppendLine(Centralizar("LOCAL / ENDERECO DE ENTREGA", colunas));
+        string endCompleto = pedido.EnderecoCompletoFormatado;
+        if (!string.IsNullOrWhiteSpace(endCompleto))
+        {
+            sb.AppendLine(QuebrarTexto(endCompleto, colunas));
+        }
+        else
+        {
+            sb.AppendLine("ENDERECO NAO INFORMADO NO PEDIDO");
+        }
+
+        if (!string.IsNullOrWhiteSpace(pedido.Obs))
+        {
+            sb.AppendLine(QuebrarTexto($"OBS/REF: {pedido.Obs.Trim()}", colunas));
+        }
+
+        sb.AppendLine(linhaDiv);
+
+        // 6. Itens Marcados para Entrega
+        sb.AppendLine(Centralizar("ITENS PARA ENTREGA", colunas));
+        sb.AppendLine(colunas >= 48 
+            ? "ITEM  COD      DESCRICAO               UN   QTD" 
+            : "COD    DESCRICAO           QTD");
+        sb.AppendLine(linhaDiv);
+
+        var itensEntrega = System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(pedido.Itens, i => i.Entrega == 1));
+        if (itensEntrega.Count == 0) itensEntrega = System.Linq.Enumerable.ToList(pedido.Itens);
+
+        int seq = 1;
+        decimal totalQtd = 0m;
+        foreach (var item in itensEntrega)
+        {
+            totalQtd += item.Quantidade;
+            string cod = Truncar(item.CodigoExibicao, 8);
+            string desc = Truncar(item.Produto, colunas >= 48 ? 23 : 18);
+            string un = Truncar(item.Unidade ?? "UN", 3);
+            string qtd = item.Quantidade.ToString("N0", PtBr);
+
+            if (colunas >= 48)
+            {
+                sb.AppendLine($"{seq:D3}   {cod,-8} {desc,-23} {un,-3} {qtd,5}");
+            }
+            else
+            {
+                sb.AppendLine($"{cod,-6} {desc,-18} {qtd,4}");
+            }
+            seq++;
+        }
+
+        sb.AppendLine(linhaDiv);
+        sb.AppendLine(AlinharEsquerdaDireita("TOTAL DE VOLUMES / ITENS:", totalQtd.ToString("N0", PtBr), colunas));
+        sb.AppendLine(linhaDupla);
+
+        // 7. Campo de Assinatura e Conferência
+        sb.AppendLine();
+        sb.AppendLine(Centralizar("RECEBIDO POR: ____________________________", colunas));
+        sb.AppendLine();
+        sb.AppendLine(Centralizar("DATA: _____/_____/_________  RG: _________", colunas));
+        sb.AppendLine();
+
+        return sb.ToString();
     }
 }

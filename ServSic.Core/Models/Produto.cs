@@ -24,6 +24,10 @@ public class Produto
     public decimal QtdAtacado { get; set; }
     public string? UnAtacado { get; set; }
     public decimal PrCusto { get; set; }
+    public int? Cfop { get; set; }
+    public string? Cst { get; set; }
+    public string? CstEcf { get; set; }
+    public double? Peso { get; set; }
     public decimal Estoque { get; set; }
     public decimal EstoqueLoja { get; set; }
     public decimal EstoqueDeposito { get; set; }

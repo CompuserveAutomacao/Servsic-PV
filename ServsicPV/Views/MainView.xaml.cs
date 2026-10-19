@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using ServsicPV.ViewModels;
 using ServSic.Core.Models;
@@ -32,6 +33,7 @@ public partial class MainView : Window
 
         // Configura ícone e inicia a janela principal maximizada
         this.AppWindow.SetIcon("Assets/icoservsicpv.ico");
+        this.AppWindow.Closing += AppWindow_Closing;
 
         if (this.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
         {
@@ -147,6 +149,19 @@ public partial class MainView : Window
 
     private async void CarregarPedidoParaEdicao(int controle)
     {
+        if (_pedidoViewModel.TemDadosNaoSalvos)
+        {
+            MostrarCadastro();
+            _pedidoViewModel.SolicitarCarregarPedido(controle, async (ctrl) => await ExecutarCarregarPedidoAsync(ctrl));
+        }
+        else
+        {
+            await ExecutarCarregarPedidoAsync(controle);
+        }
+    }
+
+    private async Task ExecutarCarregarPedidoAsync(int controle)
+    {
         try
         {
             var p = await _pedidoService.ObterPorIdAsync(controle);
@@ -159,7 +174,7 @@ public partial class MainView : Window
         }
         catch (Exception ex)
         {
-            _pedidoViewModel.StatusMensagem = $"Erro ao abrir pedido: {ex.Message}";
+            _pedidoViewModel.ExibirMensagem($"Erro ao abrir pedido: {ex.Message}", false, 5000);
         }
     }
 
@@ -189,7 +204,7 @@ public partial class MainView : Window
         args.Handled = true;
     }
 
-    private void OnF2GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    private void OnF7GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
         if (_pedidoViewModel.NovoCommand.CanExecute(null))
         {
@@ -198,8 +213,57 @@ public partial class MainView : Window
         }
     }
 
+    private void OnF9GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (_pedidoViewModel.AlternarTipoCommand.CanExecute(null))
+        {
+            _pedidoViewModel.AlternarTipoCommand.Execute(null);
+            args.Handled = true;
+        }
+    }
+
+    private void OnF8GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        MostrarConsulta();
+        args.Handled = true;
+    }
+
+    private void OnCtrlFGlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        MostrarConsulta();
+        args.Handled = true;
+    }
+
+    private void OnCtrlEGlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        MostrarCadastro();
+        _ = _pedidoViewModel.AbrirEnderecoEntregaAsync();
+        args.Handled = true;
+    }
+
     private void OnEscapeGlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (_pedidoViewModel.EnderecoEntregaViewModel.IsOpen)
+        {
+            _pedidoViewModel.EnderecoEntregaViewModel.Fechar();
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.IsLiberacaoGerenteOpen)
+        {
+            _pedidoViewModel.CancelarLiberacaoGerente();
+            args.Handled = true;
+            return;
+        }
+
+        if (_pedidoViewModel.IsConfirmarSalvarPendenteOpen)
+        {
+            _pedidoViewModel.CancelarSalvarPendente();
+            args.Handled = true;
+            return;
+        }
+
         if (_pedidoViewModel.ConfiguracaoImpressoraViewModel.IsOpen)
         {
             _pedidoViewModel.ConfiguracaoImpressoraViewModel.Fechar();
@@ -267,9 +331,35 @@ public partial class MainView : Window
 
     private void BtnSair_Click(object sender, RoutedEventArgs e)
     {
-        var login = new LoginView();
-        login.Activate();
+        if (_pedidoViewModel.TemDadosNaoSalvos)
+        {
+            MostrarCadastro();
+            _pedidoViewModel.SolicitarSair(() =>
+            {
+                var login = new LoginView();
+                login.Activate();
+                this.Close();
+            });
+            return;
+        }
+
+        var loginView = new LoginView();
+        loginView.Activate();
         this.Close();
+    }
+
+    private void AppWindow_Closing(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
+    {
+        if (_pedidoViewModel.TemDadosNaoSalvos)
+        {
+            args.Cancel = true;
+            MostrarCadastro();
+            _pedidoViewModel.SolicitarSair(() =>
+            {
+                this.AppWindow.Closing -= AppWindow_Closing;
+                this.Close();
+            });
+        }
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]

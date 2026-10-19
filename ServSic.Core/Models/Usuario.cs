@@ -9,6 +9,9 @@ public class Usuario
     public int? LkVendedor { get; set; }
     public string? NomeVendedor { get; set; }
 
+    public string? CelularVendedor { get; set; }
+    public string? TelefoneVendedor { get; set; }
+
     public string NivelDescricao => Nivel switch
     {
         0 => "Operador",
@@ -20,3 +23,4 @@ public class Usuario
     public decimal LimiteDesconto { get; set; } = 0m;
     public string LimiteDescontoFormatado => LimiteDesconto > 0 ? $"{LimiteDesconto:N2}%" : "0,00%";
 }
+

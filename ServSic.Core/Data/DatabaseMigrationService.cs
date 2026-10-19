@@ -167,7 +167,53 @@ public static class DatabaseMigrationService
                 END";
             await conn.ExecuteAsync(sqlServNivelLimite);
 
-            // 6. Sincronização de INI (Venda/VendedorPorUsuario = N)
+            // 7. Multi-Endereço do Cliente: dbo.TabCliEndereco
+            const string sqlTabCliEndereco = @"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabCliEndereco')
+                BEGIN
+                    CREATE TABLE dbo.TabCliEndereco (
+                        Controle          INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_TabCliEndereco PRIMARY KEY,
+                        LkCliente         INT NOT NULL,
+                        Apelido           VARCHAR(60) NOT NULL,
+                        Endereco          VARCHAR(80) NULL,
+                        Numero            VARCHAR(20) NULL,
+                        ComplEnd          VARCHAR(60) NULL,
+                        Bairro            VARCHAR(40) NULL,
+                        Cidade            VARCHAR(40) NULL,
+                        Estado            CHAR(2) NULL,
+                        Cep               VARCHAR(10) NULL,
+                        CodMunicipio      INT NULL,
+                        Obs               VARCHAR(120) NULL,
+                        Inativo           BIT NOT NULL CONSTRAINT DF_TabCliEndereco_Inativo DEFAULT (0),
+                        DtUltAtualizacao  DATETIME NULL
+                    );
+                    CREATE INDEX IX_TabCliEndereco_LkCliente ON dbo.TabCliEndereco (LkCliente, Inativo);
+                END";
+            await conn.ExecuteAsync(sqlTabCliEndereco);
+
+            // 8. TabEst3A.LkEnderecoCli int NULL
+            const string sqlTabEst3ALkEndereco = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabEst3A')
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'TabEst3A' AND COLUMN_NAME = 'LkEnderecoCli')
+                    BEGIN
+                        ALTER TABLE TabEst3A ADD LkEnderecoCli INT NULL;
+                    END
+                END";
+            await conn.ExecuteAsync(sqlTabEst3ALkEndereco);
+
+            // 9. TabEst3B.Entrega int NULL default 0
+            const string sqlTabEst3BEntrega = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabEst3B')
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'TabEst3B' AND COLUMN_NAME = 'Entrega')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD Entrega INT NULL CONSTRAINT DF_TabEst3B_Entrega DEFAULT 0;
+                    END
+                END";
+            await conn.ExecuteAsync(sqlTabEst3BEntrega);
+
+            // 10. Sincronização de INI (Venda/VendedorPorUsuario = N)
             SincronizarIniVendedorPorUsuario();
 
             _migracaoExecutada = true;

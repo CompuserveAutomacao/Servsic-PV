@@ -207,6 +207,13 @@ public class PedidoConsultaViewModel : ViewModelBase
             return;
         }
 
+        // Trava de segurança: Pedidos já fechados ou concluídos possuem faturamento e quitação
+        if (item.SituacaoDescricao == "FECHADO" || item.SituacaoDescricao == "CONCLUIDA")
+        {
+            Mensagem = $"O Pedido/Orçamento Nº {item.Pedido} já está {item.SituacaoDescricao} e possui faturamento/pagamento. Não é permitido excluir pedidos finalizados.";
+            return;
+        }
+
         _tipoExclusaoPendente = "SELECIONADO";
         TituloConfirmacaoExclusao = "Excluir Pedido / Orçamento";
         MensagemConfirmacaoExclusao = $"Deseja realmente excluir em definitivo o pedido Nº {item.Pedido} ({item.OperacaoDescricao}) do cliente '{item.Cliente}'? Esta ação apagará permanentemente o cabeçalho, itens e pagamentos das tabelas do banco de dados.";
@@ -217,7 +224,7 @@ public class PedidoConsultaViewModel : ViewModelBase
     {
         _tipoExclusaoPendente = "PENDENTES";
         TituloConfirmacaoExclusao = "Excluir Todos os Pendentes";
-        MensagemConfirmacaoExclusao = "Deseja realmente excluir em definitivo TODOS os orçamentos e pré-vendas pendentes vinculados ao seu usuário? Esta ação limpará permanentemente todos os registros pendentes do banco de dados.";
+        MensagemConfirmacaoExclusao = "Deseja realmente excluir em definitivo TODOS os orçamentos e pré-vendas PENDENTES (em aberto e sem formas de pagamento) vinculados ao seu usuário? Pedidos já fechados ou concluídos não serão alterados.";
         IsConfirmacaoExclusaoOpen = true;
     }
 

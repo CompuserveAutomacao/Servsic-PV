@@ -15,7 +15,9 @@ public class VendedorService
         const string sql = @"
             SELECT 
                 CONTROLE as Controle,
-                NOME as Nome
+                NOME as Nome,
+                Telefone as Telefone,
+                Celular as Celular
             FROM TabVend
             WHERE NOME IS NOT NULL AND LTRIM(RTRIM(NOME)) <> ''
             ORDER BY NOME";

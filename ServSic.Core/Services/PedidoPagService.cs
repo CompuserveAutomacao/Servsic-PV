@@ -54,10 +54,18 @@ public class PedidoPagService
         return list.ToList();
     }
 
+    public Task SalvarPagamentosAsync(
+        int pedidoNum,
+        decimal totalPedido,
+        IEnumerable<FormaPagamento> pagamentos,
+        IDbConnection conn,
+        IDbTransaction trans) => SalvarPagamentosAsync(pedidoNum, totalPedido, pagamentos, 2, conn, trans);
+
     public async Task SalvarPagamentosAsync(
         int pedidoNum,
         decimal totalPedido,
         IEnumerable<FormaPagamento> pagamentos,
+        int idEmpresa,
         IDbConnection conn,
         IDbTransaction trans)
     {
@@ -101,9 +109,17 @@ public class PedidoPagService
             if (pag.Data == default) pag.Data = DateTime.Today;
             if (pag.Vencimento == default) pag.Vencimento = DateTime.Today;
             if (string.IsNullOrEmpty(pag.Hora)) pag.Hora = DateTime.Now.ToString("HH:mm");
-            if (pag.IdEmpresa <= 0) pag.IdEmpresa = 1;
+            pag.IdEmpresa = idEmpresa > 0 ? idEmpresa : (pag.IdEmpresa > 0 ? pag.IdEmpresa : 2);
 
-            // Sanitização de colunas da TabEst3C contra erro de truncamento no SQL Server
+            // Regra do ERP Legado: Quando pagamento for Dinheiro, grava TIPOTROCO = 'DINHEIRO'
+            if (string.Equals(pag.Recebimento, "DINHEIRO", StringComparison.OrdinalIgnoreCase) || pag.LkTipo == 1)
+            {
+                if (string.IsNullOrWhiteSpace(pag.TipoTroco))
+                {
+                    pag.TipoTroco = "DINHEIRO";
+                }
+            }
+
             if (pag.Recebimento?.Length > 40) pag.Recebimento = pag.Recebimento.Substring(0, 40);
             if (pag.Caixa?.Length > 15) pag.Caixa = pag.Caixa.Substring(0, 15);
             if (pag.Operador?.Length > 15) pag.Operador = pag.Operador.Substring(0, 15);
@@ -121,5 +137,18 @@ public class PedidoPagService
     {
         const string sqlDelete = "DELETE FROM TabEst3C WHERE PEDIDO = @pedidoNum";
         await conn.ExecuteAsync(sqlDelete, new { pedidoNum }, transaction: trans);
+    }
+
+    /// <summary>
+    /// Remove registros órfãos de TabEst3C cujo pedido já não existe mais em TabEst3A.
+    /// </summary>
+    public async Task<int> LimparPagamentosOrfaosAsync(IDbConnection conn, IDbTransaction trans)
+    {
+        const string sqlOrfaos = @"
+            DELETE FROM TabEst3C 
+            WHERE NOT EXISTS (
+                SELECT 1 FROM TabEst3A ta WHERE ta.Pedido = TabEst3C.PEDIDO
+            )";
+        return await conn.ExecuteAsync(sqlOrfaos, transaction: trans);
     }
 }

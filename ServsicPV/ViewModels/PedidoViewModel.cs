@@ -25,12 +25,15 @@ public class PedidoViewModel : ViewModelBase
     private readonly ImpressaoTermicaService _impressaoTermicaService = new();
     private readonly CupomFormatadorService _cupomFormatadorService = new();
     private readonly ConfiguracaoVendaService _configuracaoVendaService = new();
+    private readonly AuthService _authService = new();
 
     // --- Modal: Componente Independente de Checkout ---
     private bool _isCheckoutOpen;
     public CheckoutViewModel CheckoutViewModel => _checkoutViewModel;
     public ConfiguracaoImpressoraViewModel ConfiguracaoImpressoraViewModel => _configuracaoImpressoraViewModel;
     public CupomVisualizacaoViewModel CupomVisualizacaoViewModel => _cupomVisualizacaoViewModel;
+    private readonly EnderecoEntregaViewModel _enderecoEntregaViewModel;
+    public EnderecoEntregaViewModel EnderecoEntregaViewModel => _enderecoEntregaViewModel;
 
     private PedidoVenda _pedido = new();
     private Cliente? _selectedCliente;
@@ -106,6 +109,8 @@ public class PedidoViewModel : ViewModelBase
                 Pedido.LkUsuario = value.Controle;
                 Pedido.LkVendedor = value.LkVendedor;
                 Pedido.Vendedor = !string.IsNullOrWhiteSpace(value.NomeVendedor) ? value.NomeVendedor : value.Nome;
+                Pedido.VendedorCelular = value.CelularVendedor;
+                Pedido.VendedorTelefone = value.TelefoneVendedor;
                 OnPropertyChanged(nameof(Pedido));
                 OnPropertyChanged(nameof(LimiteDescontoUsuario));
                 RecalcularMargemDescontoItem();
@@ -142,11 +147,27 @@ public class PedidoViewModel : ViewModelBase
                 AtribuirClienteAoPedido(value);
             }
             OnPropertyChanged(nameof(HasClienteSelecionado));
+            OnPropertyChanged(nameof(EnderecoClienteExibicao));
         }
     }
 
     public bool HasClienteSelecionado =>
         SelectedCliente != null || (!string.IsNullOrWhiteSpace(Pedido?.Cliente) && (Pedido?.LkCliente ?? 0) > 0);
+
+    public string EnderecoClienteExibicao
+    {
+        get
+        {
+            if (Pedido != null && !string.IsNullOrWhiteSpace(Pedido.Endereco))
+                return Pedido.EnderecoCompletoFormatado;
+            if (SelectedCliente != null && SelectedCliente.HasEndereco)
+                return SelectedCliente.EnderecoFormatado;
+            return "Endereço não informado";
+        }
+    }
+
+    public bool HasEnderecoEntregaDefinido => Pedido != null && !string.IsNullOrWhiteSpace(Pedido.Endereco);
+    public string ResumoEnderecoEntrega => Pedido?.EnderecoCompletoFormatado ?? string.Empty;
 
     public bool HasItens => Pedido?.Itens?.Count > 0;
 
@@ -165,6 +186,8 @@ public class PedidoViewModel : ViewModelBase
             {
                 Pedido.LkVendedor = value.Controle;
                 Pedido.Vendedor = value.Nome;
+                Pedido.VendedorCelular = value.Celular;
+                Pedido.VendedorTelefone = value.Telefone;
                 OnPropertyChanged(nameof(Pedido));
             }
         }
@@ -1027,8 +1050,114 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _mensagemConfirmacaoTipo, value);
     }
 
+    // --- Proteção de Dados Não Salvos (Gravação Tardia) ---
+    public enum TipoAcaoPendenteAposSalvar
+    {
+        Nenhuma,
+        NovoPedido,
+        CarregarOutroPedido,
+        Sair
+    }
+
+    private bool _isConfirmarSalvarPendenteOpen;
+    private string _mensagemConfirmacaoSalvarPendente = string.Empty;
+    public TipoAcaoPendenteAposSalvar AcaoPendente { get; private set; } = TipoAcaoPendenteAposSalvar.Nenhuma;
+    private Action? _callbackAcaoPendente;
+
+    public bool IsConfirmarSalvarPendenteOpen
+    {
+        get => _isConfirmarSalvarPendenteOpen;
+        set => SetProperty(ref _isConfirmarSalvarPendenteOpen, value);
+    }
+
+    public string MensagemConfirmacaoSalvarPendente
+    {
+        get => _mensagemConfirmacaoSalvarPendente;
+        set => SetProperty(ref _mensagemConfirmacaoSalvarPendente, value);
+    }
+
+    public bool TemDadosNaoSalvos => Pedido?.Itens?.Count > 0;
+
+    // --- Liberação de Gerente (Descontos Excedentes e Trava de Estoque) ---
+    public enum TipoLiberacaoGerente
+    {
+        Nenhum,
+        DescontoItem,
+        DescontoItemEdicao,
+        DescontoGeral,
+        EstoqueInsuficienteItem,
+        EstoqueInsuficienteTotalizacao
+    }
+
+    private bool _isLiberacaoGerenteOpen;
+    private string _tituloLiberacaoGerente = "Liberação de Gerente";
+    private string _subtituloLiberacaoGerente = "Autorização de Exceção Operacional";
+    private string _motivoLiberacaoGerente = string.Empty;
+    private string _detalheLiberacaoGerente = string.Empty;
+    private string _senhaGerenteInput = string.Empty;
+    private string _mensagemErroLiberacao = string.Empty;
+    private Usuario? _gerenteSelecionado;
+    private Func<Usuario, Task>? _callbackAcaoLiberada;
+    public ObservableCollection<Usuario> GerentesDisponiveis { get; } = new();
+
+    public bool IsLiberacaoGerenteOpen
+    {
+        get => _isLiberacaoGerenteOpen;
+        set => SetProperty(ref _isLiberacaoGerenteOpen, value);
+    }
+
+    public string TituloLiberacaoGerente
+    {
+        get => _tituloLiberacaoGerente;
+        set => SetProperty(ref _tituloLiberacaoGerente, value);
+    }
+
+    public string SubtituloLiberacaoGerente
+    {
+        get => _subtituloLiberacaoGerente;
+        set => SetProperty(ref _subtituloLiberacaoGerente, value);
+    }
+
+    public string MotivoLiberacaoGerente
+    {
+        get => _motivoLiberacaoGerente;
+        set => SetProperty(ref _motivoLiberacaoGerente, value);
+    }
+
+    public string DetalheLiberacaoGerente
+    {
+        get => _detalheLiberacaoGerente;
+        set => SetProperty(ref _detalheLiberacaoGerente, value);
+    }
+
+    public string SenhaGerenteInput
+    {
+        get => _senhaGerenteInput;
+        set => SetProperty(ref _senhaGerenteInput, value);
+    }
+
+    public string MensagemErroLiberacao
+    {
+        get => _mensagemErroLiberacao;
+        set => SetProperty(ref _mensagemErroLiberacao, value);
+    }
+
+    public Usuario? GerenteSelecionado
+    {
+        get => _gerenteSelecionado;
+        set => SetProperty(ref _gerenteSelecionado, value);
+    }
+
+    public Action? OnSolicitarFocoSenhaGerente;
+
     // --- Comandos ---
     public ICommand SalvarCommand { get; }
+    public ICommand SalvarPendenteCommand { get; }
+    public ICommand ConfirmarSalvarPendenteCommand { get; }
+    public ICommand DescartarEContinuarCommand { get; }
+    public ICommand CancelarSalvarPendenteCommand { get; }
+    public ICommand ConfirmarLiberacaoGerenteCommand { get; }
+    public ICommand CancelarLiberacaoGerenteCommand { get; }
     public ICommand NovoCommand { get; }
     public ICommand AdicionarItemCommand { get; }
     public ICommand RemoverItemCommand { get; }
@@ -1044,6 +1173,12 @@ public class PedidoViewModel : ViewModelBase
     public ICommand AlternarTipoDescontoItemCommand { get; }
     public ICommand AlternarTipoDescontoGeralCommand { get; }
     public ICommand AlternarTipoAcrescimoGeralCommand { get; }
+
+    // Comandos de Entrega e Multi-Endereço
+    public ICommand AbrirEnderecoEntregaCommand { get; }
+    public ICommand RemoverEnderecoEntregaCommand { get; }
+    public ICommand AlternarEntregaItemCommand { get; }
+    public ICommand MarcarTodosItensEntregaCommand { get; }
 
     // Comandos de Checkout (Condições de Pagamento)
     public ICommand AbrirCheckoutCommand { get; }
@@ -1137,6 +1272,35 @@ public class PedidoViewModel : ViewModelBase
         _configuracaoImpressoraViewModel = new ConfiguracaoImpressoraViewModel(_impressoraConfigService, _impressaoTermicaService);
         _cupomVisualizacaoViewModel = new CupomVisualizacaoViewModel(_impressoraConfigService, _impressaoTermicaService, _cupomFormatadorService);
 
+        _enderecoEntregaViewModel = new EnderecoEntregaViewModel();
+        _enderecoEntregaViewModel.OnEnderecoConfirmado += () =>
+        {
+            bool temEntrega = HasEnderecoEntregaDefinido;
+            Pedido.Entrega = temEntrega ? 1 : 0;
+            if (temEntrega)
+            {
+                if (!Pedido.DataEntrega.HasValue) Pedido.DataEntrega = DateTime.Today;
+                foreach (var it in Pedido.Itens)
+                {
+                    it.Entrega = 1;
+                    it.IsEntrega = true;
+                }
+            }
+            else
+            {
+                foreach (var it in Pedido.Itens)
+                {
+                    it.Entrega = 0;
+                    it.IsEntrega = false;
+                }
+            }
+
+            OnPropertyChanged(nameof(Pedido));
+            OnPropertyChanged(nameof(EnderecoClienteExibicao));
+            OnPropertyChanged(nameof(HasEnderecoEntregaDefinido));
+            OnPropertyChanged(nameof(ResumoEnderecoEntrega));
+        };
+
         _checkoutViewModel = new CheckoutViewModel(_formaPagamentoService);
         _checkoutViewModel.PagamentoConfirmado += async (pagamentos) =>
         {
@@ -1180,6 +1344,14 @@ public class PedidoViewModel : ViewModelBase
                             for (int i = 0; i < vias; i++)
                             {
                                 _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
+                            }
+
+                            // 🚚 Impressão Automática de Itens para Entrega conforme configuração do ERP (CFG_VENDA)
+                            var configVenda = await _configuracaoVendaService.ObterConfiguracaoAsync();
+                            if (configVenda.ImprimeItensEntregaAutomaticamente && pedidoFinalizado.TemItensEntrega)
+                            {
+                                string textoEntrega = _cupomFormatadorService.GerarTextoCupomEntrega(pedidoFinalizado, empresa, configImpressora);
+                                _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel);
                             }
                         }
                         catch (Exception ex)
@@ -1225,7 +1397,13 @@ public class PedidoViewModel : ViewModelBase
         AbrirCheckoutCommand = new RelayCommand(async _ => await AbrirCheckoutAsync());
         FecharCheckoutCommand = new RelayCommand(_ => FecharCheckout());
 
-        NovoCommand = new RelayCommand(_ => NovoPedido());
+        NovoCommand = new RelayCommand(_ => SolicitarNovoPedido());
+        SalvarPendenteCommand = new RelayCommand(async _ => await SalvarPedidoPendenteDiretoAsync());
+        ConfirmarSalvarPendenteCommand = new RelayCommand(async _ => await ConfirmarSalvarPendenteAsync());
+        DescartarEContinuarCommand = new RelayCommand(_ => DescartarEContinuar());
+        CancelarSalvarPendenteCommand = new RelayCommand(_ => CancelarSalvarPendente());
+        ConfirmarLiberacaoGerenteCommand = new RelayCommand(async _ => await ConfirmarLiberacaoGerenteAsync());
+        CancelarLiberacaoGerenteCommand = new RelayCommand(_ => CancelarLiberacaoGerente());
         AdicionarItemCommand = new RelayCommand(_ => AdicionarItem());
         RemoverItemCommand = new RelayCommand<PedidoItem>(item => RemoverItem(item));
         BuscarProdutoRapidoCommand = new RelayCommand(async _ => await BuscarProdutoRapidoAsync());
@@ -1240,6 +1418,27 @@ public class PedidoViewModel : ViewModelBase
         AlternarTipoDescontoItemCommand = new RelayCommand(_ => AlternarTipoDescontoItem());
         AlternarTipoDescontoGeralCommand = new RelayCommand(_ => AlternarTipoDescontoGeral());
         AlternarTipoAcrescimoGeralCommand = new RelayCommand(_ => AlternarTipoAcrescimoGeral());
+
+        AbrirEnderecoEntregaCommand = new RelayCommand(async _ => await AbrirEnderecoEntregaAsync());
+        RemoverEnderecoEntregaCommand = new RelayCommand(_ => RemoverEnderecoEntrega());
+        AlternarEntregaItemCommand = new RelayCommand<PedidoItem>(item =>
+        {
+            if (item != null)
+            {
+                item.IsEntrega = !item.IsEntrega;
+                OnPropertyChanged(nameof(Pedido));
+            }
+        });
+        MarcarTodosItensEntregaCommand = new RelayCommand(_ =>
+        {
+            if (Pedido?.Itens == null || Pedido.Itens.Count == 0) return;
+            bool todosMarcados = Pedido.Itens.All(i => i.IsEntrega);
+            foreach (var i in Pedido.Itens)
+            {
+                i.IsEntrega = !todosMarcados;
+            }
+            OnPropertyChanged(nameof(Pedido));
+        });
 
         // Modais de Cliente
         AbrirConsultaClienteCommand = new RelayCommand(async _ => await AbrirConsultaClienteAsync());
@@ -1272,15 +1471,14 @@ public class PedidoViewModel : ViewModelBase
             var listaVend = await _vendedorService.ListarAsync();
             foreach (var v in listaVend) Vendedores.Add(v);
 
-            if (Vendedores.Count > 0 && SelectedVendedor == null)
+            if (UsuarioLogado?.LkVendedor.HasValue == true)
             {
-                SelectedVendedor = Vendedores[0];
+                SelectedVendedor = Vendedores.FirstOrDefault(v => v.Controle == UsuarioLogado.LkVendedor.Value);
             }
         }
         catch (Exception ex)
         {
-            StatusMensagem = $"Erro ao carregar dados auxiliares: {ex.Message}";
-            IsSucesso = false;
+            ExibirMensagem($"Erro ao carregar dados auxiliares: {ex.Message}", false, 5000);
         }
         finally
         {
@@ -1288,35 +1486,308 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
+    public void SolicitarNovoPedido()
+    {
+        if (!TemDadosNaoSalvos)
+        {
+            NovoPedido();
+            return;
+        }
+
+        AcaoPendente = TipoAcaoPendenteAposSalvar.NovoPedido;
+        _callbackAcaoPendente = () => NovoPedido(preservarMensagem: true);
+        string tipoNome = IsOrcamento ? "Orçamento" : "Pré-Venda";
+        MensagemConfirmacaoSalvarPendente = $"Existe um {tipoNome} aberto com {Pedido.Itens.Count} item(ns) no valor total de {Pedido.Total:C2}.\n\nDeseja salvá-lo como PENDENTE para não perder o atendimento antes de iniciar um novo pedido?";
+        IsConfirmarSalvarPendenteOpen = true;
+    }
+
+    public void SolicitarCarregarPedido(int controle, Action<int> executarCarga)
+    {
+        if (!TemDadosNaoSalvos)
+        {
+            executarCarga(controle);
+            return;
+        }
+
+        AcaoPendente = TipoAcaoPendenteAposSalvar.CarregarOutroPedido;
+        _callbackAcaoPendente = () => executarCarga(controle);
+        string tipoNome = IsOrcamento ? "Orçamento" : "Pré-Venda";
+        MensagemConfirmacaoSalvarPendente = $"Existe um {tipoNome} em andamento com {Pedido.Itens.Count} item(ns) no valor de {Pedido.Total:C2}.\n\nDeseja salvá-lo como PENDENTE antes de carregar o outro pedido?";
+        IsConfirmarSalvarPendenteOpen = true;
+    }
+
+    public void SolicitarSair(Action executarSaida)
+    {
+        if (!TemDadosNaoSalvos)
+        {
+            executarSaida();
+            return;
+        }
+
+        AcaoPendente = TipoAcaoPendenteAposSalvar.Sair;
+        _callbackAcaoPendente = executarSaida;
+        string tipoNome = IsOrcamento ? "Orçamento" : "Pré-Venda";
+        MensagemConfirmacaoSalvarPendente = $"Existe um {tipoNome} aberto com {Pedido.Itens.Count} item(ns) no valor de {Pedido.Total:C2}.\n\nDeseja salvá-lo como PENDENTE antes de sair do sistema?";
+        IsConfirmarSalvarPendenteOpen = true;
+    }
+
+    public async Task<bool> SalvarPedidoPendenteAsync()
+    {
+        if (!TemDadosNaoSalvos) return false;
+        if (IsBusy) return false;
+
+        try
+        {
+            IsBusy = true;
+            return await SalvarPedidoPendenteInternoAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task<bool> SalvarPedidoPendenteInternoAsync()
+    {
+        try
+        {
+            Pedido.Status = IsOrcamento ? "O" : "P";
+            Pedido.Venda = 0;
+            Pedido.Cancelada = 0;
+
+            await ExecutarGravacaoPedidoAsync();
+
+            string tipoNome = IsOrcamento ? "Orçamento" : "Pré-Venda";
+            ExibirMensagem($"{tipoNome} #{Pedido.Pedido} salvo com sucesso como PENDENTE!", true, 5000);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ExibirMensagem($"Erro ao salvar {(IsOrcamento ? "orçamento" : "pré-venda")} como pendente: {ex.Message}", false, 7000);
+            return false;
+        }
+    }
+
+    public async Task SalvarPedidoPendenteDiretoAsync()
+    {
+        if (!TemDadosNaoSalvos)
+        {
+            ExibirMensagem("Não há itens no pedido para salvar.", false, 4000);
+            return;
+        }
+
+        bool sucesso = await SalvarPedidoPendenteAsync();
+        if (sucesso)
+        {
+            NovoPedido(preservarMensagem: true);
+        }
+    }
+
+    public async Task ConfirmarSalvarPendenteAsync()
+    {
+        if (IsBusy) return;
+        IsBusy = true;
+        IsConfirmarSalvarPendenteOpen = false;
+
+        var callback = _callbackAcaoPendente;
+        AcaoPendente = TipoAcaoPendenteAposSalvar.Nenhuma;
+        _callbackAcaoPendente = null;
+
+        try
+        {
+            bool sucesso = await SalvarPedidoPendenteInternoAsync();
+            if (sucesso)
+            {
+                callback?.Invoke();
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public void DescartarEContinuar()
+    {
+        if (IsBusy) return;
+        IsConfirmarSalvarPendenteOpen = false;
+        var callback = _callbackAcaoPendente;
+        AcaoPendente = TipoAcaoPendenteAposSalvar.Nenhuma;
+        _callbackAcaoPendente = null;
+
+        if (callback != null)
+        {
+            callback.Invoke();
+        }
+        else
+        {
+            NovoPedido();
+        }
+    }
+
+    public void CancelarSalvarPendente()
+    {
+        IsConfirmarSalvarPendenteOpen = false;
+        AcaoPendente = TipoAcaoPendenteAposSalvar.Nenhuma;
+        _callbackAcaoPendente = null;
+    }
+
+    // --- Métodos de Liberação de Gerente ---
+    public async Task AbrirLiberacaoGerenteAsync(string titulo, string subtitulo, string motivo, string detalhe, Func<Usuario, Task> acaoAposLiberacao)
+    {
+        TituloLiberacaoGerente = titulo;
+        SubtituloLiberacaoGerente = subtitulo;
+        MotivoLiberacaoGerente = motivo;
+        DetalheLiberacaoGerente = detalhe;
+        SenhaGerenteInput = string.Empty;
+        MensagemErroLiberacao = string.Empty;
+        _callbackAcaoLiberada = acaoAposLiberacao;
+
+        try
+        {
+            if (GerentesDisponiveis.Count == 0)
+            {
+                var lista = await _authService.ListarGerentesAtivosAsync();
+                GerentesDisponiveis.Clear();
+                foreach (var g in lista)
+                {
+                    GerentesDisponiveis.Add(g);
+                }
+            }
+
+            if (UsuarioLogado != null && UsuarioLogado.Nivel >= 1)
+            {
+                var usuarioGerente = GerentesDisponiveis.FirstOrDefault(g => g.Controle == UsuarioLogado.Controle);
+                GerenteSelecionado = usuarioGerente ?? (GerentesDisponiveis.Count > 0 ? GerentesDisponiveis[0] : null);
+            }
+            else if (GerentesDisponiveis.Count > 0)
+            {
+                GerenteSelecionado = GerentesDisponiveis[0];
+            }
+        }
+        catch (Exception ex)
+        {
+            MensagemErroLiberacao = $"Erro ao carregar gerentes: {ex.Message}";
+        }
+
+        IsLiberacaoGerenteOpen = true;
+        OnSolicitarFocoSenhaGerente?.Invoke();
+    }
+
+    public async Task ConfirmarLiberacaoGerenteAsync()
+    {
+        if (GerenteSelecionado == null)
+        {
+            MensagemErroLiberacao = "Selecione o gerente responsável.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SenhaGerenteInput))
+        {
+            MensagemErroLiberacao = "Digite a senha do gerente.";
+            OnSolicitarFocoSenhaGerente?.Invoke();
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            MensagemErroLiberacao = "Validando autorização...";
+
+            var (sucesso, mensagem, gerenteAutenticado) = await _authService.ValidarLiberacaoGerenteAsync(GerenteSelecionado.Controle, SenhaGerenteInput);
+            if (!sucesso || gerenteAutenticado == null)
+            {
+                MensagemErroLiberacao = mensagem;
+                SenhaGerenteInput = string.Empty;
+                OnSolicitarFocoSenhaGerente?.Invoke();
+                return;
+            }
+
+            // Liberação confirmada!
+            IsLiberacaoGerenteOpen = false;
+            MensagemErroLiberacao = string.Empty;
+            SenhaGerenteInput = string.Empty;
+
+            var acao = _callbackAcaoLiberada;
+            _callbackAcaoLiberada = null;
+
+            if (acao != null)
+            {
+                await acao.Invoke(gerenteAutenticado);
+            }
+
+            ExibirMensagem($"Operação liberada com sucesso por {gerenteAutenticado.Nome}.", true, 3500);
+        }
+        catch (Exception ex)
+        {
+            MensagemErroLiberacao = $"Erro ao validar liberação: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public void CancelarLiberacaoGerente()
+    {
+        IsLiberacaoGerenteOpen = false;
+        _callbackAcaoLiberada = null;
+        SenhaGerenteInput = string.Empty;
+        MensagemErroLiberacao = string.Empty;
+    }
+
     public void NovoPedido(bool preservarMensagem = false)
     {
-        LimparCliente(preservarMensagem);
-        Pedido = new PedidoVenda
+        _selectedCliente = null;
+        FiltroCliente = string.Empty;
+
+        var novoPedido = new PedidoVenda
         {
             Status = "O",
             Data = DateTime.Today,
             HoraIni = DateTime.Now.ToString("HH:mm"),
             LkUsuario = UsuarioLogado?.Controle,
             LkVendedor = UsuarioLogado?.LkVendedor,
-            Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) ? UsuarioLogado.NomeVendedor : UsuarioLogado?.Nome
+            Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) ? UsuarioLogado.NomeVendedor : UsuarioLogado?.Nome,
+            VendedorCelular = UsuarioLogado?.CelularVendedor,
+            VendedorTelefone = UsuarioLogado?.TelefoneVendedor,
+            IdEmpresa = 2
         };
+        Pedido = novoPedido;
+
+        _enderecoEntregaViewModel.LimparCampos();
+
         _tipoDescontoGeral = "P";
         _descontoGeralInputTexto = "0";
         _tipoAcrescimoGeral = "P";
         _acrescimoGeralInputTexto = "0";
+
+        LimparEntradaItem();
+
+        if (!preservarMensagem)
+        {
+            StatusMensagem = string.Empty;
+        }
+
+        OnPropertyChanged(nameof(Pedido));
+        OnPropertyChanged(nameof(Itens));
+        OnPropertyChanged(nameof(HasItens));
+        OnPropertyChanged(nameof(TemDadosNaoSalvos));
+        OnPropertyChanged(nameof(SelectedCliente));
+        OnPropertyChanged(nameof(HasClienteSelecionado));
+        OnPropertyChanged(nameof(EnderecoClienteExibicao));
+        OnPropertyChanged(nameof(HasEnderecoEntregaDefinido));
+        OnPropertyChanged(nameof(ResumoEnderecoEntrega));
+        OnPropertyChanged(nameof(FiltroCliente));
         OnPropertyChanged(nameof(TipoDescontoGeral));
         OnPropertyChanged(nameof(TipoDescontoGeralSimbolo));
         OnPropertyChanged(nameof(DescontoGeralInputTexto));
         OnPropertyChanged(nameof(TipoAcrescimoGeral));
         OnPropertyChanged(nameof(TipoAcrescimoGeralSimbolo));
         OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
-        LimparEntradaItem();
-        if (!preservarMensagem)
-        {
-            StatusMensagem = string.Empty;
-        }
-        OnPropertyChanged(nameof(HasItens));
         NotificarAlteracaoTipo();
+        RecalcularMargemDescontoGeral();
+        OnClienteDefinido?.Invoke();
     }
 
     public async Task CarregarPedidoAsync(PedidoVenda pedidoCarregado)
@@ -1342,8 +1813,13 @@ public class PedidoViewModel : ViewModelBase
                         Controle = pedidoCarregado.LkCliente.Value,
                         Nome = pedidoCarregado.Cliente ?? string.Empty,
                         Telefone = pedidoCarregado.Telefone,
+                        Endereco = pedidoCarregado.Endereco,
+                        Numero = pedidoCarregado.Numero,
+                        ComplEnd = pedidoCarregado.ComplEnd,
+                        Bairro = pedidoCarregado.Bairro,
                         Cidade = pedidoCarregado.Cidade,
-                        Estado = pedidoCarregado.UF
+                        Estado = pedidoCarregado.UF,
+                        CEP = pedidoCarregado.CEP
                     };
                 }
             }
@@ -1354,8 +1830,13 @@ public class PedidoViewModel : ViewModelBase
                     Controle = pedidoCarregado.LkCliente.Value,
                     Nome = pedidoCarregado.Cliente ?? string.Empty,
                     Telefone = pedidoCarregado.Telefone,
+                    Endereco = pedidoCarregado.Endereco,
+                    Numero = pedidoCarregado.Numero,
+                    ComplEnd = pedidoCarregado.ComplEnd,
+                    Bairro = pedidoCarregado.Bairro,
                     Cidade = pedidoCarregado.Cidade,
-                    Estado = pedidoCarregado.UF
+                    Estado = pedidoCarregado.UF,
+                    CEP = pedidoCarregado.CEP
                 };
             }
         }
@@ -1369,6 +1850,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasItens));
         OnPropertyChanged(nameof(HasClienteSelecionado));
         OnPropertyChanged(nameof(SelectedCliente));
+        OnPropertyChanged(nameof(EnderecoClienteExibicao));
         OnPropertyChanged(nameof(TipoDescontoGeral));
         OnPropertyChanged(nameof(TipoDescontoGeralSimbolo));
         OnPropertyChanged(nameof(DescontoGeralInputTexto));
@@ -1377,7 +1859,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
         NotificarAlteracaoTipo();
 
-        StatusMensagem = $"{(pedidoCarregado.Status == "O" ? "Orçamento" : "Pedido")} #{pedidoCarregado.Pedido} carregado com sucesso.";
+        ExibirMensagem($"{(pedidoCarregado.Status == "O" ? "Orçamento" : "Pedido")} #{pedidoCarregado.Pedido} carregado com sucesso.", true, 3500);
     }
 
     public void DefinirTipo(string tipo)
@@ -1487,8 +1969,7 @@ public class PedidoViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMensagem = $"Erro ao buscar cliente: {ex.Message}";
-            IsSucesso = false;
+            ExibirMensagem($"Erro ao buscar cliente: {ex.Message}", false, 5000);
         }
         finally
         {
@@ -1505,6 +1986,11 @@ public class PedidoViewModel : ViewModelBase
     {
         AbrirConsultaCliente(FiltroCliente);
         await Task.CompletedTask;
+    }
+
+    public async Task AbrirEnderecoEntregaAsync()
+    {
+        await _enderecoEntregaViewModel.AbrirAsync(Pedido, SelectedCliente);
     }
 
     private async Task DispararPesquisaAutomaticaClientesAsync()
@@ -1547,7 +2033,7 @@ public class PedidoViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMensagem = $"Erro ao listar clientes: {ex.Message}";
+            ExibirMensagem($"Erro ao listar clientes: {ex.Message}", false, 5000);
         }
         finally
         {
@@ -1574,6 +2060,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(Pedido));
         OnPropertyChanged(nameof(SelectedCliente));
         OnPropertyChanged(nameof(HasClienteSelecionado));
+        OnPropertyChanged(nameof(EnderecoClienteExibicao));
 
         if (cliente.IsBloqueado)
         {
@@ -1592,6 +2079,7 @@ public class PedidoViewModel : ViewModelBase
             {
                 SelectedCliente = atualizado;
                 OnPropertyChanged(nameof(SelectedCliente));
+                OnPropertyChanged(nameof(EnderecoClienteExibicao));
             }
         }
         catch
@@ -1607,11 +2095,13 @@ public class PedidoViewModel : ViewModelBase
         Pedido.Telefone = !string.IsNullOrWhiteSpace(cliente.Telefone) ? cliente.Telefone : cliente.Celular;
         Pedido.Endereco = cliente.Endereco;
         Pedido.Numero = cliente.Numero;
+        Pedido.ComplEnd = cliente.ComplEnd;
         Pedido.Bairro = cliente.Bairro;
         Pedido.Cidade = cliente.Cidade;
         Pedido.UF = cliente.Estado;
         Pedido.CEP = cliente.CEP;
         Pedido.Email = cliente.Email;
+        Pedido.SaldoLimite = cliente.LimiteCred;
     }
 
     public void LimparCliente(bool preservarMensagem = false)
@@ -1623,12 +2113,18 @@ public class PedidoViewModel : ViewModelBase
         Pedido.Telefone = null;
         Pedido.Endereco = null;
         Pedido.Numero = null;
+        Pedido.ComplEnd = null;
         Pedido.Bairro = null;
         Pedido.Cidade = null;
         Pedido.UF = null;
         Pedido.CEP = null;
         Pedido.Email = null;
+        Pedido.Obs = null;
+        Pedido.LkEnderecoCli = null;
+        Pedido.Entrega = 0;
         FiltroCliente = string.Empty;
+
+        _enderecoEntregaViewModel.LimparCampos();
 
         if (!preservarMensagem)
         {
@@ -1638,6 +2134,36 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(SelectedCliente));
         OnPropertyChanged(nameof(Pedido));
         OnPropertyChanged(nameof(HasClienteSelecionado));
+        OnPropertyChanged(nameof(EnderecoClienteExibicao));
+        OnPropertyChanged(nameof(HasEnderecoEntregaDefinido));
+        OnPropertyChanged(nameof(ResumoEnderecoEntrega));
+    }
+
+    public void RemoverEnderecoEntrega()
+    {
+        if (Pedido != null)
+        {
+            Pedido.Endereco = null;
+            Pedido.Numero = null;
+            Pedido.ComplEnd = null;
+            Pedido.Bairro = null;
+            Pedido.Cidade = null;
+            Pedido.UF = null;
+            Pedido.CEP = null;
+            Pedido.Obs = null;
+            Pedido.LkEnderecoCli = null;
+            Pedido.Entrega = 0;
+            foreach (var it in Pedido.Itens)
+            {
+                it.Entrega = 0;
+                it.IsEntrega = false;
+            }
+        }
+        _enderecoEntregaViewModel.LimparCampos();
+        OnPropertyChanged(nameof(Pedido));
+        OnPropertyChanged(nameof(HasEnderecoEntregaDefinido));
+        OnPropertyChanged(nameof(ResumoEnderecoEntrega));
+        OnPropertyChanged(nameof(EnderecoClienteExibicao));
     }
 
     // --- Métodos de Cadastro Rápido de Cliente ---
@@ -1696,8 +2222,7 @@ public class PedidoViewModel : ViewModelBase
             SelecionarCliente(cli);
             IsCadastroRapidoClienteOpen = false;
             LimparCamposCadastroRapido();
-            StatusMensagem = $"Cliente existente '{cli.Nome}' vinculado ao pedido!";
-            IsSucesso = true;
+            ExibirMensagem($"Cliente existente '{cli.Nome}' vinculado ao pedido!", true, 3500);
             OnClienteDefinido?.Invoke();
         }
     }
@@ -1799,8 +2324,7 @@ public class PedidoViewModel : ViewModelBase
             IsCadastroRapidoClienteOpen = false;
             LimparCamposCadastroRapido();
 
-            StatusMensagem = $"Cliente '{gravado.Nome}' cadastrado (Cód: {gravado.Codigo}) e vinculado ao pedido!";
-            IsSucesso = true;
+            ExibirMensagem($"Cliente '{gravado.Nome}' cadastrado (Cód: {gravado.Codigo}) e vinculado ao pedido!", true, 3500);
             OnClienteDefinido?.Invoke();
         }
         catch (Exception ex)
@@ -1874,8 +2398,7 @@ public class PedidoViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMensagem = $"Erro ao buscar produto: {ex.Message}";
-            IsSucesso = false;
+            ExibirMensagem($"Erro ao buscar produto: {ex.Message}", false, 5000);
         }
         finally
         {
@@ -1937,44 +2460,108 @@ public class PedidoViewModel : ViewModelBase
         decimal subtotalItem = Math.Round(QuantidadeInput * ProdutoSelecionado.PrVenda, 2);
         if (DescontoItemInput > subtotalItem)
         {
-            ExibirMensagem($"O desconto (R$ {DescontoItemInput:N2}) não pode ser maior que o subtotal do item (R$ {subtotalItem:N2}).", false, 5000);
+            ExibirMensagem($"O desconto ({DescontoItemInput:C2}) não pode ser maior que o subtotal do item ({subtotalItem:C2}).", false, 5000);
             OnItemAdicaoFalhou?.Invoke();
             return;
         }
 
         // Validação da política de desconto máximo (TabEst1.PerDescMax e ServNivelLimite do Usuário)
-        if (LimiteDescontoItemEfetivo > 0 && DescontoItemInput > 0)
+        bool precisaLiberacaoDesconto = false;
+        decimal percInformado = subtotalItem > 0 ? Math.Round((DescontoItemInput / subtotalItem) * 100m, 2) : 0m;
+        decimal maxDescontoPermitido = (LimiteDescontoItemEfetivo > 0) ? Math.Round((subtotalItem * LimiteDescontoItemEfetivo) / 100m, 2) : subtotalItem;
+
+        if (LimiteDescontoItemEfetivo > 0 && DescontoItemInput > maxDescontoPermitido)
         {
-            decimal maxDescontoPermitido = Math.Round((subtotalItem * LimiteDescontoItemEfetivo) / 100m, 2);
-            if (DescontoItemInput > maxDescontoPermitido)
+            if (UsuarioLogado?.Nivel >= 2)
             {
-                decimal percInformado = subtotalItem > 0 ? Math.Round((DescontoItemInput / subtotalItem) * 100m, 2) : 0m;
-                ExibirMensagem($"Desconto de {percInformado:N2}% ({DescontoItemInput:C2}) ultrapassa o limite permitido de {LimiteDescontoItemEfetivo:N2}% ({maxDescontoPermitido:C2}) para seu usuário/produto.", false, 6000);
-                OnItemAdicaoFalhou?.Invoke();
-                return;
+                if (UsuarioLogado.LimiteDesconto > 0 && percInformado > UsuarioLogado.LimiteDesconto)
+                {
+                    ExibirMensagem($"Desconto de {percInformado:N2}% ultrapassa seu próprio teto de gerente ({UsuarioLogado.LimiteDesconto:N2}%).", false, 6000);
+                    OnItemAdicaoFalhou?.Invoke();
+                    return;
+                }
+            }
+            else
+            {
+                precisaLiberacaoDesconto = true;
             }
         }
 
         // Validação da política de estoque insuficiente do ERP Legado (CFG_ORCAMENTO / CFG_PREVENDA)
         bool permiteEstoqueInsuficiente = _configuracaoVendaService.PermiteEstoqueInsuficiente(Pedido.IsOrcamento);
-        if (!permiteEstoqueInsuficiente)
+        decimal qtdJaNoPedido = Pedido.Itens.Where(i => i.LkProduto == ProdutoSelecionado.Controle).Sum(i => i.Quantidade);
+        decimal qtdTotalDesejada = qtdJaNoPedido + QuantidadeInput;
+        bool precisaLiberacaoEstoque = false;
+
+        if (!permiteEstoqueInsuficiente && qtdTotalDesejada > ProdutoSelecionado.Estoque)
         {
-            decimal qtdJaNoPedido = Pedido.Itens.Where(i => i.LkProduto == ProdutoSelecionado.Controle).Sum(i => i.Quantidade);
-            decimal qtdTotalDesejada = qtdJaNoPedido + QuantidadeInput;
-            if (qtdTotalDesejada > ProdutoSelecionado.Estoque)
+            precisaLiberacaoEstoque = true;
+        }
+
+        if (precisaLiberacaoDesconto || precisaLiberacaoEstoque)
+        {
+            var prod = ProdutoSelecionado;
+            decimal qtd = QuantidadeInput;
+            decimal desc = DescontoItemInput;
+
+            string tipoOperacao = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+            string titulo = (precisaLiberacaoDesconto && precisaLiberacaoEstoque)
+                ? "Liberação: Desconto e Estoque"
+                : (precisaLiberacaoDesconto ? "Liberação: Desconto Excedente" : "Liberação: Estoque Insuficiente");
+            string subtitulo = $"{tipoOperacao} • Autorização de Gerente";
+
+            var motivos = new System.Collections.Generic.List<string>();
+            if (precisaLiberacaoDesconto)
             {
-                string tipoOperacao = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
-                if (ProdutoSelecionado.Estoque <= 0)
-                {
-                    ExibirMensagem($"Produto sem estoque! '{ProdutoSelecionado.Descricao}' possui estoque {ProdutoSelecionado.Estoque:N2} {ProdutoSelecionado.Unidade}. {tipoOperacao} com estoque insuficiente está desabilitado no ERP.", false, 6000);
-                }
-                else
-                {
-                    ExibirMensagem($"Estoque insuficiente para '{ProdutoSelecionado.Descricao}'! Disponível: {ProdutoSelecionado.Estoque:N2} | Solicitado: {qtdTotalDesejada:N2} {ProdutoSelecionado.Unidade}. {tipoOperacao} com estoque insuficiente está desabilitado no ERP.", false, 6000);
-                }
-                OnItemAdicaoFalhou?.Invoke();
-                return;
+                motivos.Add($"Desconto de {percInformado:N2}% ({desc:C2}) ultrapassa o limite permitido ({LimiteDescontoItemEfetivo:N2}% / {maxDescontoPermitido:C2}).");
             }
+            if (precisaLiberacaoEstoque)
+            {
+                string statusEst = prod.Estoque <= 0 ? "Sem Estoque (0,00)" : $"{prod.Estoque:N2} {prod.Unidade}";
+                motivos.Add($"Estoque insuficiente ({statusEst} | Solicitado: {qtdTotalDesejada:N2} {prod.Unidade}).");
+            }
+
+            string motivo = string.Join("\n", motivos);
+            string detalhe = $"Produto: {prod.Descricao}\nQuantidade: {qtd:N2} {prod.Unidade} | Subtotal: {subtotalItem:C2}\nInforme a senha de um Gerente ou Supervisor para autorizar a operação.";
+
+            _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+            {
+                string obs = $"liberado por {gerente.Nome}";
+                InserirItemInterno(qtd, desc, obs);
+                await Task.CompletedTask;
+            });
+            return;
+        }
+
+        InserirItemInterno(QuantidadeInput, DescontoItemInput);
+    }
+
+    private void InserirItemInterno(decimal qtd, decimal desconto, string? observacaoLiberacao = null)
+    {
+        if (ProdutoSelecionado == null) return;
+
+        // Se o produto já foi inserido anteriormente no pedido, acumula quantidade em vez de duplicar linha
+        var itemExistente = Pedido.Itens.FirstOrDefault(i => i.LkProduto == ProdutoSelecionado.Controle);
+        if (itemExistente != null)
+        {
+            itemExistente.Quantidade += qtd;
+            itemExistente.Desconto += desconto;
+            itemExistente.RecalcularTotal();
+            Pedido.RecalcularTotais();
+
+            OnPropertyChanged(nameof(Pedido));
+            OnPropertyChanged(nameof(Itens));
+            OnPropertyChanged(nameof(HasItens));
+            RecalcularMargemDescontoGeral();
+            LimparEntradaItem();
+
+            string msg = !string.IsNullOrWhiteSpace(observacaoLiberacao)
+                ? $"Quantidade de '{itemExistente.Produto}' acumulada para {itemExistente.Quantidade:N2} {itemExistente.Unidade} ({observacaoLiberacao})."
+                : $"Quantidade de '{itemExistente.Produto}' acumulada para {itemExistente.Quantidade:N2} {itemExistente.Unidade}.";
+
+            ExibirMensagem(msg, true, 3500);
+            OnItemAdicionado?.Invoke();
+            return;
         }
 
         var item = new PedidoItem
@@ -1984,15 +2571,30 @@ public class PedidoViewModel : ViewModelBase
                 ? ProdutoSelecionado.CodInterno 
                 : (!string.IsNullOrWhiteSpace(ProdutoSelecionado.Codigo) ? ProdutoSelecionado.Codigo : ProdutoSelecionado.Controle.ToString()),
             CodBarra = ProdutoSelecionado.CodBarra,
+            CodOrigem = ProdutoSelecionado.CodOrigem,
             Produto = ProdutoSelecionado.Descricao,
-            Quantidade = QuantidadeInput,
+            Quantidade = qtd,
             VlUnitario = ProdutoSelecionado.PrVenda,
-            Desconto = DescontoItemInput,
+            PrecoVenda = ProdutoSelecionado.PrVenda,
+            PrCusto = ProdutoSelecionado.PrCusto,
+            Desconto = desconto,
             PerDescMax = ProdutoSelecionado.PerDescMax,
             Unidade = ProdutoSelecionado.Unidade ?? "UN",
             Marca = ProdutoSelecionado.Fabricante,
-            LkVendedor = Pedido.LkVendedor ?? UsuarioLogado?.LkVendedor,
-            Vendedor = Pedido.Vendedor ?? UsuarioLogado?.NomeVendedor ?? UsuarioLogado?.Nome
+            LkVendedor = UsuarioLogado?.LkVendedor ?? Pedido.LkVendedor,
+            Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) 
+                ? UsuarioLogado.NomeVendedor 
+                : (Pedido.Vendedor ?? UsuarioLogado?.Nome),
+            Cfop = ProdutoSelecionado.Cfop > 0 ? ProdutoSelecionado.Cfop : 5405,
+            Cst = int.TryParse(ProdutoSelecionado.Cst, out int parsedProdCst) 
+                ? parsedProdCst.ToString() 
+                : ((ProdutoSelecionado.Cst == "FF" || (ProdutoSelecionado.Cfop > 0 ? ProdutoSelecionado.Cfop : 5405) == 5405) ? "60" : "102"),
+            CstEcf = (ProdutoSelecionado.Cst == "60" || ProdutoSelecionado.Cst == "FF" || (ProdutoSelecionado.Cfop > 0 ? ProdutoSelecionado.Cfop : 5405) == 5405) ? "FF" : "01",
+            QtdSaldo = ProdutoSelecionado.EstoqueLoja > 0 ? ProdutoSelecionado.EstoqueLoja : ProdutoSelecionado.Estoque,
+            Peso = ProdutoSelecionado.Peso ?? 0,
+            IdEmpresa = Pedido.IdEmpresa,
+            Entrega = HasEnderecoEntregaDefinido ? 1 : 0,
+            IsEntrega = HasEnderecoEntregaDefinido
         };
 
         item.RecalcularTotal();
@@ -2004,7 +2606,12 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasItens));
         RecalcularMargemDescontoGeral();
         LimparEntradaItem();
-        ExibirMensagem($"Item '{item.Produto}' adicionado com sucesso.", true, 3000);
+        
+        string msgNova = !string.IsNullOrWhiteSpace(observacaoLiberacao)
+            ? $"Item '{item.Produto}' adicionado ({observacaoLiberacao})."
+            : $"Item '{item.Produto}' adicionado com sucesso.";
+            
+        ExibirMensagem(msgNova, true, 3500);
         OnItemAdicionado?.Invoke();
     }
 
@@ -2047,8 +2654,34 @@ public class PedidoViewModel : ViewModelBase
             if (novoDesconto > maxDesconto)
             {
                 decimal perc = Math.Round((novoDesconto / item.SubtotalBruto) * 100m, 2);
-                ExibirMensagem($"Desconto de {perc:N2}% ({novoDesconto:C2}) ultrapassa o limite permitido de {limiteEfetivo:N2}% ({maxDesconto:C2}) para '{item.Produto}'.", false, 6000);
-                return false;
+                if (UsuarioLogado?.Nivel >= 2)
+                {
+                    if (UsuarioLogado.LimiteDesconto > 0 && perc > UsuarioLogado.LimiteDesconto)
+                    {
+                        ExibirMensagem($"Desconto de {perc:N2}% ultrapassa seu próprio teto de gerente ({UsuarioLogado.LimiteDesconto:N2}%).", false, 6000);
+                        return false;
+                    }
+                }
+                else
+                {
+                    string titulo = "Liberação: Desconto do Item";
+                    string subtitulo = "Alteração de Item • Autorização de Gerente";
+                    string motivo = $"Desconto alterado para {perc:N2}% ({novoDesconto:C2}) ultrapassa o limite do vendedor ({limiteEfetivo:N2}% / {maxDesconto:C2}).";
+                    string detalhe = $"Item: {item.Produto}\nSubtotal: {item.SubtotalBruto:C2} | Novo Desconto: {novoDesconto:C2} ({perc:N2}%)\nInforme a senha de um Gerente ou Supervisor para autorizar.";
+
+                    _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                    {
+                        item.Desconto = novoDesconto;
+                        item.RecalcularTotal();
+                        Pedido.RecalcularTotais();
+                        OnPropertyChanged(nameof(Pedido));
+                        OnPropertyChanged(nameof(Itens));
+                        RecalcularMargemDescontoGeral();
+                        ExibirMensagem($"Desconto do item '{item.Produto}' atualizado para {novoDesconto:C2} (liberado por {gerente.Nome}).", true, 3500);
+                        await Task.CompletedTask;
+                    });
+                    return false;
+                }
             }
         }
 
@@ -2111,21 +2744,62 @@ public class PedidoViewModel : ViewModelBase
         if (!permiteEstoqueInsuficiente)
         {
             var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
+            var itensComEstoqueInsuficiente = new System.Collections.Generic.List<string>();
+
             foreach (var grp in itensPorProduto)
             {
                 decimal qtdTotal = grp.Sum(i => i.Quantidade);
                 decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
                 if (qtdTotal > estoqueAtual)
                 {
-                    string nomeProduto = grp.First().Produto;
-                    string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
-                    ExibirMensagem($"Não é possível totalizar este {tipoNome}: o produto '{nomeProduto}' possui estoque insuficiente (Disponível: {estoqueAtual:N2} | Solicitado: {qtdTotal:N2}). Operação bloqueada pelas regras do ERP.", false, 7000);
-                    return;
+                    itensComEstoqueInsuficiente.Add($"• '{grp.First().Produto}' (Disp: {estoqueAtual:N2} | Pedido: {qtdTotal:N2})");
                 }
+            }
+
+            if (itensComEstoqueInsuficiente.Count > 0)
+            {
+                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                string titulo = "Liberação: Estoque Insuficiente";
+                string subtitulo = $"{tipoNome} • Totalização do Pedido";
+                string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
+                string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + "\n\nAutorização de Gerente requerida para totalizar.";
+
+                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                {
+                    await IniciarCheckoutModalAsync();
+                });
+                return;
             }
         }
 
-        // Garante que o status atual seja refletido ('O' = Orçamento, 'P' = Pedido de Venda)
+        // Validação de Desconto Geral antes de totalizar
+        if (DescontoGeralPercAtual > LimiteDescontoUsuario && LimiteDescontoUsuario > 0)
+        {
+            if (UsuarioLogado?.Nivel >= 2)
+            {
+                // Gerente logado prossegue
+            }
+            else
+            {
+                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                string titulo = "Liberação: Desconto Geral Excedente";
+                string subtitulo = $"{tipoNome} • Totalização do Pedido";
+                string motivo = $"Desconto geral de {DescontoGeralPercAtual:N2}% ({Pedido.Desconto:C2}) ultrapassa o teto permitido do vendedor ({LimiteDescontoUsuario:N2}%).";
+                string detalhe = $"Subtotal: {Pedido.Subtotal:C2} | Desconto Geral: {Pedido.Desconto:C2} ({DescontoGeralPercAtual:N2}%)\nInforme a senha de Gerente para autorizar.";
+
+                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                {
+                    await IniciarCheckoutModalAsync();
+                });
+                return;
+            }
+        }
+
+        await IniciarCheckoutModalAsync();
+    }
+
+    private async Task IniciarCheckoutModalAsync()
+    {
         Pedido.Status = Pedido.IsOrcamento ? "O" : "P";
         Pedido.Venda = 0;
 

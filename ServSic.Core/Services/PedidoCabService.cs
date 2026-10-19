@@ -27,6 +27,8 @@ public class PedidoCabService
                 ta.LkCliente,
                 ta.Vendedor,
                 ta.LkVendedor,
+                v.Celular as VendedorCelular,
+                v.Telefone as VendedorTelefone,
                 ta.TOTAL as Total,
                 ta.DESCONTO as Desconto,
                 ta.ACRESCIMO as Acrescimo,
@@ -50,8 +52,14 @@ public class PedidoCabService
                 ta.Telefone,
                 ta.eMail as Email,
                 ta.ComplEnd,
-                ta.Obs
+                ta.Obs,
+                ta.LkEnderecoCli,
+                ta.DataEntrega,
+                ta.LkEntregador,
+                ta.LkEntregaTx,
+                ta.VlEntregaTx
             FROM TabEst3A ta
+            LEFT JOIN TabVend v ON ta.LkVendedor = v.CONTROLE
             WHERE ta.Controle = @controle";
 
         return await conn.QueryFirstOrDefaultAsync<PedidoVenda>(sqlHeader, new { controle });
@@ -175,10 +183,43 @@ public class PedidoCabService
     {
         if (pedido.Data == default) pedido.Data = DateTime.Today;
         if (string.IsNullOrWhiteSpace(pedido.HoraIni)) pedido.HoraIni = DateTime.Now.ToString("HH:mm");
-        if (pedido.IdEmpresa <= 0) pedido.IdEmpresa = 1;
+        if (pedido.IdEmpresa <= 0 || pedido.IdEmpresa == 1)
+        {
+            var empAtiva = await conn.ExecuteScalarAsync<int?>(
+                "SELECT TOP 1 idEmpresa FROM TabEst3A WHERE idEmpresa IS NOT NULL AND idEmpresa > 0 ORDER BY Controle DESC",
+                transaction: trans);
+            pedido.IdEmpresa = (empAtiva.HasValue && empAtiva.Value > 0) ? empAtiva.Value : 2;
+        }
+
         if (pedido.LkCaixa <= 0) pedido.LkCaixa = 1;
         if (string.IsNullOrWhiteSpace(pedido.Status)) pedido.Status = pedido.IsOrcamento ? "O" : "P";
         pedido.Venda = 0; // Sempre balcão
+
+        // Regra do ERP Legado: Pré-Vendas ('P') recebem bloqueado = 3 para aguardar caixa
+        pedido.Bloqueado = string.Equals(pedido.Status, "P", StringComparison.OrdinalIgnoreCase) ? 3 : 0;
+        if (pedido.LkConvenio <= 0) pedido.LkConvenio = 999;
+        pedido.LkTipo = 0;
+
+        // Limite de crédito do cliente
+        if (pedido.SaldoLimite <= 0 && pedido.LkCliente.HasValue && pedido.LkCliente.Value > 0)
+        {
+            var limiteCli = await conn.ExecuteScalarAsync<decimal?>(
+                "SELECT TOP 1 LimiteCred FROM TABCLI WHERE Controle = @LkCliente",
+                new { pedido.LkCliente }, transaction: trans);
+            if (limiteCli.HasValue) pedido.SaldoLimite = limiteCli.Value;
+        }
+
+        // Cálculo exato de comissão da nota sincronizado com o percentual do vendedor na TabVend
+        if (pedido.LkVendedor.HasValue && pedido.LkVendedor.Value > 0)
+        {
+            var comissaoPerc = await conn.ExecuteScalarAsync<double?>(
+                "SELECT TOP 1 Comissao FROM TabVend WHERE Controle = @LkVendedor",
+                new { pedido.LkVendedor }, transaction: trans);
+            if (comissaoPerc.HasValue && comissaoPerc.Value > 0)
+            {
+                pedido.ComissaoNota = Math.Round(pedido.Total * ((decimal)comissaoPerc.Value / 100m), 5);
+            }
+        }
 
         // Sanitização defensiva contra erro de truncamento de strings no SQL Server
         if (pedido.Cliente?.Length > 40) pedido.Cliente = pedido.Cliente.Substring(0, 40);
@@ -186,7 +227,81 @@ public class PedidoCabService
         if (pedido.Obs?.Length > 200) pedido.Obs = pedido.Obs.Substring(0, 200);
         if (pedido.Codigo?.Length > 8) pedido.Codigo = pedido.Codigo.Substring(0, 8);
 
-        bool isNovo = pedido.Controle <= 0;
+        bool isNovo = false;
+
+        if (pedido.Controle > 0)
+        {
+            var existe = await conn.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM TabEst3A WHERE Controle = @Controle",
+                new { pedido.Controle }, transaction: trans);
+            isNovo = (existe == 0);
+        }
+        else if (pedido.Pedido > 0)
+        {
+            var existingControle = await conn.ExecuteScalarAsync<int?>(
+                "SELECT TOP 1 Controle FROM TabEst3A WHERE Pedido = @Pedido",
+                new { pedido.Pedido }, transaction: trans);
+            if (existingControle.HasValue && existingControle.Value > 0)
+            {
+                pedido.Controle = existingControle.Value;
+                isNovo = false;
+            }
+            else
+            {
+                isNovo = true;
+            }
+        }
+        else
+        {
+            isNovo = true;
+        }
+
+        const string sqlUpdateA = @"
+            UPDATE TabEst3A SET
+                Codigo = @Codigo,
+                Data = @Data,
+                HoraIni = @HoraIni,
+                Cliente = @Cliente,
+                LkCliente = @LkCliente,
+                Vendedor = @Vendedor,
+                LkVendedor = @LkVendedor,
+                TOTAL = @Total,
+                DESCONTO = @Desconto,
+                ACRESCIMO = @Acrescimo,
+                SUBTOTAL = @Subtotal,
+                Vlpago = @VlPago,
+                Entrada = @Entrada,
+                Faturado = @Faturado,
+                QtdItens = @QtdItens,
+                Status = @Status,
+                Venda = @Venda,
+                Cancelada = @Cancelada,
+                LkUsuario = @LkUsuario,
+                LkCaixa = @LkCaixa,
+                LkCxFecha = @LkCxFecha,
+                Endereco = @Endereco,
+                Numero = @Numero,
+                Bairro = @Bairro,
+                Cidade = @Cidade,
+                UF = @UF,
+                CEP = @CEP,
+                CPF_CNPJ = @CPF_CNPJ,
+                Telefone = @Telefone,
+                eMail = @Email,
+                ComplEnd = @ComplEnd,
+                Obs = @Obs,
+                bloqueado = @Bloqueado,
+                Saldo_limite = @SaldoLimite,
+                lkConvenio = @LkConvenio,
+                ComissaoNota = @ComissaoNota,
+                ComissaoItemValor = @ComissaoItemValor,
+                LkTipo = @LkTipo,
+                LkEnderecoCli = @LkEnderecoCli,
+                DataEntrega = @DataEntrega,
+                LkEntregador = @LkEntregador,
+                LkEntregaTx = @LkEntregaTx,
+                VlEntregaTx = @VlEntregaTx
+            WHERE Controle = @Controle;";
 
         if (isNovo)
         {
@@ -243,17 +358,30 @@ public class PedidoCabService
                 pedido.Codigo = pedido.LkCliente.Value.ToString("D6");
             }
 
+            // Proteção contra duplicação de PK (Pedido, IdEmpresa, Controle)
+            var jaExistePK = await conn.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM TabEst3A WHERE Pedido = @Pedido AND idEmpresa = @IdEmpresa AND Controle = @Controle",
+                new { pedido.Pedido, pedido.IdEmpresa, pedido.Controle }, transaction: trans);
+
+            if (jaExistePK > 0)
+            {
+                await conn.ExecuteAsync(sqlUpdateA, pedido, transaction: trans);
+                return pedido.Controle;
+            }
+
             const string sqlInsertA = @"
                 INSERT INTO TabEst3A (
                     Controle, Pedido, Codigo, Data, HoraIni, Cliente, LkCliente, Vendedor, LkVendedor,
                     TOTAL, DESCONTO, ACRESCIMO, SUBTOTAL, Vlpago, Entrada, Faturado, QtdItens, Status, Venda, Cancelada,
                     LkUsuario, LkCaixa, LkCxFecha, idEmpresa, Endereco, Numero, Bairro, Cidade, UF, CEP, CPF_CNPJ,
-                    Telefone, eMail, ComplEnd, Obs
+                    Telefone, eMail, ComplEnd, Obs, bloqueado, Saldo_limite, lkConvenio, ComissaoNota, ComissaoItemValor, LkTipo,
+                    DataEntrega, LkEnderecoCli, LkEntregador, LkEntregaTx, VlEntregaTx
                 ) VALUES (
                     @Controle, @Pedido, @Codigo, @Data, @HoraIni, @Cliente, @LkCliente, @Vendedor, @LkVendedor,
                     @Total, @Desconto, @Acrescimo, @Subtotal, @VlPago, @Entrada, @Faturado, @QtdItens, @Status, @Venda, @Cancelada,
                     @LkUsuario, @LkCaixa, @LkCxFecha, @IdEmpresa, @Endereco, @Numero, @Bairro, @Cidade, @UF, @CEP, @CPF_CNPJ,
-                    @Telefone, @Email, @ComplEnd, @Obs
+                    @Telefone, @Email, @ComplEnd, @Obs, @Bloqueado, @SaldoLimite, @LkConvenio, @ComissaoNota, @ComissaoItemValor, @LkTipo,
+                    ISNULL(@DataEntrega, GETDATE()), @LkEnderecoCli, @LkEntregador, @LkEntregaTx, @VlEntregaTx
                 );";
 
             await conn.ExecuteAsync(sqlInsertA, pedido, transaction: trans);
@@ -264,42 +392,6 @@ public class PedidoCabService
             {
                 pedido.Codigo = pedido.LkCliente.Value.ToString("D6");
             }
-
-            const string sqlUpdateA = @"
-                UPDATE TabEst3A SET
-                    Codigo = @Codigo,
-                    Data = @Data,
-                    HoraIni = @HoraIni,
-                    Cliente = @Cliente,
-                    LkCliente = @LkCliente,
-                    Vendedor = @Vendedor,
-                    LkVendedor = @LkVendedor,
-                    TOTAL = @Total,
-                    DESCONTO = @Desconto,
-                    ACRESCIMO = @Acrescimo,
-                    SUBTOTAL = @Subtotal,
-                    Vlpago = @VlPago,
-                    Entrada = @Entrada,
-                    Faturado = @Faturado,
-                    QtdItens = @QtdItens,
-                    Status = @Status,
-                    Venda = @Venda,
-                    Cancelada = @Cancelada,
-                    LkUsuario = @LkUsuario,
-                    LkCaixa = @LkCaixa,
-                    LkCxFecha = @LkCxFecha,
-                    Endereco = @Endereco,
-                    Numero = @Numero,
-                    Bairro = @Bairro,
-                    Cidade = @Cidade,
-                    UF = @UF,
-                    CEP = @CEP,
-                    CPF_CNPJ = @CPF_CNPJ,
-                    Telefone = @Telefone,
-                    eMail = @Email,
-                    ComplEnd = @ComplEnd,
-                    Obs = @Obs
-                WHERE Controle = @Controle;";
 
             await conn.ExecuteAsync(sqlUpdateA, pedido, transaction: trans);
         }
