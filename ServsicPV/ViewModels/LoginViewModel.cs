@@ -87,6 +87,7 @@ public class LoginViewModel : ViewModelBase
 
     // Propriedades da Janela Modal de Configuração do Banco
     private bool _isConfigOpen;
+    private string _configFilePath = string.Empty;
     private string _configServer = @".\qg";
     private string _configDatabase = "prod silcon";
     private string _configUser = "sa";
@@ -99,6 +100,12 @@ public class LoginViewModel : ViewModelBase
     {
         get => _isConfigOpen;
         set => SetProperty(ref _isConfigOpen, value);
+    }
+
+    public string ConfigFilePath
+    {
+        get => _configFilePath;
+        set => SetProperty(ref _configFilePath, value);
     }
 
     public string ConfigServer
@@ -174,6 +181,7 @@ public class LoginViewModel : ViewModelBase
     public void AbrirConfiguracao()
     {
         var cfg = DbConnectionFactory.GetConfig();
+        ConfigFilePath = string.IsNullOrWhiteSpace(cfg.FilePath) ? "Servcom.dll" : cfg.FilePath;
         ConfigServer = cfg.Server;
         ConfigDatabase = cfg.Database;
         ConfigUser = cfg.UserId;
@@ -243,6 +251,7 @@ public class LoginViewModel : ViewModelBase
             };
 
             DbConnectionFactory.SaveAndApplyConfig(newConfig);
+            ConfigFilePath = newConfig.FilePath;
 
             ConfigStatusMessage = "Servcom.dll gravado com sucesso! Conectando...";
             IsConfigSuccess = true;

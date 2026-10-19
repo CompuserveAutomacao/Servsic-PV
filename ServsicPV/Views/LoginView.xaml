@@ -144,6 +144,21 @@
 
                     <Border Height="1" Background="{StaticResource BrushBorder}"/>
 
+                    <!-- Origem do Servcom.dll -->
+                    <Border Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ic:SymbolIcon Grid.Column="0" Symbol="DocumentBulletList" FontSize="16" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Origem do Servcom.dll:" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                <TextBlock Text="{Binding ConfigFilePath, Mode=OneWay}" FontSize="11.5" FontWeight="Medium" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                     <!-- Campos de Conexão -->
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="4">

@@ -83,6 +83,22 @@ public static class ServcomReader
         config.FilePath = targetPath;
         config.RawConnectionString = content;
 
+        // Se o executável estiver em uma subpasta da pasta Servsic (ex: C:\Servsic\PV\),
+        // mantém atualizado também o Servcom.dll da pasta mãe do ERP legado
+        try
+        {
+            var parent = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory);
+            if (parent != null)
+            {
+                string parentFile = Path.Combine(parent.FullName, "Servcom.dll");
+                if (File.Exists(parentFile) && !string.Equals(Path.GetFullPath(targetPath), Path.GetFullPath(parentFile), StringComparison.OrdinalIgnoreCase))
+                {
+                    File.WriteAllText(parentFile, content);
+                }
+            }
+        }
+        catch { }
+
         // Se existir a pasta c:\DEV\SERVSIC PV, mantém sincronizado também no diretório de desenvolvimento
         const string devDir = @"c:\DEV\SERVSIC PV";
         if (Directory.Exists(devDir))
@@ -120,32 +136,105 @@ public static class ServcomReader
     private static string FindServcomFile(string? specificPath)
     {
         if (!string.IsNullOrWhiteSpace(specificPath) && File.Exists(specificPath))
-            return specificPath;
+            return Path.GetFullPath(specificPath);
 
-        var candidates = new List<string>
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string localFile = Path.Combine(baseDir, "Servcom.dll");
+
+        var prioritizedCandidates = new List<string>();
+
+        // 1. PRIORIDADE MÁXIMA: Pasta mãe do ERP Legado SERVSIC.
+        // Cenário: o ServsicPV sempre fica em uma subpasta dentro da pasta Servsic (ex: C:\Servsic\PV\ ou C:\Servsic\ServsicPV\).
+        // Ao copiar a pasta do PV para dentro da pasta do Servsic, busca e usa prioritariamente o Servcom.dll da pasta mãe.
+        var directParent = Directory.GetParent(baseDir);
+        if (directParent != null)
         {
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Servcom.dll"),
-            Path.Combine(Directory.GetCurrentDirectory(), "Servcom.dll"),
-            @"c:\DEV\SERVSIC PV\Servcom.dll"
-        };
+            prioritizedCandidates.Add(Path.Combine(directParent.FullName, "Servcom.dll"));
+        }
 
-        // Adiciona diretórios pais até a raiz
-        string current = AppDomain.CurrentDomain.BaseDirectory;
+        // 2. Subindo na árvore de diretórios (até 4 níveis) procurando especificamente pasta chamada 'SERVSIC' ou 'Servsic'
+        string current = baseDir;
         for (int i = 0; i < 4; i++)
         {
-            var parent = Directory.GetParent(current);
-            if (parent == null) break;
-            candidates.Add(Path.Combine(parent.FullName, "Servcom.dll"));
-            current = parent.FullName;
+            var p = Directory.GetParent(current);
+            if (p == null) break;
+
+            if (p.Name.Equals("Servsic", StringComparison.OrdinalIgnoreCase) ||
+                p.Name.Equals("SERVSIC", StringComparison.OrdinalIgnoreCase))
+            {
+                prioritizedCandidates.Add(Path.Combine(p.FullName, "Servcom.dll"));
+            }
+            current = p.FullName;
         }
 
-        foreach (var candidate in candidates)
+        // 3. Pastas padrões clássicas de instalação do ERP SERVSIC nos discos locais
+        string[] padroesInstalacao =
+        {
+            @"C:\Servsic\Servcom.dll",
+            @"C:\SERVSIC\Servcom.dll",
+            @"D:\Servsic\Servcom.dll",
+            @"D:\SERVSIC\Servcom.dll",
+            @"E:\Servsic\Servcom.dll",
+            @"E:\SERVSIC\Servcom.dll"
+        };
+
+        foreach (var padrao in padroesInstalacao)
+        {
+            prioritizedCandidates.Add(padrao);
+        }
+
+        // Se encontrou Servcom.dll na pasta mãe do ERP legado ou em locais padrões do Servsic:
+        foreach (var candidate in prioritizedCandidates)
         {
             if (File.Exists(candidate))
-                return Path.GetFullPath(candidate);
+            {
+                string fullCandidate = Path.GetFullPath(candidate);
+                SincronizarComLocal(fullCandidate, localFile);
+                return fullCandidate;
+            }
         }
 
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Servcom.dll");
+        // 4. Se não achou na pasta mãe do ERP, utiliza o Servcom.dll presente na pasta local do PV
+        if (File.Exists(localFile))
+        {
+            return Path.GetFullPath(localFile);
+        }
+
+        // 5. Diretório de trabalho atual (CurrentDirectory)
+        string curDirFile = Path.Combine(Directory.GetCurrentDirectory(), "Servcom.dll");
+        if (File.Exists(curDirFile))
+        {
+            return Path.GetFullPath(curDirFile);
+        }
+
+        // 6. Fallback para ambiente de desenvolvimento
+        const string devPath = @"c:\DEV\SERVSIC PV\Servcom.dll";
+        if (File.Exists(devPath))
+        {
+            return Path.GetFullPath(devPath);
+        }
+
+        return localFile;
+    }
+
+    private static void SincronizarComLocal(string sourceFile, string targetLocalFile)
+    {
+        try
+        {
+            if (string.Equals(Path.GetFullPath(sourceFile), Path.GetFullPath(targetLocalFile), StringComparison.OrdinalIgnoreCase))
+                return;
+
+            string masterContent = File.ReadAllText(sourceFile);
+            bool precisaAtualizar = !File.Exists(targetLocalFile) || File.ReadAllText(targetLocalFile).Trim() != masterContent.Trim();
+            if (precisaAtualizar)
+            {
+                File.WriteAllText(targetLocalFile, masterContent);
+            }
+        }
+        catch
+        {
+            // Ignora falha de permissão de escrita local caso a pasta esteja protegida
+        }
     }
 
     private static Dictionary<string, string> ParseConnectionString(string connStr)
