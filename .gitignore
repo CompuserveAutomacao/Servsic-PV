@@ -52,3 +52,5 @@ Publish*/
 Servcom.dll
 publish-release.ps1
 
+# Utilitarios locais internos (nao versionados)
+[uU]til/
