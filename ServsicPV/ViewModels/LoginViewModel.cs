@@ -22,6 +22,7 @@ public class LoginViewModel : ViewModelBase
     private string _databaseInfo = string.Empty;
 
     public ObservableCollection<Usuario> ActiveUsers { get; } = new();
+    public AtualizacaoViewModel AtualizacaoViewModel { get; } = new();
 
     public Usuario? SelectedUser
     {
@@ -281,6 +282,9 @@ public class LoginViewModel : ViewModelBase
 
             var config = DbConnectionFactory.GetConfig();
             DatabaseInfo = $"Servidor: {config.Server} | Base: {config.Database}";
+
+            // Dispara verificação de novas versões em segundo plano
+            _ = AtualizacaoViewModel.VerificarSilenciosoAsync();
 
             bool ok = await _authService.TestarConexaoAsync();
             IsConnected = ok;

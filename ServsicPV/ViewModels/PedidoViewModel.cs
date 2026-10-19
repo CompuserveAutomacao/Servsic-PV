@@ -34,6 +34,8 @@ public class PedidoViewModel : ViewModelBase
     public CupomVisualizacaoViewModel CupomVisualizacaoViewModel => _cupomVisualizacaoViewModel;
     private readonly EnderecoEntregaViewModel _enderecoEntregaViewModel;
     public EnderecoEntregaViewModel EnderecoEntregaViewModel => _enderecoEntregaViewModel;
+    private readonly AtualizacaoViewModel _atualizacaoViewModel = new();
+    public AtualizacaoViewModel AtualizacaoViewModel => _atualizacaoViewModel;
 
     private PedidoVenda _pedido = new();
     private Cliente? _selectedCliente;

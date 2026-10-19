@@ -14,6 +14,7 @@
     <conv:StatusColorConverter x:Key="StatusColorConverter" />
     <conv:NotificationBackgroundConverter x:Key="NotificationBackgroundConverter" />
     <conv:NotificationBorderConverter x:Key="NotificationBorderConverter" />
+    <conv:InverseBoolConverter x:Key="InverseBoolConverter" />
 
     <!-- Cores do Design System ServSic (Exclusivamente Claro e Azul) -->
     <Color x:Key="ColorServsicDark">#0B192C</Color>

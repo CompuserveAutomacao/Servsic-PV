@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ic="using:FluentIcons.WinUI"
+    xmlns:views="using:ServsicPV.Views"
     mc:Ignorable="d"
     Title="ServsicPV - Login">
 
@@ -32,26 +33,34 @@
                            FontSize="13" 
                            FontFamily="Segoe UI"
                            FontWeight="Normal"
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,0"/>
+                           HorizontalAlignment="Center"/>
+
+                <!-- Versão do Sistema -->
+                <TextBlock Text="{Binding AtualizacaoViewModel.CurrentVersion}" 
+                           Foreground="#64748B" FontSize="11" 
+                           HorizontalAlignment="Center" Margin="0,8,0,0"/>
             </StackPanel>
         </Grid>
 
         <!-- Painel Direito: Formulário de Autenticação -->
         <Grid Grid.Column="1" Margin="48,24,48,20">
-            <!-- Botão Engrenagem no Canto Superior Direito -->
-            <Button x:Name="BtnConfig"
-                    Click="BtnConfig_Click"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Margin="0,12,12,0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="8"
-                    CornerRadius="6"
-                    ToolTipService.ToolTip="Configuração do Banco de Dados (Servcom.dll)">
-                <ic:SymbolIcon Symbol="Settings" FontSize="20" Foreground="{StaticResource BrushTextSubtle}"/>
-            </Button>
+            <!-- Ações no Canto Superior Direito: Atualizações e Configuração -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,12,0" Spacing="4">
+                <Button Command="{Binding AtualizacaoViewModel.VerificarCommand}"
+                        Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6"
+                        ToolTipService.ToolTip="Verificar Atualizações do Sistema">
+                    <ic:SymbolIcon Symbol="ArrowSync" FontSize="19" Foreground="{StaticResource BrushTextSubtle}"/>
+                </Button>
+                <Button x:Name="BtnConfig"
+                        Click="BtnConfig_Click"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="8"
+                        CornerRadius="6"
+                        ToolTipService.ToolTip="Configuração do Banco de Dados (Servcom.dll)">
+                    <ic:SymbolIcon Symbol="Settings" FontSize="20" Foreground="{StaticResource BrushTextSubtle}"/>
+                </Button>
+            </StackPanel>
 
             <StackPanel VerticalAlignment="Center" Spacing="20" MaxWidth="340" HorizontalAlignment="Center">
                 
@@ -230,5 +239,11 @@
                 </StackPanel>
             </Border>
         </Grid>
+
+        <!-- ============================================================== -->
+        <!-- MODAL DE ATUALIZAÇÃO AUTOMÁTICA                                -->
+        <!-- ============================================================== -->
+        <views:AtualizacaoModalView Grid.Column="0" Grid.ColumnSpan="2"
+                                    DataContext="{Binding AtualizacaoViewModel}"/>
     </Grid>
 </Window>

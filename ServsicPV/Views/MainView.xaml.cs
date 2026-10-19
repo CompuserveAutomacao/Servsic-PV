@@ -273,6 +273,13 @@ public partial class MainView : Window
             return;
         }
 
+        if (_pedidoViewModel.AtualizacaoViewModel.IsOpen && _pedidoViewModel.AtualizacaoViewModel.CanClose)
+        {
+            _pedidoViewModel.AtualizacaoViewModel.Fechar();
+            args.Handled = true;
+            return;
+        }
+
         if (_pedidoViewModel.ConfiguracaoImpressoraViewModel.IsOpen)
         {
             _pedidoViewModel.ConfiguracaoImpressoraViewModel.Fechar();
@@ -331,6 +338,14 @@ public partial class MainView : Window
             args.Handled = true;
             return;
         }
+    }
+
+    private async void BtnAtualizacoes_Click(object sender, RoutedEventArgs e)
+    {
+        await _pedidoViewModel.AtualizacaoViewModel.VerificarComFeedbackAsync((msg, sucesso) =>
+        {
+            _pedidoViewModel.ExibirMensagem(msg, sucesso);
+        });
     }
 
     private void BtnConfiguracoes_Click(object sender, RoutedEventArgs e)

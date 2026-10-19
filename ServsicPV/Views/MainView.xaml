@@ -63,6 +63,11 @@
                         <TextBlock x:Name="TxtUsuarioNivel" Text="Operador" FontSize="11" Foreground="#94A3B8" HorizontalAlignment="Right"/>
                     </StackPanel>
 
+                    <!-- Botão de Atualizações do Sistema -->
+                    <Button x:Name="BtnAtualizacoes" Click="BtnAtualizacoes_Click" IsTabStop="False" Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6" ToolTipService.ToolTip="Verificar Atualizações do Sistema">
+                        <ic:SymbolIcon Symbol="ArrowSync" FontSize="19" Foreground="#CBD5E1"/>
+                    </Button>
+
                     <!-- Botão de Configurações / Impressora (Engrenagem) -->
                     <Button x:Name="BtnConfiguracoes" Click="BtnConfiguracoes_Click" IsTabStop="False" Background="Transparent" BorderThickness="0" Padding="8" CornerRadius="6" ToolTipService.ToolTip="Configurar Impressora Térmica">
                         <ic:SymbolIcon Symbol="Settings" FontSize="20" Foreground="#CBD5E1"/>
@@ -93,6 +98,14 @@
         <views:CupomVisualizacaoView 
             Grid.Row="0" Grid.RowSpan="2"
             DataContext="{Binding CupomVisualizacaoViewModel}"
+            Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+        <!-- ============================================================== -->
+        <!-- MODAL DE ATUALIZAÇÃO AUTOMÁTICA                                -->
+        <!-- ============================================================== -->
+        <views:AtualizacaoModalView 
+            Grid.Row="0" Grid.RowSpan="2"
+            DataContext="{Binding AtualizacaoViewModel}"
             Visibility="{Binding IsOpen, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
     </Grid>
