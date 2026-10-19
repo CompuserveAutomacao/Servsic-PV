@@ -204,6 +204,15 @@ public partial class MainView : Window
         args.Handled = true;
     }
 
+    private void OnF6GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (_pedidoViewModel.AbrirObservacoesCommand.CanExecute(null))
+        {
+            _pedidoViewModel.AbrirObservacoesCommand.Execute(null);
+            args.Handled = true;
+        }
+    }
+
     private void OnF7GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
         if (_pedidoViewModel.NovoCommand.CanExecute(null))

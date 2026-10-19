@@ -23,7 +23,6 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- 0. Card Compacto de Cliente -->
                     <RowDefinition Height="*"/>    <!-- 1. Grade de Produtos e Inserção de Itens -->
-                    <RowDefinition Height="Auto"/> <!-- 2. Card de Ações Rápidas (Novo, Salvar, Obs, Consultar) -->
                 </Grid.RowDefinitions>
 
                 <!-- 0. Card de Identificação do Cliente -->
@@ -252,7 +251,7 @@
                             <RowDefinition Height="*"/>    <!-- 4. Lista de Itens com Rolagem -->
                         </Grid.RowDefinitions>
 
-                        <!-- Cabeçalho do Card de Produtos com Botão F4 - ITENS em Destaque -->
+                        <!-- Cabeçalho do Card de Produtos com Botões de Ação: Novo Pedido, Itens e Observações -->
                         <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -263,36 +262,101 @@
                                 <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                             </StackPanel>
 
-                            <!-- Botão F4 - ITENS (Fonte Segoe UI Semibold, Contraste Perfeito no Foco/Hover) -->
-                            <Button Grid.Column="1" 
-                                    Command="{Binding AbrirConsultaProdutoCommand}" 
-                                    IsTabStop="False"
-                                    Height="34" 
-                                    Padding="14,0" 
-                                    CornerRadius="6"
-                                    BorderThickness="1.5"
-                                    BorderBrush="{StaticResource BrushServsicBlue}"
-                                    Background="#FFFFFF"
-                                    Foreground="{StaticResource BrushServsicBlue}">
-                                <Button.Resources>
-                                    <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
-                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
-                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#BAE6FD"/>
-                                    <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#E0F2FE"/>
-                                    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#0284C7"/>
-                                    <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#0284C7"/>
-                                    <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#0369A1"/>
-                                    <SolidColorBrush x:Key="ButtonBorderBrushFocused" Color="#0284C7"/>
-                                    <SolidColorBrush x:Key="ButtonForeground" Color="#0284C7"/>
-                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#0284C7"/>
-                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#0369A1"/>
-                                    <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#0284C7"/>
-                                </Button.Resources>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ic:SymbolIcon Symbol="Search" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    <TextBlock Text="F4 - ITENS" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
-                                </StackPanel>
-                            </Button>
+                            <!-- Botões de Ação Unificados (Estilo Outline Azul Idêntico ao Itens) -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <!-- 1. Novo Pedido (F7) -->
+                                <Button Command="{Binding NovoCommand}" 
+                                        IsTabStop="False"
+                                        Height="34" 
+                                        Padding="14,0" 
+                                        CornerRadius="6"
+                                        BorderThickness="1.5"
+                                        BorderBrush="{StaticResource BrushServsicBlue}"
+                                        Background="#FFFFFF"
+                                        Foreground="{StaticResource BrushServsicBlue}"
+                                        ToolTipService.ToolTip="Iniciar Novo Pedido ou Orçamento (F7 / F2)">
+                                    <Button.Resources>
+                                        <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#BAE6FD"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#E0F2FE"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#0369A1"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushFocused" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForeground" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#0369A1"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#0284C7"/>
+                                    </Button.Resources>
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ic:SymbolIcon Symbol="Add" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="F7 - NOVO PEDIDO" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- 2. F4 - ITENS -->
+                                <Button Command="{Binding AbrirConsultaProdutoCommand}" 
+                                        IsTabStop="False"
+                                        Height="34" 
+                                        Padding="14,0" 
+                                        CornerRadius="6"
+                                        BorderThickness="1.5"
+                                        BorderBrush="{StaticResource BrushServsicBlue}"
+                                        Background="#FFFFFF"
+                                        Foreground="{StaticResource BrushServsicBlue}"
+                                        ToolTipService.ToolTip="Consultar e Selecionar Produtos (F4)">
+                                    <Button.Resources>
+                                        <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#BAE6FD"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#E0F2FE"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#0369A1"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushFocused" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForeground" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#0369A1"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#0284C7"/>
+                                    </Button.Resources>
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ic:SymbolIcon Symbol="Search" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="F4 - ITENS" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- 3. Observações -->
+                                <Button Command="{Binding AbrirObservacoesCommand}" 
+                                        IsTabStop="False"
+                                        Height="34" 
+                                        Padding="14,0" 
+                                        CornerRadius="6"
+                                        BorderThickness="1.5"
+                                        BorderBrush="{StaticResource BrushServsicBlue}"
+                                        Background="#FFFFFF"
+                                        Foreground="{StaticResource BrushServsicBlue}"
+                                        ToolTipService.ToolTip="Inserir ou editar observações do pedido (F6)">
+                                    <Button.Resources>
+                                        <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#BAE6FD"/>
+                                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#E0F2FE"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrush" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#0369A1"/>
+                                        <SolidColorBrush x:Key="ButtonBorderBrushFocused" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForeground" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#0284C7"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#0369A1"/>
+                                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#0284C7"/>
+                                    </Button.Resources>
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ic:SymbolIcon Symbol="Note" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="OBSERVAÇÕES" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                         </Grid>
 
                         <!-- Barra de Inserção de Produto -->
@@ -592,43 +656,7 @@
                     </Grid>
                 </Border>
 
-                <!-- 2. Card de Ações Rápidas do Atendimento (Abaixo de Produtos) -->
-                <Border Grid.Row="2" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14,10">
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
 
-                        <!-- Novo Pedido / Orçamento (F7) -->
-                        <Button Grid.Column="0"
-                                Command="{Binding NovoCommand}"
-                                Style="{StaticResource BtnSecondary}"
-                                Height="36"
-                                HorizontalAlignment="Stretch"
-                                Padding="0"
-                                ToolTipService.ToolTip="Iniciar Novo Pedido ou Orçamento (F7)">
-                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                <ic:SymbolIcon Symbol="Add" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
-                                <TextBlock Text="Novo Pedido (F7)" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- Observações -->
-                        <Button Grid.Column="1"
-                                Command="{Binding AbrirObservacoesCommand}"
-                                Style="{StaticResource BtnSecondary}"
-                                Height="36"
-                                HorizontalAlignment="Stretch"
-                                Padding="0"
-                                ToolTipService.ToolTip="Inserir ou editar observações do pedido">
-                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                <ic:SymbolIcon Symbol="Note" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
-                                <TextBlock Text="Observações" FontSize="12" FontFamily="Segoe UI Semibold" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-                </Border>
             </Grid>
 
             <!-- ============================================================== -->
