@@ -1311,12 +1311,42 @@
                                          Height="36"/>
                             </StackPanel>
 
-                            <!-- Linha: CEP, Endereço e Número -->
+                            <!-- Linha: Endereço (Rua, Av.) - Linha própria ocupando toda a horizontal -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Endereço (Rua, Av.)" Style="{StaticResource TextLabel}"/>
+                                <TextBox Text="{Binding NovoClienteEndereco, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PlaceholderText="Rua Principal, Avenida, Alameda..."
+                                         Height="36"/>
+                            </StackPanel>
+
+                            <!-- Linha: Número e Bairro -->
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Spacing="4">
+                                    <TextBlock Text="Número" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteNumero, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="123"
+                                             Height="36"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Text="Bairro" Style="{StaticResource TextLabel}"/>
+                                    <TextBox Text="{Binding NovoClienteBairro, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             PlaceholderText="Centro, Bairro..."
+                                             Height="36"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Linha: CEP, Cidade e UF -->
                             <Grid ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="130"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="70"/>
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Spacing="4">
@@ -1327,36 +1357,6 @@
                                              TextChanging="Cep_TextChanging"
                                              PlaceholderText="00000-000"
                                              MaxLength="9"
-                                             Height="36"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="1" Spacing="4">
-                                    <TextBlock Text="Endereço (Rua, Av.)" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteEndereco, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             PlaceholderText="Rua Principal..."
-                                             Height="36"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2" Spacing="4">
-                                    <TextBlock Text="Número" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteNumero, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             PlaceholderText="123"
-                                             Height="36"/>
-                                </StackPanel>
-                            </Grid>
-
-                            <!-- Linha: Bairro, Cidade e UF -->
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="1.2*"/>
-                                    <ColumnDefinition Width="1.5*"/>
-                                    <ColumnDefinition Width="70"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="Bairro" Style="{StaticResource TextLabel}"/>
-                                    <TextBox Text="{Binding NovoClienteBairro, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             PlaceholderText="Centro"
                                              Height="36"/>
                                 </StackPanel>
 
