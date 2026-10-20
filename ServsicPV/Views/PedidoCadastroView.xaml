@@ -378,7 +378,7 @@
                                         BorderBrush="{StaticResource BrushServsicBlue}"
                                         Background="#FFFFFF"
                                         Foreground="{StaticResource BrushServsicBlue}"
-                                        ToolTipService.ToolTip="Inserir ou editar observações do pedido (F6)">
+                                        ToolTipService.ToolTip="Inserir ou editar observações do pedido (F5)">
                                     <Button.Resources>
                                         <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
                                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
@@ -395,7 +395,7 @@
                                     </Button.Resources>
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <ic:SymbolIcon Symbol="Note" FontSize="15" Foreground="{StaticResource BrushServsicBlue}"/>
-                                        <TextBlock Text="OBSERVAÇÕES" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="F5 - OBSERVAÇÕES" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>

@@ -44,6 +44,7 @@ public class PedidoViewModel : ViewModelBase
     private string _statusMensagem = string.Empty;
     private bool _isSucesso;
     private string _filtroCliente = string.Empty;
+    private readonly HashSet<int> _produtosEstoqueLiberados = new();
 
     // Campos de inserção de itens rápidos
     private string _codigoProdutoInput = string.Empty;
@@ -1715,6 +1716,7 @@ public class PedidoViewModel : ViewModelBase
 
     public void NovoPedido(bool preservarMensagem = false)
     {
+        _produtosEstoqueLiberados.Clear();
         _selectedCliente = null;
         FiltroCliente = string.Empty;
 
@@ -1771,6 +1773,12 @@ public class PedidoViewModel : ViewModelBase
     public async Task CarregarPedidoAsync(PedidoVenda pedidoCarregado)
     {
         Pedido = pedidoCarregado;
+        _produtosEstoqueLiberados.Clear();
+        foreach (var item in Pedido.Itens)
+        {
+            item.EstoqueLiberado = true;
+            _produtosEstoqueLiberados.Add(item.LkProduto);
+        }
         FiltroCliente = pedidoCarregado.Cliente;
         _descontoGeralInputTexto = pedidoCarregado.Desconto.ToString("N2");
         _acrescimoGeralInputTexto = pedidoCarregado.Acrescimo.ToString("N2");
@@ -2508,7 +2516,14 @@ public class PedidoViewModel : ViewModelBase
 
         if (!permiteEstoqueInsuficiente && qtdTotalDesejada > ProdutoSelecionado.Estoque)
         {
-            precisaLiberacaoEstoque = true;
+            if (UsuarioLogado?.Nivel < 2 && !_produtosEstoqueLiberados.Contains(ProdutoSelecionado.Controle))
+            {
+                precisaLiberacaoEstoque = true;
+            }
+            else
+            {
+                _produtosEstoqueLiberados.Add(ProdutoSelecionado.Controle);
+            }
         }
 
         if (precisaLiberacaoDesconto || precisaLiberacaoEstoque)
@@ -2540,7 +2555,11 @@ public class PedidoViewModel : ViewModelBase
             _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
             {
                 string obs = $"liberado por {gerente.Nome}";
-                InserirItemInterno(qtd, desc, obs);
+                if (precisaLiberacaoEstoque)
+                {
+                    _produtosEstoqueLiberados.Add(prod.Controle);
+                }
+                InserirItemInterno(qtd, desc, obs, estoqueLiberado: precisaLiberacaoEstoque);
                 await Task.CompletedTask;
             });
             return;
@@ -2549,9 +2568,11 @@ public class PedidoViewModel : ViewModelBase
         InserirItemInterno(QuantidadeInput, DescontoItemInput);
     }
 
-    private void InserirItemInterno(decimal qtd, decimal desconto, string? observacaoLiberacao = null)
+    private void InserirItemInterno(decimal qtd, decimal desconto, string? observacaoLiberacao = null, bool estoqueLiberado = false)
     {
         if (ProdutoSelecionado == null) return;
+
+        bool isLiberado = estoqueLiberado || _produtosEstoqueLiberados.Contains(ProdutoSelecionado.Controle) || (UsuarioLogado?.Nivel >= 2);
 
         // Se o produto já foi inserido anteriormente no pedido, acumula quantidade em vez de duplicar linha
         var itemExistente = Pedido.Itens.FirstOrDefault(i => i.LkProduto == ProdutoSelecionado.Controle);
@@ -2559,6 +2580,11 @@ public class PedidoViewModel : ViewModelBase
         {
             itemExistente.Quantidade += qtd;
             itemExistente.Desconto += desconto;
+            if (isLiberado)
+            {
+                itemExistente.EstoqueLiberado = true;
+                _produtosEstoqueLiberados.Add(itemExistente.LkProduto);
+            }
             itemExistente.RecalcularTotal();
             Pedido.RecalcularTotais();
 
@@ -2592,6 +2618,7 @@ public class PedidoViewModel : ViewModelBase
             PrCusto = ProdutoSelecionado.PrCusto,
             Desconto = desconto,
             PerDescMax = ProdutoSelecionado.PerDescMax,
+            EstoqueLiberado = isLiberado,
             Unidade = ProdutoSelecionado.Unidade ?? "UN",
             Marca = ProdutoSelecionado.Fabricante,
             LkVendedor = UsuarioLogado?.LkVendedor ?? Pedido.LkVendedor,
@@ -2609,6 +2636,10 @@ public class PedidoViewModel : ViewModelBase
             Entrega = HasEnderecoEntregaDefinido ? 1 : 0,
             IsEntrega = HasEnderecoEntregaDefinido
         };
+        if (isLiberado)
+        {
+            _produtosEstoqueLiberados.Add(item.LkProduto);
+        }
 
         item.RecalcularTotal();
         Pedido.Itens.Add(item);
@@ -2981,34 +3012,46 @@ public class PedidoViewModel : ViewModelBase
 
         // Validação da política de Estoque Insuficiente do ERP Legado
         bool permiteEstoqueInsuficiente = await _configuracaoVendaService.PermiteEstoqueInsuficienteAsync(Pedido.IsOrcamento);
-        if (!permiteEstoqueInsuficiente)
+        if (!permiteEstoqueInsuficiente && UsuarioLogado?.Nivel < 2)
         {
-            var itensPorProduto = Pedido.Itens.GroupBy(i => i.LkProduto);
-            var itensComEstoqueInsuficiente = new System.Collections.Generic.List<string>();
+            var itensNaoLiberados = Pedido.Itens
+                .Where(i => !i.EstoqueLiberado && !_produtosEstoqueLiberados.Contains(i.LkProduto))
+                .ToList();
 
-            foreach (var grp in itensPorProduto)
+            if (itensNaoLiberados.Count > 0)
             {
-                decimal qtdTotal = grp.Sum(i => i.Quantidade);
-                decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
-                if (qtdTotal > estoqueAtual)
+                var itensPorProduto = itensNaoLiberados.GroupBy(i => i.LkProduto);
+                var itensComEstoqueInsuficiente = new System.Collections.Generic.List<string>();
+
+                foreach (var grp in itensPorProduto)
                 {
-                    itensComEstoqueInsuficiente.Add($"• '{grp.First().Produto}' (Disp: {estoqueAtual:N2} | Pedido: {qtdTotal:N2})");
+                    decimal qtdTotal = grp.Sum(i => i.Quantidade);
+                    decimal estoqueAtual = await _produtoService.ObterEstoqueAtualAsync(grp.Key);
+                    if (qtdTotal > estoqueAtual)
+                    {
+                        itensComEstoqueInsuficiente.Add($"• '{grp.First().Produto}' (Disp: {estoqueAtual:N2} | Pedido: {qtdTotal:N2})");
+                    }
                 }
-            }
 
-            if (itensComEstoqueInsuficiente.Count > 0)
-            {
-                string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
-                string titulo = "Liberação: Estoque Insuficiente";
-                string subtitulo = $"{tipoNome} • Totalização do Pedido";
-                string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
-                string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + $"\n\nAutorização de Gerente requerida para {acaoNome}.";
-
-                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                if (itensComEstoqueInsuficiente.Count > 0)
                 {
-                    await IniciarCheckoutModalAsync();
-                });
-                return;
+                    string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
+                    string titulo = "Liberação: Estoque Insuficiente";
+                    string subtitulo = $"{tipoNome} • Totalização do Pedido";
+                    string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
+                    string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + $"\n\nAutorização de Gerente requerida para {acaoNome}.";
+
+                    _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                    {
+                        foreach (var it in Pedido.Itens)
+                        {
+                            it.EstoqueLiberado = true;
+                            _produtosEstoqueLiberados.Add(it.LkProduto);
+                        }
+                        await IniciarCheckoutModalAsync();
+                    });
+                    return;
+                }
             }
         }
 

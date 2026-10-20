@@ -27,6 +27,7 @@ public class PedidoItem : INotifyPropertyChanged
     public string? CodBarra { get; set; }
     public string Produto { get; set; } = string.Empty;
     public decimal PerDescMax { get; set; } = 0m;
+    public bool EstoqueLiberado { get; set; } = false;
 
     public decimal Quantidade
     {

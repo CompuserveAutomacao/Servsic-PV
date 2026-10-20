@@ -298,7 +298,15 @@ public partial class PedidoCadastroView : UserControl
                     e.Handled = true;
                 }
             }
-            else if (e.Key == Windows.System.VirtualKey.F7)
+            else if (e.Key == Windows.System.VirtualKey.F5)
+            {
+                if (!vm.IsEdicaoBloqueada && vm.AbrirObservacoesCommand.CanExecute(null))
+                {
+                    vm.AbrirObservacoesCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Windows.System.VirtualKey.F7 || e.Key == Windows.System.VirtualKey.F2)
             {
                 if (vm.NovoCommand.CanExecute(null))
                 {

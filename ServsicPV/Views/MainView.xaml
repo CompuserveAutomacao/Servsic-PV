@@ -14,6 +14,7 @@
             <KeyboardAccelerator Key="F2" Invoked="OnF7GlobalInvoked"/>
             <KeyboardAccelerator Key="F3" Invoked="OnF3GlobalInvoked"/>
             <KeyboardAccelerator Key="F4" Invoked="OnF4GlobalInvoked"/>
+            <KeyboardAccelerator Key="F5" Invoked="OnF5GlobalInvoked"/>
             <KeyboardAccelerator Key="F6" Invoked="OnF6GlobalInvoked"/>
             <KeyboardAccelerator Key="F7" Invoked="OnF7GlobalInvoked"/>
             <KeyboardAccelerator Key="F8" Invoked="OnF8GlobalInvoked"/>

@@ -205,12 +205,42 @@ public partial class MainView : Window
         args.Handled = true;
     }
 
-    private void OnF6GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    private void OnF5GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
     {
+        MostrarCadastro();
         if (_pedidoViewModel.AbrirObservacoesCommand.CanExecute(null))
         {
             _pedidoViewModel.AbrirObservacoesCommand.Execute(null);
             args.Handled = true;
+        }
+    }
+
+    private void OnF6GlobalInvoked(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ReferenceEquals(ContentArea.Content, _cadastroView))
+        {
+            if (_pedidoViewModel.IsEdicaoBloqueada)
+            {
+                if (_pedidoViewModel.ReimprimirComprovanteCommand.CanExecute(null))
+                {
+                    _pedidoViewModel.ReimprimirComprovanteCommand.Execute(null);
+                    args.Handled = true;
+                }
+            }
+            else if (_pedidoViewModel.SalvarCommand.CanExecute(null))
+            {
+                _pedidoViewModel.SalvarCommand.Execute(null);
+                args.Handled = true;
+            }
+        }
+        else
+        {
+            MostrarCadastro();
+            if (_pedidoViewModel.SalvarCommand.CanExecute(null))
+            {
+                _pedidoViewModel.SalvarCommand.Execute(null);
+                args.Handled = true;
+            }
         }
     }
 
