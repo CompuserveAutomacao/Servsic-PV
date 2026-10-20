@@ -2098,6 +2098,7 @@ public class PedidoViewModel : ViewModelBase
     private void AtribuirClienteAoPedido(Cliente cliente)
     {
         Pedido.LkCliente = cliente.Controle;
+        Pedido.Codigo = cliente.Codigo;
         Pedido.Cliente = cliente.Nome;
         Pedido.CPF_CNPJ = cliente.Documento;
         Pedido.Telefone = !string.IsNullOrWhiteSpace(cliente.Telefone) ? cliente.Telefone : cliente.Celular;

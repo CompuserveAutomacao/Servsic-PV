@@ -202,39 +202,47 @@ public class ClienteService
         string doc = cliente.Documento?.Trim() ?? string.Empty;
         string digitos = new string(doc.Where(char.IsDigit).ToArray());
         bool isCnpj = digitos.Length > 11;
+        bool tagFisica = !isCnpj;
 
         string? cpf = !isCnpj && digitos.Length > 0 ? digitos : null;
         string? cgc = isCnpj ? digitos : null;
 
+        static string? Trunca(string? val, int maxLen)
+        {
+            if (string.IsNullOrEmpty(val)) return val;
+            return val.Length > maxLen ? val.Substring(0, maxLen) : val;
+        }
+
         const string sqlInsert = @"
             INSERT INTO TabCli (
-                Controle, Codigo, Nome, FANTASIA_APELIDO, Cpf, CGC,
+                Controle, Codigo, Nome, FANTASIA_APELIDO, Cpf, CGC, TagFisica,
                 Telefone, Celular, Endereco, Numero, ComplEnd, Bairro, Cidade, Estado, Cep, eMail,
-                Data, Inativo
+                Data, Inativo, idEmpresa, lkTipo
             ) VALUES (
-                @Controle, @Codigo, @Nome, @Fantasia, @Cpf, @CGC,
+                @Controle, @Codigo, @Nome, @Fantasia, @Cpf, @CGC, @TagFisica,
                 @Telefone, @Celular, @Endereco, @Numero, @ComplEnd, @Bairro, @Cidade, @Estado, @CEP, @Email,
-                @Data, 'N'
+                @Data, 'N', 1, 1
             );";
 
         await conn.ExecuteAsync(sqlInsert, new
         {
             Controle = cliente.Controle,
-            Codigo = cliente.Codigo,
-            Nome = cliente.Nome.Trim(),
-            Fantasia = cliente.Fantasia?.Trim() ?? cliente.Nome.Trim(),
-            Cpf = cpf,
-            CGC = cgc,
-            Telefone = cliente.Telefone?.Trim(),
-            Celular = cliente.Celular?.Trim(),
-            Endereco = cliente.Endereco?.Trim(),
-            Numero = cliente.Numero?.Trim(),
-            ComplEnd = cliente.ComplEnd?.Trim(),
-            Bairro = cliente.Bairro?.Trim(),
-            Cidade = cliente.Cidade?.Trim(),
-            Estado = cliente.Estado?.Trim(),
-            CEP = cliente.CEP?.Trim(),
-            Email = cliente.Email?.Trim(),
+            Codigo = Trunca(cliente.Codigo, 8),
+            Nome = Trunca(cliente.Nome?.Trim(), 60),
+            Fantasia = Trunca((cliente.Fantasia?.Trim() ?? cliente.Nome?.Trim()), 60),
+            Cpf = Trunca(cpf, 14),
+            CGC = Trunca(cgc, 18),
+            TagFisica = tagFisica,
+            Telefone = Trunca(cliente.Telefone?.Trim(), 30),
+            Celular = Trunca(cliente.Celular?.Trim(), 30),
+            Endereco = Trunca(cliente.Endereco?.Trim(), 60),
+            Numero = Trunca(cliente.Numero?.Trim(), 10),
+            ComplEnd = Trunca(cliente.ComplEnd?.Trim(), 80),
+            Bairro = Trunca(cliente.Bairro?.Trim(), 30),
+            Cidade = Trunca(cliente.Cidade?.Trim(), 30),
+            Estado = Trunca(cliente.Estado?.Trim(), 2),
+            CEP = Trunca(cliente.CEP?.Trim(), 9),
+            Email = Trunca(cliente.Email?.Trim(), 40),
             Data = System.DateTime.Now
         });
 

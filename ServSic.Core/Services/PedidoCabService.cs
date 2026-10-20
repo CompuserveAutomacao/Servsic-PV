@@ -231,11 +231,27 @@ public class PedidoCabService
         }
 
         // Sanitização defensiva contra erro de truncamento de strings no SQL Server
-        if (pedido.Cliente?.Length > 40) pedido.Cliente = pedido.Cliente.Substring(0, 40);
-        if (pedido.Vendedor?.Length > 20) pedido.Vendedor = pedido.Vendedor.Substring(0, 20);
-        if (pedido.Telefone?.Length > 20) pedido.Telefone = pedido.Telefone.Substring(0, 20);
-        if (pedido.Obs?.Length > 200) pedido.Obs = pedido.Obs.Substring(0, 200);
-        if (pedido.Codigo?.Length > 8) pedido.Codigo = pedido.Codigo.Substring(0, 8);
+        static string? Trunca(string? val, int maxLen)
+        {
+            if (string.IsNullOrEmpty(val)) return val;
+            return val.Length > maxLen ? val.Substring(0, maxLen) : val;
+        }
+
+        pedido.Cliente = Trunca(pedido.Cliente?.Trim(), 100);
+        pedido.Vendedor = Trunca(pedido.Vendedor?.Trim(), 40);
+        pedido.Telefone = Trunca(pedido.Telefone?.Trim(), 30);
+        pedido.Obs = Trunca(pedido.Obs?.Trim(), 500);
+        pedido.Codigo = Trunca(pedido.Codigo?.Trim(), 8);
+        pedido.CPF_CNPJ = Trunca(pedido.CPF_CNPJ?.Trim(), 20);
+        pedido.CEP = Trunca(pedido.CEP?.Trim(), 10);
+        pedido.Cidade = Trunca(pedido.Cidade?.Trim(), 40);
+        pedido.Bairro = Trunca(pedido.Bairro?.Trim(), 50);
+        pedido.Endereco = Trunca(pedido.Endereco?.Trim(), 80);
+        pedido.ComplEnd = Trunca(pedido.ComplEnd?.Trim(), 80);
+        pedido.Numero = Trunca(pedido.Numero?.Trim(), 10);
+        pedido.UF = Trunca(pedido.UF?.Trim(), 2);
+        pedido.Email = Trunca(pedido.Email?.Trim(), 40);
+        pedido.HoraIni = Trunca(pedido.HoraIni?.Trim(), 5);
 
         bool isNovo = false;
 
