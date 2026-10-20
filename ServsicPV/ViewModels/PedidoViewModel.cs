@@ -97,6 +97,8 @@ public class PedidoViewModel : ViewModelBase
     private string _novoClienteCidade = string.Empty;
     private string _novoClienteUF = string.Empty;
     private string _novoClienteEmail = string.Empty;
+    private string _novoClienteRefBan = string.Empty;
+    private string _novoClienteObs = string.Empty;
     private string _cadastroRapidoMensagem = string.Empty;
     private bool _isConsultandoCnpj;
     private bool _isCadastroDuplicadoBloqueado;
@@ -1017,6 +1019,18 @@ public class PedidoViewModel : ViewModelBase
     {
         get => _novoClienteEmail;
         set => SetProperty(ref _novoClienteEmail, value);
+    }
+
+    public string NovoClienteRefBan
+    {
+        get => _novoClienteRefBan;
+        set => SetProperty(ref _novoClienteRefBan, value);
+    }
+
+    public string NovoClienteObs
+    {
+        get => _novoClienteObs;
+        set => SetProperty(ref _novoClienteObs, value);
     }
 
     public string CadastroRapidoMensagem
@@ -2111,6 +2125,8 @@ public class PedidoViewModel : ViewModelBase
         Pedido.CEP = cliente.CEP;
         Pedido.Email = cliente.Email;
         Pedido.SaldoLimite = cliente.LimiteCred;
+        Pedido.ClienteRefBan = cliente.RefBan;
+        Pedido.ClienteObs = cliente.Obs;
     }
 
     public void LimparCliente(bool preservarMensagem = false)
@@ -2135,6 +2151,8 @@ public class PedidoViewModel : ViewModelBase
         Pedido.CEP = null;
         Pedido.Email = null;
         Pedido.Obs = null;
+        Pedido.ClienteRefBan = null;
+        Pedido.ClienteObs = null;
         Pedido.LkEnderecoCli = null;
         Pedido.Entrega = 0;
         FiltroCliente = string.Empty;
@@ -2225,6 +2243,8 @@ public class PedidoViewModel : ViewModelBase
         NovoClienteCidade = string.Empty;
         NovoClienteUF = string.Empty;
         NovoClienteEmail = string.Empty;
+        NovoClienteRefBan = string.Empty;
+        NovoClienteObs = string.Empty;
         CadastroRapidoMensagem = string.Empty;
         IsCadastroDuplicadoBloqueado = false;
         ClienteDuplicadoEncontrado = null;
@@ -2331,7 +2351,9 @@ public class PedidoViewModel : ViewModelBase
                 Cidade = NovoClienteCidade?.Trim(),
                 Estado = NovoClienteUF?.Trim(),
                 CEP = NovoClienteCEP?.Trim(),
-                Email = NovoClienteEmail?.Trim()
+                Email = NovoClienteEmail?.Trim(),
+                RefBan = NovoClienteRefBan?.Trim(),
+                Obs = NovoClienteObs?.Trim()
             };
 
             var gravado = await _clienteService.CadastrarRapidoAsync(novo);

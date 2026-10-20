@@ -56,9 +56,12 @@ public class PedidoCabService
                 ta.DataEntrega,
                 ta.LkEntregador,
                 ta.LkEntregaTx,
-                ta.VlEntregaTx
+                ta.VlEntregaTx,
+                c.RefBan as ClienteRefBan,
+                c.Obs as ClienteObs
             FROM TabEst3A ta
             LEFT JOIN TabVend v ON ta.LkVendedor = v.CONTROLE
+            LEFT JOIN TabCli c ON (ta.LkCliente IS NOT NULL AND ta.LkCliente > 0 AND ta.LkCliente = c.Controle)
             WHERE ta.Controle = @controle";
 
         try

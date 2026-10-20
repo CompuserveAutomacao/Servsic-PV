@@ -91,6 +91,12 @@ public class CupomFormatadorService
         if (!string.IsNullOrWhiteSpace(pedido.Telefone))
             sb.AppendLine($"FONE: {FormatarTelefone(pedido.Telefone)}");
 
+        if (!string.IsNullOrWhiteSpace(pedido.ClienteRefBan))
+            sb.AppendLine(QuebrarTextoComPrefixo("REF: ", pedido.ClienteRefBan.Trim(), colunas));
+
+        if (!string.IsNullOrWhiteSpace(pedido.ClienteObs))
+            sb.AppendLine(QuebrarTextoComPrefixo("OBS CLIENTE: ", pedido.ClienteObs.Trim(), colunas));
+
         // Endereço de Entrega ou Endereço do Cliente
         if (pedido.TemEnderecoEntrega || pedido.Entrega == 1)
         {

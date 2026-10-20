@@ -58,6 +58,8 @@ public class PedidoVenda
     public string? Email { get; set; }
     public string? ComplEnd { get; set; }
     public string? Obs { get; set; }
+    public string? ClienteRefBan { get; set; }
+    public string? ClienteObs { get; set; }
 
     public int? LkEnderecoCli { get; set; }
     public int? Entrega { get; set; }

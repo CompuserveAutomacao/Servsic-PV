@@ -281,6 +281,38 @@ internal class PedidoDocument : IDocument
                         t.Span(!string.IsNullOrWhiteSpace(_pedido.Email) ? _pedido.Email : "-");
                     });
                 });
+
+                if (!string.IsNullOrWhiteSpace(_pedido.ClienteRefBan) || !string.IsNullOrWhiteSpace(_pedido.ClienteObs))
+                {
+                    dados.Item().PaddingTop(2).Row(r =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(_pedido.ClienteRefBan))
+                        {
+                            r.RelativeItem(5).Text(t =>
+                            {
+                                t.Span("Ref. / Contato: ").Bold();
+                                t.Span(_pedido.ClienteRefBan);
+                            });
+                        }
+                        else
+                        {
+                            r.RelativeItem(5).Text("");
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(_pedido.ClienteObs))
+                        {
+                            r.RelativeItem(5).Text(t =>
+                            {
+                                t.Span("Obs. Cliente: ").Bold();
+                                t.Span(_pedido.ClienteObs);
+                            });
+                        }
+                        else
+                        {
+                            r.RelativeItem(5).Text("");
+                        }
+                    });
+                }
             });
         });
     }

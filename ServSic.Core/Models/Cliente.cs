@@ -19,6 +19,8 @@ public class Cliente
     public string? Telefone { get; set; }
     public string? Celular { get; set; }
     public string? Email { get; set; }
+    public string? RefBan { get; set; }
+    public string? Obs { get; set; }
 
     public decimal LimiteCred { get; set; } = 0m;
     public string? Inativo { get; set; } = "N";

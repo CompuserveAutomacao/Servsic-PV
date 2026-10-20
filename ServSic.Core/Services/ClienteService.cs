@@ -62,6 +62,8 @@ public class ClienteService
                 c.Telefone,
                 c.Celular,
                 c.eMail as Email,
+                c.RefBan,
+                c.Obs,
                 ISNULL(c.LimiteCred, 0) as LimiteCred,
                 ISNULL(c.Inativo, 'N') as Inativo,
                 ISNULL(cr.SaldoDevedor, 0) as SaldoDevedor,
@@ -104,6 +106,8 @@ public class ClienteService
                 c.Telefone,
                 c.Celular,
                 c.eMail as Email,
+                c.RefBan,
+                c.Obs,
                 ISNULL(c.LimiteCred, 0) as LimiteCred,
                 ISNULL(c.Inativo, 'N') as Inativo,
                 ISNULL(cr.SaldoDevedor, 0) as SaldoDevedor,
@@ -217,10 +221,12 @@ public class ClienteService
             INSERT INTO TabCli (
                 Controle, Codigo, Nome, FANTASIA_APELIDO, Cpf, CGC, TagFisica,
                 Telefone, Celular, Endereco, Numero, ComplEnd, Bairro, Cidade, Estado, Cep, eMail,
+                RefBan, Obs,
                 Data, Inativo, idEmpresa, lkTipo
             ) VALUES (
                 @Controle, @Codigo, @Nome, @Fantasia, @Cpf, @CGC, @TagFisica,
                 @Telefone, @Celular, @Endereco, @Numero, @ComplEnd, @Bairro, @Cidade, @Estado, @CEP, @Email,
+                @RefBan, @Obs,
                 @Data, 'N', 1, 1
             );";
 
@@ -243,6 +249,8 @@ public class ClienteService
             Estado = Trunca(cliente.Estado?.Trim(), 2),
             CEP = Trunca(cliente.CEP?.Trim(), 9),
             Email = Trunca(cliente.Email?.Trim(), 40),
+            RefBan = Trunca(cliente.RefBan?.Trim(), 30),
+            Obs = Trunca(cliente.Obs?.Trim(), 400),
             Data = System.DateTime.Now
         });
 

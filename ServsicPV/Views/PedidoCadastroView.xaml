@@ -1379,6 +1379,26 @@
                                 </StackPanel>
                             </Grid>
 
+                            <!-- Linha: Referência Comercial / Pessoal -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Referência / Contato" Style="{StaticResource TextLabel}"/>
+                                <TextBox Text="{Binding NovoClienteRefBan, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PlaceholderText="Ex: Maria 9171-3359 / Irmãozinho / Torradinha"
+                                         MaxLength="30"
+                                         Height="36"/>
+                            </StackPanel>
+
+                            <!-- Linha: Observações do Cliente -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Observações do Cliente" Style="{StaticResource TextLabel}"/>
+                                <TextBox Text="{Binding NovoClienteObs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         PlaceholderText="Observações cadastrais, restrições, referências adicionais..."
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         MaxLength="400"
+                                         Height="60"/>
+                            </StackPanel>
+
                         </StackPanel>
                     </ScrollViewer>
 
