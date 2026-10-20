@@ -168,15 +168,10 @@ public class ImpressaoTermicaService
             // Corte de papel (Guilhotina)
             if (cortarPapel)
             {
-                // ESC m (Epson / Bematech)
+                // ESC m (0x1B, 0x6D) - Comando padrão ESC/POS de corte (Epson, Bematech, Elgin, Daruma).
+                // Mantém corte único e evita o corte duplicado com avanço de papel em branco gerado por GS V.
                 ms.WriteByte(0x1B);
                 ms.WriteByte(0x6D);
-
-                // GS V 66 0 (Corte parcial com avanço padrão ESC/POS)
-                ms.WriteByte(0x1D);
-                ms.WriteByte(0x56);
-                ms.WriteByte(0x42);
-                ms.WriteByte(0x00);
             }
 
             byte[] bufferEnvio = ms.ToArray();
