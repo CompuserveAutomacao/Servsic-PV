@@ -56,10 +56,10 @@ public partial class CheckoutView : UserControl
             return;
         }
 
-        // F6 (ou F10) finaliza o pedido de venda se quitado ou pronto para finalizar
+        // F6 (ou F10) finaliza o pedido de venda somente se quitado
         if (e.Key == Windows.System.VirtualKey.F6 || e.Key == Windows.System.VirtualKey.F10)
         {
-            if (vm.IsQuitado || vm.PodeFinalizar)
+            if (vm.IsQuitado)
             {
                 vm.FinalizarCheckout();
                 e.Handled = true;

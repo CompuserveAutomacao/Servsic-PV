@@ -126,7 +126,6 @@ public class CheckoutViewModel : ViewModelBase
             _valorInputTexto = rounded.ToString("N2", CulturePtBr);
             OnPropertyChanged(nameof(ValorInput));
             OnPropertyChanged(nameof(ValorInputTexto));
-            OnPropertyChanged(nameof(PodeFinalizar));
             RecalcularTroco();
             RecalcularParcelas();
         }
@@ -143,7 +142,6 @@ public class CheckoutViewModel : ViewModelBase
             {
                 _valorInput = Math.Round(v, 2);
                 OnPropertyChanged(nameof(ValorInput));
-                OnPropertyChanged(nameof(PodeFinalizar));
                 RecalcularTroco();
                 RecalcularParcelas();
             }
@@ -281,7 +279,6 @@ public class CheckoutViewModel : ViewModelBase
     public bool TemTroco => TrocoVisivel;
     public bool TemSaldoRestante => !TrocoVisivel;
     public bool IsQuitado => TotalPedido > 0 && Math.Round(TotalPago, 2) >= (Math.Round(TotalPedido, 2) - 0.005m);
-    public bool PodeFinalizar => IsQuitado || (HasNoPagamentos && FormaSelecionada != null && ValorInput > 0);
     public bool HasPagamentos => PagamentosLancados.Count > 0;
     public bool HasNoPagamentos => PagamentosLancados.Count == 0;
     public bool IsPagamentoHabilitado => SaldoRestante > 0.005m;
@@ -631,21 +628,6 @@ public class CheckoutViewModel : ViewModelBase
 
     public void FinalizarCheckout()
     {
-        // Se ainda não adicionou nenhum pagamento à grade mas o valor está informado,
-        // lança o pagamento automaticamente antes de finalizar para agilizar o fluxo!
-        if (PagamentosLancados.Count == 0 && FormaSelecionada != null)
-        {
-            if (ValorInput <= 0 && SaldoRestante > 0.005m)
-            {
-                ValorInput = SaldoRestante;
-            }
-
-            if (ValorInput > 0)
-            {
-                AdicionarPagamento();
-            }
-        }
-
         if (!IsQuitado)
         {
             Mensagem = $"O valor pago ({TotalPagoFormatado}) deve cobrir o total do pedido ({TotalPedidoFormatado}) para finalizar.";
@@ -676,7 +658,6 @@ public class CheckoutViewModel : ViewModelBase
         OnPropertyChanged(nameof(TemTroco));
         OnPropertyChanged(nameof(TemSaldoRestante));
         OnPropertyChanged(nameof(IsQuitado));
-        OnPropertyChanged(nameof(PodeFinalizar));
         OnPropertyChanged(nameof(HasPagamentos));
         OnPropertyChanged(nameof(HasNoPagamentos));
         OnPropertyChanged(nameof(IsPagamentoHabilitado));
