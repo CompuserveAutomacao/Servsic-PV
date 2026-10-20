@@ -1,6 +1,10 @@
 ## [Próxima Versão]
 
+## [1.0.7] - 2026-10-20
+
 - Inclusão do campo Telefone / WhatsApp de contato no modal de Entrega (Ctrl+E), gravação direta na TabEst3A.Telefone e impressão destacada no cupom e ordem de entrega.
+- Correção de quebra de linha e alinhamento de itens com código de barras EAN-13 no cupom térmico (80mm/58mm), com quebra multilinha de descrições longas.
+- Limpeza na formatação de endereço de entrega para evitar duplicidade de telefone e quebras irregulares.
 
 ## [1.0.6] - 2026-10-20
 
