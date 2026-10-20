@@ -66,6 +66,7 @@
                             <TextBox x:Name="TxtFiltro" Grid.Column="1"
                                      Text="{Binding FiltroTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      KeyDown="TxtFiltro_KeyDown"
+                                     GotFocus="TxtFiltro_GotFocus"
                                      PlaceholderText="Buscar por código (Controle, EAN, Cód. Interno, Ref.) ou descrição do produto..."
                                      Height="36" VerticalAlignment="Center"
                                      BorderThickness="0" Background="Transparent"/>

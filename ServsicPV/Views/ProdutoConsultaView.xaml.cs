@@ -36,28 +36,33 @@ public partial class ProdutoConsultaView : UserControl
 
     private void ProdutoConsultaView_Loaded(object sender, RoutedEventArgs e)
     {
-        FocarBarraPesquisa();
+        FocarBarraPesquisa(true);
     }
 
-    public void FocarBarraPesquisa(bool posicionarNoFim = false)
+    public void FocarBarraPesquisa(bool posicionarNoFim = true)
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(50);
+            await Task.Delay(30);
             if (TxtFiltro != null)
             {
                 TxtFiltro.Focus(FocusState.Programmatic);
-                if (posicionarNoFim && !string.IsNullOrEmpty(TxtFiltro.Text))
+                if (!string.IsNullOrEmpty(TxtFiltro.Text))
                 {
                     TxtFiltro.SelectionStart = TxtFiltro.Text.Length;
                     TxtFiltro.SelectionLength = 0;
                 }
-                else
-                {
-                    TxtFiltro.SelectAll();
-                }
             }
         });
+    }
+
+    private void TxtFiltro_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (TxtFiltro != null && !string.IsNullOrEmpty(TxtFiltro.Text))
+        {
+            TxtFiltro.SelectionStart = TxtFiltro.Text.Length;
+            TxtFiltro.SelectionLength = 0;
+        }
     }
 
     private void ProdutoConsultaView_KeyDown(object sender, KeyRoutedEventArgs e)
