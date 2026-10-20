@@ -117,10 +117,11 @@ internal class PedidoDocument : IDocument
 
                     // CNPJ e Inscrição Estadual
                     string cnpjIe = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(_empresa.Cnpj)) cnpjIe += $"CNPJ: {_empresa.Cnpj}";
+                    if (!string.IsNullOrWhiteSpace(_empresa.Cnpj)) 
+                        cnpjIe += $"CNPJ: {CupomFormatadorService.FormatarCnpj(_empresa.Cnpj)}";
                     if (!string.IsNullOrWhiteSpace(_empresa.InscricaoEstadual))
                     {
-                        if (cnpjIe.Length > 0) cnpjIe += "  •  ";
+                        if (cnpjIe.Length > 0) cnpjIe += "   •   ";
                         cnpjIe += $"IE: {_empresa.InscricaoEstadual}";
                     }
                     if (cnpjIe.Length > 0)
@@ -140,10 +141,20 @@ internal class PedidoDocument : IDocument
                         c.Item().Text(cidLinha).FontSize(8).FontColor(CorTextoSubtle);
                     }
 
-                    // Telefone
+                    // Contatos: Telefone e Email
+                    string contatos = string.Empty;
                     if (!string.IsNullOrWhiteSpace(_empresa.Telefone))
                     {
-                        c.Item().Text($"Telefone: {_empresa.Telefone}").FontSize(8).Bold().FontColor(CorAzul);
+                        contatos += $"Fone: {CupomFormatadorService.FormatarTelefone(_empresa.Telefone)}";
+                    }
+                    if (!string.IsNullOrWhiteSpace(_empresa.Email))
+                    {
+                        if (contatos.Length > 0) contatos += "   •   ";
+                        contatos += $"E-mail: {_empresa.Email.ToLowerInvariant()}";
+                    }
+                    if (contatos.Length > 0)
+                    {
+                        c.Item().Text(contatos).FontSize(8).Bold().FontColor(CorAzul);
                     }
                 });
 

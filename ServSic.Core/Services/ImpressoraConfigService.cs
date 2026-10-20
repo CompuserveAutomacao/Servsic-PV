@@ -77,7 +77,7 @@ public class ImpressoraConfigService
 
     public async Task<DadosEmpresa> ObterDadosEmpresaAsync()
     {
-        if (_cachedEmpresa != null) return _cachedEmpresa;
+        if (_cachedEmpresa != null && !string.IsNullOrWhiteSpace(_cachedEmpresa.NomeFantasia)) return _cachedEmpresa;
 
         try
         {
@@ -94,9 +94,11 @@ public class ImpressoraConfigService
                     ISNULL(Numero, '') as Numero,
                     ISNULL(Bairro, '') as Bairro,
                     ISNULL(CIDADE, '') as Cidade,
-                    ISNULL(UF, '') as UF,
+                    ISNULL(ESTADO, '') as UF,
                     ISNULL(CEP, '') as CEP,
-                    ISNULL(TELEFONE, '') as Telefone
+                    ISNULL(TELEFONE, '') as Telefone,
+                    ISNULL(email, '') as Email,
+                    ISNULL(slogan, '') as Slogan
                 FROM CFG_EMPRESA";
 
             var empresa = await conn.QueryFirstOrDefaultAsync<DadosEmpresa>(sqlCfg);

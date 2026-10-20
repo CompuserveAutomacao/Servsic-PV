@@ -323,7 +323,7 @@ public class PedidoConsultaViewModel : ViewModelBase
         try
         {
             IsBusy = true;
-            Mensagem = "Gerando documento PDF profissional...";
+            Mensagem = "Abrindo documento PDF no leitor padrão...";
 
             var completo = await _pedidoService.ObterPorIdAsync(item.Controle) ?? item;
             var configService = new ImpressoraConfigService();
@@ -332,30 +332,13 @@ public class PedidoConsultaViewModel : ViewModelBase
             string tipoDoc = completo.IsOrcamento ? "Orcamento" : "Pedido";
             string nomeArquivoSugerido = $"{tipoDoc}_{completo.Pedido}.pdf";
 
-            string? caminhoFinal = null;
-            if (OnEscolherCaminhoSalvarPdf != null)
-            {
-                caminhoFinal = await OnEscolherCaminhoSalvarPdf.Invoke(nomeArquivoSugerido);
-                if (string.IsNullOrWhiteSpace(caminhoFinal))
-                {
-                    Mensagem = "Geração de PDF cancelada pelo usuário.";
-                    return;
-                }
-            }
-            else
-            {
-                string pastaDownloads = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-                if (!System.IO.Directory.Exists(pastaDownloads))
-                {
-                    pastaDownloads = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                }
-                caminhoFinal = System.IO.Path.Combine(pastaDownloads, nomeArquivoSugerido);
-            }
+            // Gera diretamente no diretório temporário para abertura instantânea no leitor padrão (navegador ou leitor de PDF)
+            string caminhoFinal = System.IO.Path.Combine(System.IO.Path.GetTempPath(), nomeArquivoSugerido);
 
             var pdfService = new PedidoPdfService();
             await pdfService.SalvarPdfArquivoAsync(completo, empresa, caminhoFinal);
 
-            Mensagem = $"PDF gerado com sucesso: {System.IO.Path.GetFileName(caminhoFinal)}";
+            Mensagem = $"Documento PDF aberto com sucesso: {nomeArquivoSugerido}";
 
             try
             {
@@ -365,7 +348,10 @@ public class PedidoConsultaViewModel : ViewModelBase
                     UseShellExecute = true
                 });
             }
-            catch { }
+            catch (Exception exProc)
+            {
+                Mensagem = $"PDF gerado em {caminhoFinal}, mas não foi possível abrir o leitor padrão: {exProc.Message}";
+            }
         }
         catch (Exception ex)
         {

@@ -5,7 +5,7 @@ namespace ServSic.Core.Models;
 /// </summary>
 public class DadosEmpresa
 {
-    public string NomeFantasia { get; set; } = "COMPUSERVE SISTEMAS";
+    public string NomeFantasia { get; set; } = string.Empty;
     public string RazaoSocial { get; set; } = string.Empty;
     public string Cnpj { get; set; } = string.Empty;
     public string InscricaoEstadual { get; set; } = string.Empty;
@@ -16,6 +16,8 @@ public class DadosEmpresa
     public string UF { get; set; } = string.Empty;
     public string CEP { get; set; } = string.Empty;
     public string Telefone { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Slogan { get; set; } = string.Empty;
 
     public string EnderecoLinha1
     {

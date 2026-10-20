@@ -68,26 +68,6 @@ public partial class MainView : Window
 
         _consultaViewModel = new PedidoConsultaViewModel(_pedidoService) { UsuarioLogado = usuario };
         _consultaViewModel.OnEditarPedido = (controle) => CarregarPedidoParaEdicao(controle);
-        _consultaViewModel.OnEscolherCaminhoSalvarPdf = async (sugerido) =>
-        {
-            try
-            {
-                var savePicker = new Windows.Storage.Pickers.FileSavePicker();
-                var hWnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
-                WinRT.Interop.InitializeWithWindow.Initialize(savePicker, hWnd);
-                savePicker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.Downloads;
-                savePicker.FileTypeChoices.Add("Documento PDF (*.pdf)", new System.Collections.Generic.List<string>() { ".pdf" });
-                savePicker.SuggestedFileName = sugerido;
-
-                var file = await savePicker.PickSaveFileAsync();
-                return file?.Path;
-            }
-            catch
-            {
-                string downloads = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-                return System.IO.Path.Combine(downloads, sugerido);
-            }
-        };
         _consultaView = new PedidoConsultaView { DataContext = _consultaViewModel };
         _consultaView.OnVoltarAoPedido = () => MostrarCadastro();
 

@@ -421,7 +421,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Botão Salvar PDF (QuestPDF 2025/2026) em Azul Primário #0284C7 -->
+                        <!-- Botão Visualizar PDF (QuestPDF 2025/2026) em Azul Primário #0284C7 -->
                         <Button Grid.Column="0" x:Name="BtnSalvarPdfLateral"
                                 Command="{Binding SalvarPdfCommand}"
                                 Height="38" HorizontalAlignment="Stretch"
@@ -430,7 +430,7 @@
                                 LostFocus="BtnNavy_LostFocus"
                                 PointerEntered="BtnNavy_PointerEntered"
                                 PointerExited="BtnNavy_PointerExited"
-                                ToolTipService.ToolTip="Gerar e salvar documento PDF profissional (A4) do orçamento / pré-venda">
+                                ToolTipService.ToolTip="Abrir documento PDF profissional (A4) no leitor padrão ou navegador para impressão ou salvamento">
                             <Button.Resources>
                                 <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
                                 <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
@@ -442,8 +442,8 @@
                                 <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
                             </Button.Resources>
                             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                <ic:SymbolIcon Symbol="ArrowDownload" FontSize="16" Foreground="#FFFFFF"/>
-                                <TextBlock Text="Salvar PDF" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <ic:SymbolIcon Symbol="DocumentPdf" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Visualizar PDF" FontWeight="Bold" Foreground="#FFFFFF"/>
                             </StackPanel>
                         </Button>
 

@@ -50,7 +50,7 @@ public class CupomFormatadorService
             sb.AppendLine(Centralizar(empresa.EnderecoLinha2, colunas));
 
         if (!string.IsNullOrWhiteSpace(empresa.Telefone))
-            sb.AppendLine(Centralizar($"FONE: {empresa.Telefone}", colunas));
+            sb.AppendLine(Centralizar($"FONE: {FormatarTelefone(empresa.Telefone)}", colunas));
 
         sb.AppendLine(linhaDupla);
 
@@ -311,7 +311,7 @@ public class CupomFormatadorService
             sb.AppendLine(Centralizar(empresa.NomeFantasia.ToUpperInvariant(), colunas));
 
         if (!string.IsNullOrWhiteSpace(empresa.Telefone))
-            sb.AppendLine(Centralizar($"FONE: {empresa.Telefone}", colunas));
+            sb.AppendLine(Centralizar($"FONE: {FormatarTelefone(empresa.Telefone)}", colunas));
 
         sb.AppendLine(linhaDupla);
 
@@ -643,7 +643,7 @@ public class CupomFormatadorService
         return tel.Trim();
     }
 
-    private static string FormatarCnpj(string cnpj)
+    public static string FormatarCnpj(string cnpj)
     {
         string d = System.Text.RegularExpressions.Regex.Replace(cnpj, @"\D", "");
         if (d.Length == 14)
@@ -651,7 +651,7 @@ public class CupomFormatadorService
         return cnpj;
     }
 
-    private static string FormatarCpfCnpj(string doc)
+    public static string FormatarCpfCnpj(string doc)
     {
         string d = System.Text.RegularExpressions.Regex.Replace(doc, @"\D", "");
         if (d.Length == 11)
