@@ -5,6 +5,8 @@
 - Inclusão do campo Telefone / WhatsApp de contato no modal de Entrega (Ctrl+E), gravação direta na TabEst3A.Telefone e impressão destacada no cupom e ordem de entrega.
 - Correção de quebra de linha e alinhamento de itens com código de barras EAN-13 no cupom térmico (80mm/58mm), com quebra multilinha de descrições longas.
 - Limpeza na formatação de endereço de entrega para evitar duplicidade de telefone e quebras irregulares.
+- Implementação de Busca Rápida Global de Produtos (Type-to-Search): qualquer digitação de texto fora de campos ou no campo de código abre instantaneamente a consulta de produtos (F4) com o termo digitado.
+- Adição do atalho global Ctrl+E para abertura rápida dos dados de entrega.
 
 ## [1.0.6] - 2026-10-20
 

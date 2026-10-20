@@ -16,6 +16,7 @@ public partial class PedidoCadastroView : UserControl
         this.InitializeComponent();
         this.DataContextChanged += PedidoCadastroView_DataContextChanged;
         this.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(PedidoCadastroView_KeyDown), handledEventsToo: true);
+        this.CharacterReceived += PedidoCadastroView_CharacterReceived;
     }
 
     private void PedidoCadastroView_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
@@ -270,6 +271,17 @@ public partial class PedidoCadastroView : UserControl
                 }
             }
 
+            // Atalho Ctrl+E: Abrir Endereço de Entrega
+            if (isCtrlPressed && e.Key == Windows.System.VirtualKey.E)
+            {
+                if (!vm.IsEdicaoBloqueada && vm.AbrirEnderecoEntregaCommand.CanExecute(null))
+                {
+                    vm.AbrirEnderecoEntregaCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+            }
+
             if (e.Key == Windows.System.VirtualKey.F3)
             {
                 if (!vm.IsEdicaoBloqueada && vm.BuscarClienteRapidoCommand.CanExecute(null))
@@ -304,7 +316,7 @@ public partial class PedidoCadastroView : UserControl
             }
             else if (e.Key == Windows.System.VirtualKey.F6 || e.Key == Windows.System.VirtualKey.F10)
             {
-                if (!vm.IsCheckoutOpen && !vm.IsConfirmarAlteracaoTipoOpen && !vm.IsConfirmarSalvarPendenteOpen && !vm.IsCadastroRapidoClienteOpen && !vm.IsConsultaClienteOpen)
+                if (!TemModalAberto(vm))
                 {
                     if (vm.IsEdicaoBloqueada)
                     {
@@ -321,7 +333,150 @@ public partial class PedidoCadastroView : UserControl
                     }
                 }
             }
+            else
+            {
+                // Detecção Global de Digitação (Quick-Type / Type-to-Search)
+                var altState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu);
+                bool isAltPressed = (altState & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+
+                if (!isCtrlPressed && !isAltPressed && !vm.IsEdicaoBloqueada && !TemModalAberto(vm))
+                {
+                    object? focused = null;
+                    if (this.XamlRoot != null)
+                    {
+                        focused = FocusManager.GetFocusedElement(this.XamlRoot);
+                    }
+
+                    // 1. Se o foco estiver no campo TxtCodigoProduto ("Bipe ou digite...")
+                    if (ReferenceEquals(focused, TxtCodigoProduto))
+                    {
+                        // Se o operador digitar uma letra (A-Z), ele quer buscar pela descrição!
+                        if (e.Key >= Windows.System.VirtualKey.A && e.Key <= Windows.System.VirtualKey.Z)
+                        {
+                            e.Handled = true;
+                            char letra = ObterLetraDeVirtualKey(e.Key);
+                            TxtCodigoProduto.Text = string.Empty;
+                            vm.AbrirConsultaProduto(letra.ToString());
+                            return;
+                        }
+                        // Se for número (0-9), não intercepta: entra no campo normalmente para permitir leitor de código de barras
+                    }
+                    // 2. Se o foco NÃO estiver em nenhum campo editável (TextBox, PasswordBox, AutoSuggestBox)
+                    else if (focused is not TextBox && focused is not PasswordBox && focused is not AutoSuggestBox)
+                    {
+                        // Se for letra (A-Z): abre a consulta de produtos já com a letra pesquisada!
+                        if (e.Key >= Windows.System.VirtualKey.A && e.Key <= Windows.System.VirtualKey.Z)
+                        {
+                            e.Handled = true;
+                            char letra = ObterLetraDeVirtualKey(e.Key);
+                            vm.AbrirConsultaProduto(letra.ToString());
+                            return;
+                        }
+
+                        // Se for número (0-9): encaminha o foco imediatamente para o campo Código/Barra para bipe ou digitação
+                        if ((e.Key >= Windows.System.VirtualKey.Number0 && e.Key <= Windows.System.VirtualKey.Number9) ||
+                            (e.Key >= Windows.System.VirtualKey.NumberPad0 && e.Key <= Windows.System.VirtualKey.NumberPad9))
+                        {
+                            e.Handled = true;
+                            char digito = ObterDigitoDeVirtualKey(e.Key);
+                            TxtCodigoProduto.Text = digito.ToString();
+                            TxtCodigoProduto.Focus(FocusState.Programmatic);
+                            TxtCodigoProduto.SelectionStart = 1;
+                            TxtCodigoProduto.SelectionLength = 0;
+                            return;
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private void PedidoCadastroView_CharacterReceived(UIElement sender, CharacterReceivedRoutedEventArgs e)
+    {
+        if (this.DataContext is not PedidoViewModel vm) return;
+        if (vm.IsEdicaoBloqueada || TemModalAberto(vm)) return;
+
+        char c = e.Character;
+        if (char.IsControl(c) || c == '\r' || c == '\n' || c == '\t' || c == '\b' || c == (char)27)
+            return;
+
+        var ctrlState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control);
+        bool isCtrl = (ctrlState & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+        var altState = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu);
+        bool isAlt = (altState & Windows.UI.Core.CoreVirtualKeyStates.Down) == Windows.UI.Core.CoreVirtualKeyStates.Down;
+        if (isCtrl || isAlt) return;
+
+        object? focused = null;
+        if (this.XamlRoot != null)
+        {
+            focused = FocusManager.GetFocusedElement(this.XamlRoot);
+        }
+
+        // Se estiver em campos de busca de cliente, quantidade, desconto ou outros modais
+        if (ReferenceEquals(focused, TxtFiltroCliente) ||
+            ReferenceEquals(focused, TxtQuantidade) ||
+            ReferenceEquals(focused, TxtDescontoItem) ||
+            (focused is TextBox tbOutro && !ReferenceEquals(tbOutro, TxtCodigoProduto)) ||
+            focused is PasswordBox ||
+            focused is AutoSuggestBox)
+        {
+            return;
+        }
+
+        // Se o foco estiver no campo TxtCodigoProduto e for digitada letra (ex: ç, acentos que passam por CharacterReceived)
+        if (ReferenceEquals(focused, TxtCodigoProduto))
+        {
+            if (char.IsLetter(c))
+            {
+                e.Handled = true;
+                TxtCodigoProduto.Text = string.Empty;
+                vm.AbrirConsultaProduto(c.ToString());
+            }
+            return;
+        }
+
+        // Se o foco estiver fora de qualquer campo de texto
+        if (char.IsLetter(c))
+        {
+            e.Handled = true;
+            vm.AbrirConsultaProduto(c.ToString());
+        }
+    }
+
+    private static bool TemModalAberto(PedidoViewModel vm)
+    {
+        return vm.IsCheckoutOpen ||
+               vm.IsConfirmarAlteracaoTipoOpen ||
+               vm.IsConfirmarSalvarPendenteOpen ||
+               vm.IsCadastroRapidoClienteOpen ||
+               vm.IsConsultaClienteOpen ||
+               vm.IsLiberacaoGerenteOpen ||
+               vm.IsObservacoesOpen ||
+               (vm.CupomVisualizacaoViewModel?.IsOpen == true) ||
+               (vm.EnderecoEntregaViewModel?.IsOpen == true) ||
+               (vm.ConfiguracaoImpressoraViewModel?.IsOpen == true);
+    }
+
+    private static char ObterLetraDeVirtualKey(Windows.System.VirtualKey key)
+    {
+        if (key >= Windows.System.VirtualKey.A && key <= Windows.System.VirtualKey.Z)
+        {
+            return (char)('A' + (key - Windows.System.VirtualKey.A));
+        }
+        return ' ';
+    }
+
+    private static char ObterDigitoDeVirtualKey(Windows.System.VirtualKey key)
+    {
+        if (key >= Windows.System.VirtualKey.Number0 && key <= Windows.System.VirtualKey.Number9)
+        {
+            return (char)('0' + (key - Windows.System.VirtualKey.Number0));
+        }
+        if (key >= Windows.System.VirtualKey.NumberPad0 && key <= Windows.System.VirtualKey.NumberPad9)
+        {
+            return (char)('0' + (key - Windows.System.VirtualKey.NumberPad0));
+        }
+        return ' ';
     }
 
     private async void CodigoProduto_KeyDown(object sender, KeyRoutedEventArgs e)

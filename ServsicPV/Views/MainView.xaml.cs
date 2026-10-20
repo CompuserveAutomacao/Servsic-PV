@@ -114,7 +114,7 @@ public partial class MainView : Window
 
         _pedidoViewModel.OnSolicitarConsultaProduto = (filtro) =>
         {
-            MostrarConsultaProduto(filtro);
+            MostrarConsultaProduto(filtro, !string.IsNullOrWhiteSpace(filtro));
         };
 
         // Exibe tela de cadastro inicialmente
@@ -140,11 +140,11 @@ public partial class MainView : Window
         _clienteConsultaView.FocarBarraPesquisa();
     }
 
-    private void MostrarConsultaProduto(string? filtro = null)
+    private void MostrarConsultaProduto(string? filtro = null, bool posicionarNoFim = false)
     {
         ContentArea.Content = _produtoConsultaView;
         _produtoConsultaViewModel.Abrir(filtro);
-        _produtoConsultaView.FocarBarraPesquisa();
+        _produtoConsultaView.FocarBarraPesquisa(posicionarNoFim || !string.IsNullOrWhiteSpace(filtro));
     }
 
     private async void CarregarPedidoParaEdicao(int controle)
