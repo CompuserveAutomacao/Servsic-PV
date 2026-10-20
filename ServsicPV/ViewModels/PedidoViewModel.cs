@@ -821,25 +821,15 @@ public class PedidoViewModel : ViewModelBase
     public bool IsVenda => string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) || string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase);
     public string TituloTela => "Pedido de Venda";
 
-    private bool _lancarPagamentos = false; // Novo padrão: Desativado (Apenas Finalizar direto sem TabEst3C)
     public bool LancarPagamentos
     {
-        get => _lancarPagamentos;
-        set
-        {
-            if (SetProperty(ref _lancarPagamentos, value))
-            {
-                OnPropertyChanged(nameof(TextoBotaoSalvar));
-                OnPropertyChanged(nameof(StatusPagamentoModoTexto));
-            }
-        }
+        get => true;
+        set { }
     }
 
-    public string TextoBotaoSalvar => LancarPagamentos ? "Totalizar (F6)" : "Finalizar (F6)";
+    public string TextoBotaoSalvar => "Totalizar (F6)";
 
-    public string StatusPagamentoModoTexto => LancarPagamentos 
-        ? "Abrir checkout de pagamentos e parcelas" 
-        : "Finalizar e imprimir direto";
+    public string StatusPagamentoModoTexto => "Totalizar e finalizar pedido";
 
     public Microsoft.UI.Xaml.Media.Brush BrushOrcamentoBackground => IsOrcamento
         ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199))
@@ -1727,7 +1717,6 @@ public class PedidoViewModel : ViewModelBase
     {
         _selectedCliente = null;
         FiltroCliente = string.Empty;
-        LancarPagamentos = false; // Novo padrão: Fechamento rápido direto
 
         var novoPedido = new PedidoVenda
         {
@@ -1785,10 +1774,6 @@ public class PedidoViewModel : ViewModelBase
         FiltroCliente = pedidoCarregado.Cliente;
         _descontoGeralInputTexto = pedidoCarregado.Desconto.ToString("N2");
         _acrescimoGeralInputTexto = pedidoCarregado.Acrescimo.ToString("N2");
-
-        // Se o pedido já possui pagamentos lançados no banco, ativa automaticamente para preservar os dados
-        bool temPagamentos = pedidoCarregado.Pagamentos != null && pedidoCarregado.Pagamentos.Count > 0;
-        LancarPagamentos = temPagamentos;
 
         if (pedidoCarregado.LkCliente.HasValue && pedidoCarregado.LkCliente.Value > 0)
         {
@@ -2986,7 +2971,7 @@ public class PedidoViewModel : ViewModelBase
             return;
         }
 
-        string acaoNome = LancarPagamentos ? "totalizar" : "finalizar";
+        string acaoNome = "totalizar";
 
         if (Pedido.Itens.Count == 0 || Pedido.Total <= 0)
         {
@@ -3015,20 +3000,13 @@ public class PedidoViewModel : ViewModelBase
             {
                 string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
                 string titulo = "Liberação: Estoque Insuficiente";
-                string subtitulo = $"{tipoNome} • {(LancarPagamentos ? "Totalização" : "Finalização")} do Pedido";
+                string subtitulo = $"{tipoNome} • Totalização do Pedido";
                 string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
                 string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + $"\n\nAutorização de Gerente requerida para {acaoNome}.";
 
                 _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
                 {
-                    if (LancarPagamentos)
-                    {
-                        await IniciarCheckoutModalAsync();
-                    }
-                    else
-                    {
-                        await FinalizarPedidoDiretoAsync();
-                    }
+                    await IniciarCheckoutModalAsync();
                 });
                 return;
             }
@@ -3045,32 +3023,18 @@ public class PedidoViewModel : ViewModelBase
             {
                 string tipoNome = Pedido.IsOrcamento ? "Orçamento" : "Pré-Venda";
                 string titulo = "Liberação: Desconto Geral Excedente";
-                string subtitulo = $"{tipoNome} • {(LancarPagamentos ? "Totalização" : "Finalização")} do Pedido";
+                string subtitulo = $"{tipoNome} • Totalização do Pedido";
                 string motivo = $"Desconto geral de {DescontoGeralPercAtual:N2}% ({Pedido.Desconto:C2}) ultrapassa o teto permitido do vendedor ({LimiteDescontoUsuario:N2}%).";
                 string detalhe = $"Subtotal: {Pedido.Subtotal:C2} | Desconto Geral: {Pedido.Desconto:C2} ({DescontoGeralPercAtual:N2}%)\nInforme a senha de Gerente para autorizar.";
 
                 _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
                 {
-                    if (LancarPagamentos)
-                    {
-                        await IniciarCheckoutModalAsync();
-                    }
-                    else
-                    {
-                        await FinalizarPedidoDiretoAsync();
-                    }
+                    await IniciarCheckoutModalAsync();
                 });
                 return;
             }
         }
 
-        if (LancarPagamentos)
-        {
-            await IniciarCheckoutModalAsync();
-        }
-        else
-        {
-            await FinalizarPedidoDiretoAsync();
-        }
+        await IniciarCheckoutModalAsync();
     }
 }

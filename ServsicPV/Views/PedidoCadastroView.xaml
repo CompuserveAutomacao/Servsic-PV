@@ -1038,35 +1038,9 @@
                             </StackPanel>
                         </ScrollViewer>
 
-                        <!-- Alternador: Lançar Pagamentos (Botão Tomada) e Botão de Ação (Totalizar / Finalizar F6 / Reimprimir) -->
+                        <!-- Botão de Ação: Totalizar (F6) / Reimprimir -->
                         <StackPanel Grid.Row="2" Spacing="8">
-                            <!-- Botão Tomada: Lançar Pagamentos Opcional (visível apenas quando edição permitida) -->
-                            <Border Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12,8"
-                                    Visibility="{Binding IsEdicaoPermitida, Converter={StaticResource BoolToVisibilityConverter}}">
-                                <Grid ColumnSpacing="8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                            <ic:SymbolIcon Symbol="Payment" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
-                                            <TextBlock Text="Lançar Pagamentos" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding StatusPagamentoModoTexto}" FontSize="10.5" Foreground="{StaticResource BrushTextSubtle}"/>
-                                    </StackPanel>
-                                    <ToggleSwitch Grid.Column="1"
-                                                  x:Name="TglLancarPagamentos"
-                                                  IsOn="{Binding LancarPagamentos, Mode=TwoWay}"
-                                                  OnContent=""
-                                                  OffContent=""
-                                                  MinWidth="0"
-                                                  VerticalAlignment="Center"
-                                                  ToolTipService.ToolTip="Ative para informar pagamentos e parcelas no balcão (Totalizar). Desative para finalizar e imprimir direto."/>
-                                </Grid>
-                            </Border>
-
-                            <!-- Botão Finalizar / Totalizar (F6) -> Habilitado somente quando em edição e houver itens -->
+                            <!-- Botão Totalizar (F6) -> Habilitado somente quando em edição e houver itens -->
                             <Button x:Name="BtnTotalizar"
                                     Command="{Binding SalvarCommand}"
                                     IsEnabled="{Binding HasItens}"
@@ -1078,7 +1052,8 @@
                                     GotFocus="BtnTotalizar_GotFocus"
                                     LostFocus="BtnTotalizar_LostFocus"
                                     PointerEntered="BtnTotalizar_PointerEntered"
-                                    PointerExited="BtnTotalizar_PointerExited">
+                                    PointerExited="BtnTotalizar_PointerExited"
+                                    ToolTipService.ToolTip="Abrir tela de pagamento e totalizar pedido (F6)">
                                 <Button.Resources>
                                     <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
                                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
@@ -1090,9 +1065,8 @@
                                     <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#94A3B8"/>
                                 </Button.Resources>
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ic:SymbolIcon Symbol="Wallet" FontSize="18" Visibility="{Binding LancarPagamentos, Converter={StaticResource BoolToVisibilityConverter}}"/>
-                                    <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="18" Visibility="{Binding LancarPagamentos, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
-                                    <TextBlock Text="{Binding TextoBotaoSalvar}"/>
+                                    <ic:SymbolIcon Symbol="Wallet" FontSize="18"/>
+                                    <TextBlock Text="Totalizar (F6)"/>
                                 </StackPanel>
                             </Button>
 
