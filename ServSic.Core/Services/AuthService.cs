@@ -29,26 +29,41 @@ public class AuthService
     {
         using var conn = DbConnectionFactory.CreateConnection();
         const string sql = @"
+            WITH UsuariosCTE AS (
+                SELECT 
+                    s.CONTROLE as Controle,
+                    s.USUARIO as Nome,
+                    s.CODSENHA as CodSenha,
+                    CASE 
+                        WHEN s.NIVEL IS NOT NULL AND s.NIVEL NOT LIKE '%[^0-9]%' AND LTRIM(RTRIM(s.NIVEL)) <> '' 
+                        THEN CAST(s.NIVEL AS int) 
+                        ELSE 0 
+                    END as Nivel,
+                    s.LkVendedor as LkVendedor,
+                    s.Inativo as Inativo
+                FROM serv s
+                WHERE s.USUARIO IS NOT NULL AND LTRIM(RTRIM(s.USUARIO)) <> ''
+            )
             SELECT 
-                s.CONTROLE as Controle,
-                s.USUARIO as Nome,
-                s.CODSENHA as CodSenha,
-                s.NIVEL as Nivel,
-                s.LkVendedor as LkVendedor,
+                u.Controle,
+                u.Nome,
+                u.CodSenha,
+                u.Nivel,
+                u.LkVendedor,
                 v.NOME as NomeVendedor,
                 v.Celular as CelularVendedor,
                 v.Telefone as TelefoneVendedor,
                 CAST(CASE 
-                    WHEN s.NIVEL = 0 THEN ISNULL(lim.OperadorDescVen, 0)
-                    WHEN s.NIVEL = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
-                    WHEN s.NIVEL >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
+                    WHEN u.Nivel = 0 THEN ISNULL(lim.OperadorDescVen, 0)
+                    WHEN u.Nivel = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
+                    WHEN u.Nivel >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
                     ELSE 0 
                 END AS decimal(12,2)) as LimiteDesconto
-            FROM serv s
-            LEFT JOIN TabVend v ON s.LkVendedor = v.CONTROLE
+            FROM UsuariosCTE u
+            LEFT JOIN TabVend v ON u.LkVendedor = v.CONTROLE
             OUTER APPLY (SELECT TOP 1 OperadorDescVen, SupervisorDescVen, GerenteDescVen FROM ServNivelLimite ORDER BY Controle DESC) lim
-            WHERE s.USUARIO IS NOT NULL AND LTRIM(RTRIM(s.USUARIO)) <> ''
-            ORDER BY s.USUARIO";
+            WHERE ISNULL(u.Inativo, 0) = 0
+            ORDER BY u.Nome";
 
         var list = await conn.QueryAsync<Usuario>(sql);
         return list.ToList();
@@ -61,25 +76,40 @@ public class AuthService
 
         using var conn = DbConnectionFactory.CreateConnection();
         const string sql = @"
+            WITH UsuariosCTE AS (
+                SELECT 
+                    s.CONTROLE as Controle,
+                    s.USUARIO as Nome,
+                    s.CODSENHA as CodSenha,
+                    CASE 
+                        WHEN s.NIVEL IS NOT NULL AND s.NIVEL NOT LIKE '%[^0-9]%' AND LTRIM(RTRIM(s.NIVEL)) <> '' 
+                        THEN CAST(s.NIVEL AS int) 
+                        ELSE 0 
+                    END as Nivel,
+                    s.LkVendedor as LkVendedor,
+                    s.Inativo as Inativo
+                FROM serv s
+                WHERE UPPER(LTRIM(RTRIM(s.USUARIO))) = UPPER(LTRIM(RTRIM(@usuario)))
+            )
             SELECT TOP 1
-                s.CONTROLE as Controle,
-                s.USUARIO as Nome,
-                s.CODSENHA as CodSenha,
-                s.NIVEL as Nivel,
-                s.LkVendedor as LkVendedor,
+                u.Controle,
+                u.Nome,
+                u.CodSenha,
+                u.Nivel,
+                u.LkVendedor,
                 v.NOME as NomeVendedor,
                 v.Celular as CelularVendedor,
                 v.Telefone as TelefoneVendedor,
                 CAST(CASE 
-                    WHEN s.NIVEL = 0 THEN ISNULL(lim.OperadorDescVen, 0)
-                    WHEN s.NIVEL = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
-                    WHEN s.NIVEL >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
+                    WHEN u.Nivel = 0 THEN ISNULL(lim.OperadorDescVen, 0)
+                    WHEN u.Nivel = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
+                    WHEN u.Nivel >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
                     ELSE 0 
                 END AS decimal(12,2)) as LimiteDesconto
-            FROM serv s
-            LEFT JOIN TabVend v ON s.LkVendedor = v.CONTROLE
+            FROM UsuariosCTE u
+            LEFT JOIN TabVend v ON u.LkVendedor = v.CONTROLE
             OUTER APPLY (SELECT TOP 1 OperadorDescVen, SupervisorDescVen, GerenteDescVen FROM ServNivelLimite ORDER BY Controle DESC) lim
-            WHERE UPPER(LTRIM(RTRIM(s.USUARIO))) = UPPER(LTRIM(RTRIM(@usuario)))";
+            WHERE ISNULL(u.Inativo, 0) = 0";
 
         var user = await conn.QueryFirstOrDefaultAsync<Usuario>(sql, new { usuario = nomeUsuario });
         if (user == null)
@@ -93,28 +123,42 @@ public class AuthService
     {
         using var conn = DbConnectionFactory.CreateConnection();
         const string sql = @"
+            WITH UsuariosCTE AS (
+                SELECT 
+                    s.CONTROLE as Controle,
+                    s.USUARIO as Nome,
+                    s.CODSENHA as CodSenha,
+                    CASE 
+                        WHEN s.NIVEL IS NOT NULL AND s.NIVEL NOT LIKE '%[^0-9]%' AND LTRIM(RTRIM(s.NIVEL)) <> '' 
+                        THEN CAST(s.NIVEL AS int) 
+                        ELSE 0 
+                    END as Nivel,
+                    s.LkVendedor as LkVendedor,
+                    s.Inativo as Inativo
+                FROM serv s
+                WHERE s.USUARIO IS NOT NULL AND LTRIM(RTRIM(s.USUARIO)) <> ''
+            )
             SELECT 
-                s.CONTROLE as Controle,
-                s.USUARIO as Nome,
-                s.CODSENHA as CodSenha,
-                s.NIVEL as Nivel,
-                s.LkVendedor as LkVendedor,
+                u.Controle,
+                u.Nome,
+                u.CodSenha,
+                u.Nivel,
+                u.LkVendedor,
                 v.NOME as NomeVendedor,
                 v.Celular as CelularVendedor,
                 v.Telefone as TelefoneVendedor,
                 CAST(CASE 
-                    WHEN s.NIVEL = 0 THEN ISNULL(lim.OperadorDescVen, 0)
-                    WHEN s.NIVEL = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
-                    WHEN s.NIVEL >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
+                    WHEN u.Nivel = 0 THEN ISNULL(lim.OperadorDescVen, 0)
+                    WHEN u.Nivel = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
+                    WHEN u.Nivel >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
                     ELSE 0 
                 END AS decimal(12,2)) as LimiteDesconto
-            FROM serv s
-            LEFT JOIN TabVend v ON s.LkVendedor = v.CONTROLE
+            FROM UsuariosCTE u
+            LEFT JOIN TabVend v ON u.LkVendedor = v.CONTROLE
             OUTER APPLY (SELECT TOP 1 OperadorDescVen, SupervisorDescVen, GerenteDescVen FROM ServNivelLimite ORDER BY Controle DESC) lim
-            WHERE s.USUARIO IS NOT NULL 
-              AND LTRIM(RTRIM(s.USUARIO)) <> ''
-              AND s.NIVEL >= 1
-            ORDER BY s.NIVEL DESC, s.USUARIO ASC";
+            WHERE ISNULL(u.Inativo, 0) = 0
+              AND u.Nivel >= 1
+            ORDER BY u.Nivel DESC, u.Nome ASC";
 
         var list = await conn.QueryAsync<Usuario>(sql);
         return list.ToList();
@@ -130,25 +174,40 @@ public class AuthService
 
         using var conn = DbConnectionFactory.CreateConnection();
         const string sql = @"
+            WITH UsuariosCTE AS (
+                SELECT 
+                    s.CONTROLE as Controle,
+                    s.USUARIO as Nome,
+                    s.CODSENHA as CodSenha,
+                    CASE 
+                        WHEN s.NIVEL IS NOT NULL AND s.NIVEL NOT LIKE '%[^0-9]%' AND LTRIM(RTRIM(s.NIVEL)) <> '' 
+                        THEN CAST(s.NIVEL AS int) 
+                        ELSE 0 
+                    END as Nivel,
+                    s.LkVendedor as LkVendedor,
+                    s.Inativo as Inativo
+                FROM serv s
+                WHERE s.CONTROLE = @controle
+            )
             SELECT TOP 1
-                s.CONTROLE as Controle,
-                s.USUARIO as Nome,
-                s.CODSENHA as CodSenha,
-                s.NIVEL as Nivel,
-                s.LkVendedor as LkVendedor,
+                u.Controle,
+                u.Nome,
+                u.CodSenha,
+                u.Nivel,
+                u.LkVendedor,
                 v.NOME as NomeVendedor,
                 v.Celular as CelularVendedor,
                 v.Telefone as TelefoneVendedor,
                 CAST(CASE 
-                    WHEN s.NIVEL = 0 THEN ISNULL(lim.OperadorDescVen, 0)
-                    WHEN s.NIVEL = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
-                    WHEN s.NIVEL >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
+                    WHEN u.Nivel = 0 THEN ISNULL(lim.OperadorDescVen, 0)
+                    WHEN u.Nivel = 1 THEN ISNULL(lim.SupervisorDescVen, 0)
+                    WHEN u.Nivel >= 2 THEN ISNULL(lim.GerenteDescVen, 0)
                     ELSE 0 
                 END AS decimal(12,2)) as LimiteDesconto
-            FROM serv s
-            LEFT JOIN TabVend v ON s.LkVendedor = v.CONTROLE
+            FROM UsuariosCTE u
+            LEFT JOIN TabVend v ON u.LkVendedor = v.CONTROLE
             OUTER APPLY (SELECT TOP 1 OperadorDescVen, SupervisorDescVen, GerenteDescVen FROM ServNivelLimite ORDER BY Controle DESC) lim
-            WHERE s.CONTROLE = @controle";
+            WHERE ISNULL(u.Inativo, 0) = 0";
 
         var user = await conn.QueryFirstOrDefaultAsync<Usuario>(sql, new { controle = controleGerente });
         if (user == null)

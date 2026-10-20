@@ -28,6 +28,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
     private string _bairro = string.Empty;
     private string _cidade = string.Empty;
     private string _estado = string.Empty;
+    private string _telefone = string.Empty;
     private string _obs = string.Empty;
     private string _apelidoNovo = string.Empty;
 
@@ -105,6 +106,18 @@ public class EnderecoEntregaViewModel : ViewModelBase
         set => SetProperty(ref _estado, value);
     }
 
+    public string Telefone
+    {
+        get => _telefone;
+        set
+        {
+            if (SetProperty(ref _telefone, value))
+            {
+                OnPropertyChanged(nameof(EnderecoResumoFormatado));
+            }
+        }
+    }
+
     public string Obs
     {
         get => _obs;
@@ -155,6 +168,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
                 p.Add(cid);
             }
             if (!string.IsNullOrWhiteSpace(Cep)) p.Add($"CEP: {Cep}");
+            if (!string.IsNullOrWhiteSpace(Telefone)) p.Add($"Tel: {Telefone}");
             return p.Count > 0 ? string.Join(" - ", p) : "Nenhum endereço informado";
         }
     }
@@ -193,7 +207,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
         ApelidoNovo = string.Empty;
 
         // 1. Carrega dados já presentes no pedido se houver
-        if (!string.IsNullOrWhiteSpace(pedido.Endereco))
+        if (!string.IsNullOrWhiteSpace(pedido.Endereco) || !string.IsNullOrWhiteSpace(pedido.Telefone))
         {
             Cep = pedido.CEP ?? string.Empty;
             Endereco = pedido.Endereco ?? string.Empty;
@@ -202,6 +216,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
             Bairro = pedido.Bairro ?? string.Empty;
             Cidade = pedido.Cidade ?? string.Empty;
             Estado = pedido.UF ?? string.Empty;
+            Telefone = pedido.Telefone ?? string.Empty;
             Obs = pedido.Obs ?? string.Empty;
             _lkEnderecoCli = pedido.LkEnderecoCli;
         }
@@ -273,6 +288,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
         Bairro = _cliente.Bairro ?? string.Empty;
         Cidade = _cliente.Cidade ?? string.Empty;
         Estado = _cliente.Estado ?? string.Empty;
+        Telefone = !string.IsNullOrWhiteSpace(_cliente.Telefone) ? _cliente.Telefone : (_cliente.Celular ?? string.Empty);
 
         MensagemStatus = "Endereço principal do cadastro do cliente selecionado.";
         OnPropertyChanged(nameof(EnderecoResumoFormatado));
@@ -307,6 +323,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
         Bairro = string.Empty;
         Cidade = string.Empty;
         Estado = string.Empty;
+        Telefone = string.Empty;
         Obs = string.Empty;
         ApelidoNovo = string.Empty;
         SalvarNovoDestinoNoCadastro = false;
@@ -362,7 +379,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
         }
 
         // Validação mínima se preencheu algo
-        bool temDados = !string.IsNullOrWhiteSpace(Endereco) || !string.IsNullOrWhiteSpace(Cidade) || !string.IsNullOrWhiteSpace(Cep);
+        bool temDados = !string.IsNullOrWhiteSpace(Endereco) || !string.IsNullOrWhiteSpace(Cidade) || !string.IsNullOrWhiteSpace(Cep) || !string.IsNullOrWhiteSpace(Telefone);
         if (!temDados)
         {
             // Usuário optou por limpar endereço do pedido
@@ -373,6 +390,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
             _pedido.Cidade = null;
             _pedido.UF = null;
             _pedido.CEP = null;
+            _pedido.Telefone = null;
             _pedido.Obs = null;
             _pedido.LkEnderecoCli = null;
 
@@ -418,6 +436,7 @@ public class EnderecoEntregaViewModel : ViewModelBase
         _pedido.Cidade = Cidade?.Trim().ToUpperInvariant();
         _pedido.UF = Estado?.Trim().ToUpperInvariant();
         _pedido.CEP = Regex.Replace(Cep ?? "", @"\D", "");
+        _pedido.Telefone = Telefone?.Trim();
         if (!string.IsNullOrWhiteSpace(Obs)) _pedido.Obs = Obs.Trim().ToUpperInvariant();
         _pedido.LkEnderecoCli = _lkEnderecoCli;
 

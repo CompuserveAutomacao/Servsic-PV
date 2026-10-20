@@ -16,7 +16,6 @@ public class PedidoCabService
 {
     public async Task<PedidoVenda?> ObterPorIdAsync(int controle)
     {
-        using var conn = DbConnectionFactory.CreateConnection();
         const string sqlHeader = @"
             SELECT TOP 1
                 ta.Controle,
@@ -62,7 +61,17 @@ public class PedidoCabService
             LEFT JOIN TabVend v ON ta.LkVendedor = v.CONTROLE
             WHERE ta.Controle = @controle";
 
-        return await conn.QueryFirstOrDefaultAsync<PedidoVenda>(sqlHeader, new { controle });
+        try
+        {
+            using var conn = DbConnectionFactory.CreateConnection();
+            return await conn.QueryFirstOrDefaultAsync<PedidoVenda>(sqlHeader, new { controle });
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number == 207 || ex.Message.Contains("LkEnderecoCli", StringComparison.OrdinalIgnoreCase))
+        {
+            await DatabaseMigrationService.ExecutarMigracaoAsync(forcar: true);
+            using var connRetry = DbConnectionFactory.CreateConnection();
+            return await connRetry.QueryFirstOrDefaultAsync<PedidoVenda>(sqlHeader, new { controle });
+        }
     }
 
     public async Task<IReadOnlyList<PedidoVenda>> ListarAsync(
@@ -224,6 +233,7 @@ public class PedidoCabService
         // Sanitização defensiva contra erro de truncamento de strings no SQL Server
         if (pedido.Cliente?.Length > 40) pedido.Cliente = pedido.Cliente.Substring(0, 40);
         if (pedido.Vendedor?.Length > 20) pedido.Vendedor = pedido.Vendedor.Substring(0, 20);
+        if (pedido.Telefone?.Length > 20) pedido.Telefone = pedido.Telefone.Substring(0, 20);
         if (pedido.Obs?.Length > 200) pedido.Obs = pedido.Obs.Substring(0, 200);
         if (pedido.Codigo?.Length > 8) pedido.Codigo = pedido.Codigo.Substring(0, 8);
 

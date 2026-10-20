@@ -293,7 +293,7 @@ public class LoginViewModel : ViewModelBase
             {
                 ConnectionStatus = $"Conectado: {config.Server} ({config.Database})";
                 ErrorMessage = string.Empty;
-                await DatabaseMigrationService.ExecutarMigracaoAsync();
+                await DatabaseMigrationService.ExecutarMigracaoAsync(forcar: true);
                 await CarregarUsuariosAsync();
             }
             else

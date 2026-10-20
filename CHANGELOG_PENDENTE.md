@@ -1,5 +1,15 @@
 ## [Próxima Versão]
 
+- Inclusão do campo Telefone / WhatsApp de contato no modal de Entrega (Ctrl+E), gravação direta na TabEst3A.Telefone e impressão destacada no cupom e ordem de entrega.
+
+## [1.0.6] - 2026-10-20
+
+- Correção no carregamento e mapeamento de usuários com nível alfanumérico no banco legado (NIVEL).
+- Filtro automático de operadores ativos na tela de login.
+- Suporte aprimorado para conexão e persistência de dados via Servcom.dll em rede.
+- Ajustes de estabilidade nas consultas de operadores, supervisores e gerentes.
+- Otimização do processo de deploy automatizado e compilação do instalador.
+
 ## [1.0.0] - 2026-10-19
 
 - Busca e sincronização automática do Servcom.dll na pasta mãe Servsic do ERP legado.

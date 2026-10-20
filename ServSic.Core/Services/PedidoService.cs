@@ -78,6 +78,35 @@ public class PedidoService
 
         try
         {
+            // Trava de Segurança Defensiva: Vendas concluídas, fechadas pelo caixa ou canceladas jamais podem ser editadas
+            if (pedido.Controle > 0)
+            {
+                var cabAtual = await conn.QueryFirstOrDefaultAsync<dynamic>(
+                    "SELECT Status, ISNULL(Venda, 0) as Venda, ISNULL(Cancelada, 0) as Cancelada, ISNULL(SUBTOTAL, 0) as Subtotal, ISNULL(TOTAL, 0) as Total, ISNULL(Entrada, 0) as Entrada, ISNULL(Faturado, 0) as Faturado FROM TabEst3A WHERE Controle = @Controle",
+                    new { pedido.Controle }, transaction: trans);
+
+                if (cabAtual != null)
+                {
+                    string statusExistente = (string)(cabAtual.Status ?? string.Empty);
+                    int vendaExistente = (int)cabAtual.Venda;
+                    int canceladaExistente = (int)cabAtual.Cancelada;
+                    decimal subtotalExistente = (decimal)cabAtual.Subtotal;
+                    decimal totalExistente = (decimal)cabAtual.Total;
+                    decimal entradaExistente = (decimal)cabAtual.Entrada;
+                    decimal faturadoExistente = (decimal)cabAtual.Faturado;
+
+                    bool isConcluidaOuFechada = vendaExistente == 1 
+                        || statusExistente == "V" 
+                        || canceladaExistente == 1
+                        || (subtotalExistente == 0 && (totalExistente > 0 || entradaExistente > 0 || faturadoExistente > 0));
+
+                    if (isConcluidaOuFechada)
+                    {
+                        throw new InvalidOperationException($"O Pedido/Venda Nº {pedido.Pedido} já está concluído/fechado ou cancelado e jamais pode ser alterado pelo sistema.");
+                    }
+                }
+            }
+
             if (pedido.Pagamentos != null && pedido.Pagamentos.Count > 0)
             {
                 pedido.VlPago = pedido.Pagamentos.Sum(p => p.Valor);

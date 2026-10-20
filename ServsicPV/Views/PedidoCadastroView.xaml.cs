@@ -259,9 +259,20 @@ public partial class PedidoCadastroView : UserControl
                 return;
             }
 
+            // Atalho Ctrl+P: Se venda estiver concluída / bloqueada, reimprimir comprovante
+            if (isCtrlPressed && e.Key == Windows.System.VirtualKey.P)
+            {
+                if (vm.IsEdicaoBloqueada && vm.ReimprimirComprovanteCommand.CanExecute(null))
+                {
+                    vm.ReimprimirComprovanteCommand.Execute(null);
+                    e.Handled = true;
+                    return;
+                }
+            }
+
             if (e.Key == Windows.System.VirtualKey.F3)
             {
-                if (vm.BuscarClienteRapidoCommand.CanExecute(null))
+                if (!vm.IsEdicaoBloqueada && vm.BuscarClienteRapidoCommand.CanExecute(null))
                 {
                     vm.BuscarClienteRapidoCommand.Execute(null);
                     e.Handled = true;
@@ -269,7 +280,7 @@ public partial class PedidoCadastroView : UserControl
             }
             else if (e.Key == Windows.System.VirtualKey.F4)
             {
-                if (vm.AbrirConsultaProdutoCommand.CanExecute(null))
+                if (!vm.IsEdicaoBloqueada && vm.AbrirConsultaProdutoCommand.CanExecute(null))
                 {
                     vm.AbrirConsultaProdutoCommand.Execute(null);
                     e.Handled = true;
@@ -285,7 +296,7 @@ public partial class PedidoCadastroView : UserControl
             }
             else if (e.Key == Windows.System.VirtualKey.F9)
             {
-                if (vm.AlternarTipoCommand.CanExecute(null))
+                if (!vm.IsEdicaoBloqueada && vm.AlternarTipoCommand.CanExecute(null))
                 {
                     vm.AlternarTipoCommand.Execute(null);
                     e.Handled = true;
@@ -295,7 +306,15 @@ public partial class PedidoCadastroView : UserControl
             {
                 if (!vm.IsCheckoutOpen && !vm.IsConfirmarAlteracaoTipoOpen && !vm.IsConfirmarSalvarPendenteOpen && !vm.IsCadastroRapidoClienteOpen && !vm.IsConsultaClienteOpen)
                 {
-                    if (vm.SalvarCommand.CanExecute(null))
+                    if (vm.IsEdicaoBloqueada)
+                    {
+                        if (vm.ReimprimirComprovanteCommand.CanExecute(null))
+                        {
+                            vm.ReimprimirComprovanteCommand.Execute(null);
+                            e.Handled = true;
+                        }
+                    }
+                    else if (vm.SalvarCommand.CanExecute(null))
                     {
                         vm.SalvarCommand.Execute(null);
                         e.Handled = true;
@@ -307,6 +326,11 @@ public partial class PedidoCadastroView : UserControl
 
     private async void CodigoProduto_KeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (this.DataContext is PedidoViewModel vmBloq && vmBloq.IsEdicaoBloqueada)
+        {
+            return;
+        }
+
         if (e.Key == Windows.System.VirtualKey.F4)
         {
             if (this.DataContext is PedidoViewModel vm && vm.AbrirConsultaProdutoCommand.CanExecute(null))
@@ -380,8 +404,11 @@ public partial class PedidoCadastroView : UserControl
 
     private void ExecutarInserirItem()
     {
-        if (this.DataContext is PedidoViewModel vm && vm.HasProdutoSelecionado)
+        if (this.DataContext is PedidoViewModel vm)
         {
+            if (vm.IsEdicaoBloqueada || !vm.HasProdutoSelecionado)
+                return;
+
             vm.QuantidadeTexto = TxtQuantidade?.Text?.Trim() ?? "1";
             vm.DescontoItemInputTexto = TxtDescontoItem?.Text?.Trim() ?? "0";
             vm.AdicionarItem();
@@ -393,6 +420,9 @@ public partial class PedidoCadastroView : UserControl
 
     private void BtnAbrirEdicaoQuantidade_Click(object sender, RoutedEventArgs e)
     {
+        if (this.DataContext is PedidoViewModel vmBloq && vmBloq.IsEdicaoBloqueada)
+            return;
+
         if (sender is Button btn && btn.Flyout is Flyout flyout)
         {
             _activeQtdFlyout = flyout;
@@ -561,6 +591,9 @@ public partial class PedidoCadastroView : UserControl
 
     private void BtnAbrirEdicaoDesconto_Click(object sender, RoutedEventArgs e)
     {
+        if (this.DataContext is PedidoViewModel vmBloq && vmBloq.IsEdicaoBloqueada)
+            return;
+
         if (sender is Button btn && btn.Flyout is Flyout flyout)
         {
             _activeItemFlyout = flyout;

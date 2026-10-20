@@ -1097,7 +1097,20 @@ public class PedidoViewModel : ViewModelBase
         set => SetProperty(ref _mensagemConfirmacaoSalvarPendente, value);
     }
 
-    public bool TemDadosNaoSalvos => Pedido?.Itens?.Count > 0;
+    /// <summary>
+    /// Indica se o pedido/venda carregado está concluído, fechado pelo caixa ou cancelado, bloqueando terminantemente qualquer edição.
+    /// </summary>
+    public bool IsEdicaoBloqueada => Pedido?.IsConcluidaOuFechada == true;
+
+    /// <summary>
+    /// Indica se a venda/orçamento em tela pode ser editado pelo operador.
+    /// </summary>
+    public bool IsEdicaoPermitida => !IsEdicaoBloqueada;
+
+    public string BannerBloqueioTitulo => $"VENDA #{Pedido?.NumeroFormatado} CONCLUÍDA • SOMENTE LEITURA";
+    public string BannerBloqueioMensagem => "Esta venda já foi concretizada no caixa. Nenhuma informação ou item pode ser alterado pelo sistema.";
+
+    public bool TemDadosNaoSalvos => (Pedido?.Itens?.Count > 0) && !IsEdicaoBloqueada;
 
     // --- Liberação de Gerente (Descontos Excedentes e Trava de Estoque) ---
     public enum TipoLiberacaoGerente
@@ -1173,6 +1186,7 @@ public class PedidoViewModel : ViewModelBase
 
     // --- Comandos ---
     public ICommand SalvarCommand { get; }
+    public ICommand ReimprimirComprovanteCommand { get; }
     public ICommand SalvarPendenteCommand { get; }
     public ICommand ConfirmarSalvarPendenteCommand { get; }
     public ICommand DescartarEContinuarCommand { get; }
@@ -1366,6 +1380,7 @@ public class PedidoViewModel : ViewModelBase
 
         FecharMensagemCommand = new RelayCommand(_ => LimparMensagem());
         SalvarCommand = new RelayCommand(async _ => await SalvarPedidoAsync());
+        ReimprimirComprovanteCommand = new RelayCommand(async _ => await ReimprimirComprovanteAsync());
         AbrirCheckoutCommand = new RelayCommand(async _ => await AbrirCheckoutAsync());
         FecharCheckoutCommand = new RelayCommand(_ => FecharCheckout());
 
@@ -1760,6 +1775,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
         NotificarAlteracaoTipo();
         RecalcularMargemDescontoGeral();
+        NotificarEstadoBloqueio();
         OnClienteDefinido?.Invoke();
     }
 
@@ -1835,12 +1851,22 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(TipoAcrescimoGeralSimbolo));
         OnPropertyChanged(nameof(AcrescimoGeralInputTexto));
         NotificarAlteracaoTipo();
+        NotificarEstadoBloqueio();
 
-        ExibirMensagem($"{(pedidoCarregado.Status == "O" ? "Orçamento" : "Pedido")} #{pedidoCarregado.Pedido} carregado com sucesso.", true, 3500);
+        if (pedidoCarregado.IsConcluidaOuFechada)
+        {
+            ExibirMensagem($"🔒 Venda #{pedidoCarregado.NumeroFormatado} carregada em MODO SOMENTE LEITURA. Nenhuma alteração é permitida.", false, 6000);
+        }
+        else
+        {
+            ExibirMensagem($"{(pedidoCarregado.Status == "O" ? "Orçamento" : "Pedido")} #{pedidoCarregado.Pedido} carregado com sucesso.", true, 3500);
+        }
     }
 
     public void DefinirTipo(string tipo)
     {
+        if (IsEdicaoBloqueada) return;
+
         if (string.IsNullOrWhiteSpace(tipo)) tipo = "O";
         tipo = tipo.Trim().ToUpperInvariant();
         if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "O";
@@ -1852,6 +1878,12 @@ public class PedidoViewModel : ViewModelBase
 
     public async Task SelecionarTipoAsync(string tipo)
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem("Venda concluída não permite alternar entre Orçamento e Pré-Venda.", false, 4000);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(tipo)) tipo = "O";
         tipo = tipo.Trim().ToUpperInvariant();
         if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "O";
@@ -2032,6 +2064,12 @@ public class PedidoViewModel : ViewModelBase
 
     public async void SelecionarCliente(Cliente cliente)
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"Venda #{Pedido.NumeroFormatado} concluída não permite alterar cliente.", false, 4000);
+            return;
+        }
+
         SelectedCliente = cliente;
         AtribuirClienteAoPedido(cliente);
         OnPropertyChanged(nameof(Pedido));
@@ -2083,6 +2121,12 @@ public class PedidoViewModel : ViewModelBase
 
     public void LimparCliente(bool preservarMensagem = false)
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"Venda #{Pedido.NumeroFormatado} concluída não permite desvincular o cliente.", false, 4000);
+            return;
+        }
+
         _selectedCliente = null;
         Pedido.LkCliente = null;
         Pedido.Cliente = string.Empty;
@@ -2118,6 +2162,7 @@ public class PedidoViewModel : ViewModelBase
 
     public void RemoverEnderecoEntrega()
     {
+        if (IsEdicaoBloqueada) return;
         if (Pedido != null)
         {
             Pedido.Endereco = null;
@@ -2385,6 +2430,12 @@ public class PedidoViewModel : ViewModelBase
 
     public void AdicionarItem()
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"Venda #{Pedido.NumeroFormatado} concluída não permite inclusão de itens.", false, 4000);
+            return;
+        }
+
         if (!string.IsNullOrWhiteSpace(QuantidadeTexto) &&
             decimal.TryParse(QuantidadeTexto.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var qtdInformada))
         {
@@ -2594,6 +2645,12 @@ public class PedidoViewModel : ViewModelBase
 
     public void RemoverItem(PedidoItem? item)
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"Venda #{Pedido.NumeroFormatado} concluída não permite exclusão de itens.", false, 4000);
+            return;
+        }
+
         if (item != null && Pedido.Itens.Contains(item))
         {
             Pedido.Itens.Remove(item);
@@ -2607,6 +2664,12 @@ public class PedidoViewModel : ViewModelBase
 
     public bool AtualizarQuantidadeItem(PedidoItem item, decimal novaQuantidade)
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"Venda #{Pedido.NumeroFormatado} concluída não permite alteração de quantidade.", false, 4000);
+            return false;
+        }
+
         if (item == null) return false;
 
         if (novaQuantidade <= 0)
@@ -2637,6 +2700,12 @@ public class PedidoViewModel : ViewModelBase
 
     public bool AtualizarDescontoItem(PedidoItem item, decimal novoDesconto)
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"Venda #{Pedido.NumeroFormatado} concluída não permite alteração de desconto.", false, 4000);
+            return false;
+        }
+
         if (item == null) return false;
 
         if (novoDesconto < 0)
@@ -2794,12 +2863,56 @@ public class PedidoViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Reimpressão direta do comprovante de venda sem realizar qualquer alteração nos dados do banco.
+    /// </summary>
+    public async Task ReimprimirComprovanteAsync()
+    {
+        if (Pedido == null) return;
+        try
+        {
+            var config = _impressoraConfigService.ObterConfiguracao();
+            if (string.IsNullOrWhiteSpace(config.NomeImpressora))
+            {
+                ExibirMensagem("Nenhuma impressora configurada. Acesse as configurações no topo para definir a impressora.", false, 5000);
+                return;
+            }
+
+            var empresa = await _impressoraConfigService.ObterDadosEmpresaAsync();
+            string textoCupom = _cupomFormatadorService.GerarTextoCupom(Pedido, empresa, config);
+            int vias = config.DuasVias ? 2 : 1;
+            for (int i = 0; i < vias; i++)
+            {
+                _impressaoTermicaService.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel);
+            }
+            ExibirMensagem($"✓ Comprovante da Venda #{Pedido.NumeroFormatado} reimpresso na impressora '{config.NomeImpressora}'.", true, 4000);
+        }
+        catch (Exception ex)
+        {
+            ExibirMensagem($"Erro ao reimprimir comprovante: {ex.Message}", false, 5000);
+        }
+    }
+
+    public void NotificarEstadoBloqueio()
+    {
+        OnPropertyChanged(nameof(IsEdicaoBloqueada));
+        OnPropertyChanged(nameof(IsEdicaoPermitida));
+        OnPropertyChanged(nameof(TemDadosNaoSalvos));
+        OnPropertyChanged(nameof(BannerBloqueioTitulo));
+        OnPropertyChanged(nameof(BannerBloqueioMensagem));
+    }
+
     // ==============================================================
     // CHECKOUT DE CONDIÇÕES DE PAGAMENTO (MODAL BALCÃO / PRÉ-VENDA)
     // ==============================================================
 
     public async Task AbrirCheckoutAsync()
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem("Esta venda já está concluída e não permite alteração de pagamento.", false, 4000);
+            return;
+        }
         LancarPagamentos = true;
         await SalvarPedidoAsync();
     }
@@ -2835,6 +2948,12 @@ public class PedidoViewModel : ViewModelBase
 
     public async Task FinalizarPedidoDiretoAsync()
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"A Venda #{Pedido.NumeroFormatado} já está concluída e jamais pode ser alterada pelo sistema.", false, 5000);
+            return;
+        }
+
         try
         {
             IsBusy = true;
@@ -2861,6 +2980,12 @@ public class PedidoViewModel : ViewModelBase
 
     public async Task SalvarPedidoAsync()
     {
+        if (IsEdicaoBloqueada)
+        {
+            ExibirMensagem($"A Venda #{Pedido.NumeroFormatado} já está concluída e jamais pode ser alterada pelo sistema.", false, 5000);
+            return;
+        }
+
         string acaoNome = LancarPagamentos ? "totalizar" : "finalizar";
 
         if (Pedido.Itens.Count == 0 || Pedido.Total <= 0)

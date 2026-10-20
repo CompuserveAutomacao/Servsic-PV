@@ -196,11 +196,12 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Linha 4: Cidade + UF -->
+                                <!-- Linha 4: Cidade + UF + Telefone / WhatsApp -->
                                 <Grid ColumnSpacing="8">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="55"/>
+                                        <ColumnDefinition Width="180"/>
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0" Spacing="2">
@@ -215,6 +216,17 @@
                                         <TextBox Text="{Binding Estado, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  PlaceholderText="PA"
                                                  MaxLength="2"
+                                                 Height="28" FontSize="11.5"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <ic:SymbolIcon Symbol="Call" FontSize="12" Foreground="{StaticResource BrushServsicBlue}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Telefone / WhatsApp" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                        </StackPanel>
+                                        <TextBox Text="{Binding Telefone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 PlaceholderText="(00) 00000-0000"
+                                                 MaxLength="20"
                                                  Height="28" FontSize="11.5"/>
                                     </StackPanel>
                                 </Grid>

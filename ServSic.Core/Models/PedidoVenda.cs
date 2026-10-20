@@ -104,6 +104,11 @@ public class PedidoVenda
     public bool IsVenda => Status == "P" || Status == "V" || Venda == 1;
 
     /// <summary>
+    /// Indica se a venda/pedido já está concluída, fechada pelo caixa ou cancelada, tornando qualquer edição proibida no sistema.
+    /// </summary>
+    public bool IsConcluidaOuFechada => Status == "V" || Venda == 1 || SituacaoDescricao == "CONCLUIDA" || SituacaoDescricao == "FECHADO" || SituacaoDescricao == "CANCELADA";
+
+    /// <summary>
     /// Operação / Tipo do documento conforme regra do ERP Legado:
     /// 'O' = ORÇAMENTO, 'P' = PRÉ-VENDA, 'V' / Venda=1 = VENDA, 'C' / Cancelada=1 = CANCELADO
     /// </summary>

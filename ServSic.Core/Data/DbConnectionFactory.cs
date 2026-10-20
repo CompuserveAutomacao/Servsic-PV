@@ -38,6 +38,7 @@ public class DbConnectionFactory
         {
             ServcomReader.Save(config);
             _cachedConfig = config;
+            DatabaseMigrationService.ResetMigrationState();
         }
     }
 
@@ -48,6 +49,7 @@ public class DbConnectionFactory
             if (ServcomReader.TryLoad(out var loaded))
             {
                 _cachedConfig = loaded;
+                DatabaseMigrationService.ResetMigrationState();
             }
         }
     }
