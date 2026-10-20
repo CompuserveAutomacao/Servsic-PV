@@ -20,6 +20,7 @@ O SERVSIC PV é uma aplicação de alta produtividade para frente de caixa e pr�
 - **Atalhos Globais:**
   - <kbd>F2</kbd>: Iniciar novo pedido ou orçamento.
   - <kbd>F3</kbd>: Abrir busca/consulta rápida de clientes.
+  - <kbd>F6</kbd>: Totalizar pedido/orçamento (abrir tela de formas de pagamento).
   - <kbd>Esc</kbd>: Fechar qualquer modal ou diálogo aberto.
 - **Navegação em Grades e Modais:**
   - Ao abrir o modal de consulta de clientes, o foco deve ir imediatamente para a grade de resultados com a primeira linha selecionada.
