@@ -126,10 +126,12 @@ public class PedidoVenda
     }
 
     /// <summary>
-    /// Situação operacional:
+    /// Situação operacional conforme regra do ERP CompuServe:
     /// - CONCLUIDA: Venda concretizada pelo caixa (Status 'V' ou Venda=1).
     /// - CANCELADA: Pedido/Orçamento cancelado.
-    /// - PENDENTE: Orçamento ou Pré-Venda ativo aguardando faturamento/aprovação no caixa.
+    /// - FECHADA: Pré-Venda com formas de pagamento registradas (Entrada > 0, Faturado > 0 ou VlPago > 0).
+    /// - FECHADO: Orçamento com formas de pagamento registradas (Entrada > 0, Faturado > 0 ou VlPago > 0).
+    /// - PENDENTE: Orçamento ou Pré-Venda ativo aguardando faturamento/aprovação no caixa sem quitação.
     /// </summary>
     public string SituacaoDescricao
     {
@@ -137,6 +139,13 @@ public class PedidoVenda
         {
             if (Cancelada == 1 || Status == "C") return "CANCELADA";
             if (Status == "V" || Venda == 1) return "CONCLUIDA";
+
+            bool temPagamento = (Entrada > 0 || Faturado > 0 || VlPago > 0 || (Pagamentos != null && Pagamentos.Count > 0)) && Total > 0;
+            if (temPagamento)
+            {
+                return Status == "P" ? "FECHADA" : "FECHADO";
+            }
+
             return "PENDENTE";
         }
     }
@@ -166,8 +175,9 @@ public class PedidoVenda
     public string SituacaoBgColor => SituacaoDescricao switch
     {
         "PENDENTE"  => "#FEF3C7",   // Âmbar suave
-        "CONCLUIDA" => "#DCFCE7",   // Verde suave
-        "FECHADO"   => "#F1F5F9",   // Cinza suave
+        "CONCLUIDA" => "#F1F5F9",   // Cinza corporativo suave
+        "FECHADA"   => "#F1F5F9",   // Cinza corporativo suave
+        "FECHADO"   => "#F1F5F9",   // Cinza corporativo suave
         "CANCELADA" => "#FEE2E2",   // Vermelho suave
         _ => "#F1F5F9"
     };
@@ -175,7 +185,8 @@ public class PedidoVenda
     public string SituacaoFgColor => SituacaoDescricao switch
     {
         "PENDENTE"  => "#B45309",   // Âmbar escuro
-        "CONCLUIDA" => "#15803D",   // Verde escuro
+        "CONCLUIDA" => "#0B192C",   // Navy corporativo
+        "FECHADA"   => "#475569",   // Slate escuro
         "FECHADO"   => "#475569",   // Slate escuro
         "CANCELADA" => "#DC2626",   // Vermelho
         _ => "#475569"

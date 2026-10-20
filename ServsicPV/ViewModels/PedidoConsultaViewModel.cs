@@ -208,7 +208,7 @@ public class PedidoConsultaViewModel : ViewModelBase
         }
 
         // Trava de segurança: Pedidos já fechados ou concluídos possuem faturamento e quitação
-        if (item.SituacaoDescricao == "FECHADO" || item.SituacaoDescricao == "CONCLUIDA")
+        if (item.SituacaoDescricao == "FECHADO" || item.SituacaoDescricao == "FECHADA" || item.SituacaoDescricao == "CONCLUIDA")
         {
             Mensagem = $"O Pedido/Orçamento Nº {item.Pedido} já está {item.SituacaoDescricao} e possui faturamento/pagamento. Não é permitido excluir pedidos finalizados.";
             return;
