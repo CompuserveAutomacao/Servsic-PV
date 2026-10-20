@@ -569,8 +569,8 @@ public class CupomFormatadorService
 
     public static string AlinharEsquerdaDireita(string esquerda, string direita, int largura)
     {
-        direita ??= string.Empty;
-        esquerda ??= string.Empty;
+        direita = (direita ?? string.Empty).Trim();
+        esquerda = (esquerda ?? string.Empty).TrimEnd();
 
         // Se ambos cabem na mesma linha com pelo menos 1 espaço de separação
         if (esquerda.Length + direita.Length + 1 <= largura)

@@ -46,6 +46,8 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
             if (SetProperty(ref _larguraColunas, value))
             {
                 OnPropertyChanged(nameof(IsBobina80mm));
+                OnPropertyChanged(nameof(IsBobina80mm42));
+                OnPropertyChanged(nameof(IsBobina80mm40));
                 OnPropertyChanged(nameof(IsBobina58mm));
             }
         }
@@ -55,6 +57,18 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
     {
         get => LarguraColunas >= 40;
         set { if (value) LarguraColunas = 42; }
+    }
+
+    public bool IsBobina80mm42
+    {
+        get => LarguraColunas == 42 || LarguraColunas >= 48;
+        set { if (value) LarguraColunas = 42; }
+    }
+
+    public bool IsBobina80mm40
+    {
+        get => LarguraColunas == 40;
+        set { if (value) LarguraColunas = 40; }
     }
 
     public bool IsBobina58mm
@@ -155,7 +169,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
         var config = _configService.ObterConfiguracao();
 
         SelectedImpressora = config.NomeImpressora;
-        LarguraColunas = config.LarguraColunas;
+        LarguraColunas = config.LarguraColunas >= 48 ? 42 : config.LarguraColunas;
         ModoImpressao = config.ModoImpressao;
         CortarPapel = config.CortarPapel;
         DuasVias = config.DuasVias;
@@ -227,7 +241,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
                 MensagemRodape = MensagemRodape
             };
 
-            int col = config.LarguraColunas >= 40 ? 42 : 32;
+            int col = config.LarguraColunas > 0 ? config.LarguraColunas : 42;
             string linha = new('=', col);
             string div = new('-', col);
 
@@ -238,7 +252,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
             sb.AppendLine(div);
             sb.AppendLine($"DATA: {DateTime.Now:dd/MM/yyyy HH:mm:ss}");
             sb.AppendLine($"IMPRESSORA: {SelectedImpressora}");
-            sb.AppendLine($"LARGURA BOBINA: {(config.IsBobina80mm ? "80mm (48 colunas)" : "58mm (32 colunas)")}");
+            sb.AppendLine($"LARGURA BOBINA: {(config.IsBobina80mm ? $"80mm ({col} colunas)" : "58mm (32 colunas)")}");
             sb.AppendLine($"GUILHOTINA: {(CortarPapel ? "HABILITADA" : "DESABILITADA")}");
             sb.AppendLine(div);
             sb.AppendLine("123456789012345678901234567890123456789012345678".Substring(0, col));

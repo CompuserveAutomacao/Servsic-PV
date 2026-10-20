@@ -39,6 +39,7 @@ public class ImpressoraConfigService
                     if (config.LarguraColunas >= 48)
                     {
                         config.LarguraColunas = 42;
+                        try { SalvarConfiguracao(config); } catch { }
                     }
 
                     _cachedConfig = config;

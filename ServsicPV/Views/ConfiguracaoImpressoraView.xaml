@@ -83,16 +83,12 @@
 
                         <!-- 2. Largura da Bobina Térmica -->
                         <StackPanel Spacing="6">
-                            <TextBlock Text="Largura da Bobina" Style="{StaticResource TextLabel}"/>
-                            <Grid ColumnSpacing="12">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <RadioButton Grid.Column="0" Content="80mm (42 Colunas - Padrão Epson / Bematech)" IsChecked="{Binding IsBobina80mm, Mode=TwoWay}" FontSize="12.5"/>
-                                <RadioButton Grid.Column="1" Content="58mm (32 Colunas)" IsChecked="{Binding IsBobina58mm, Mode=TwoWay}" FontSize="12.5"/>
-                            </Grid>
+                            <TextBlock Text="Largura da Bobina Térmica" Style="{StaticResource TextLabel}"/>
+                            <StackPanel Spacing="6">
+                                <RadioButton Content="80mm - 42 Colunas (Padrão Oficial Epson TM-T20 / Bematech)" IsChecked="{Binding IsBobina80mm42, Mode=TwoWay}" FontSize="12.5"/>
+                                <RadioButton Content="80mm - 40 Colunas (Margem de Segurança Anti-quebra)" IsChecked="{Binding IsBobina80mm40, Mode=TwoWay}" FontSize="12.5"/>
+                                <RadioButton Content="58mm - 32 Colunas (Bobina Estreita)" IsChecked="{Binding IsBobina58mm, Mode=TwoWay}" FontSize="12.5"/>
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- 3. Ação ao Finalizar Venda / Orçamento -->
