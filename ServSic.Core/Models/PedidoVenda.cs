@@ -27,9 +27,9 @@ public class PedidoVenda
     public int QtdItens { get; set; } = 0;
 
     /// <summary>
-    /// Status: 'O' = Orçamento, 'P' = Pré-Venda / Pedido de Venda, 'V' / 'F' = Venda Efetivada / Finalizada
+    /// Status: 'P' = Pré-Venda / Pedido de Venda (Padrão), 'O' = Orçamento, 'V' / 'F' = Venda Efetivada / Finalizada
     /// </summary>
-    public string Status { get; set; } = "O";
+    public string Status { get; set; } = "P";
 
     /// <summary>
     /// Venda: 0 = Pré-Venda / Orçamento, 1 = Venda Finalizada

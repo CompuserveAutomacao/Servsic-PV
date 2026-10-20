@@ -170,10 +170,24 @@ public class CupomFormatadorService
                     sb.AppendLine($"{indentDesc}{linhasDesc[i]}");
                 }
 
-                // Linha com quantidade, valor unitário e total do item à direita
+                // Linha com quantidade, valor unitário e total do item
                 string qtdUnit = $"{item.Quantidade:N3} {item.Unidade} x {item.VlUnitario:N2}";
                 string totItem = item.Total.ToString("N2", PtBr);
-                sb.AppendLine(AlinharEsquerdaDireita($"      {qtdUnit}", totItem, colunas));
+                string linhaQtd = $"      {qtdUnit}";
+
+                // Se couber na mesma linha com folga segura (mínimo 5 espaços) e não for valor alto (>= 1000)
+                if (item.Total < 1000m && item.Quantidade < 1000m && (linhaQtd.Length + totItem.Length + 5 <= colunas))
+                {
+                    sb.AppendLine(AlinharEsquerdaDireita(linhaQtd, totItem, colunas));
+                }
+                else
+                {
+                    // Para valores altos, quantidades grandes ou bobinas onde não há espaço seguro:
+                    // Linha 1: Quantidade x Unitário
+                    // Linha 2: Total do Item à direita com indicação clara, sem risco de corte
+                    sb.AppendLine(linhaQtd);
+                    sb.AppendLine(AlinharEsquerdaDireita("      TOTAL ITEM (R$):", totItem, colunas));
+                }
 
                 if (item.Desconto > 0)
                 {
@@ -196,7 +210,17 @@ public class CupomFormatadorService
 
                 string qtdUnit = $"{item.Quantidade:N2} {item.Unidade} x {item.VlUnitario:N2}";
                 string totItem = item.Total.ToString("N2", PtBr);
-                sb.AppendLine(AlinharEsquerdaDireita($"   {qtdUnit}", totItem, colunas));
+                string linhaQtd = $"   {qtdUnit}";
+
+                if (item.Total < 1000m && item.Quantidade < 100m && (linhaQtd.Length + totItem.Length + 3 <= colunas))
+                {
+                    sb.AppendLine(AlinharEsquerdaDireita(linhaQtd, totItem, colunas));
+                }
+                else
+                {
+                    sb.AppendLine(linhaQtd);
+                    sb.AppendLine(AlinharEsquerdaDireita("   TOTAL (R$):", totItem, colunas));
+                }
 
                 if (item.Desconto > 0)
                 {
@@ -548,19 +572,19 @@ public class CupomFormatadorService
         direita ??= string.Empty;
         esquerda ??= string.Empty;
 
-        if (direita.Length >= largura)
+        // Se ambos cabem na mesma linha com pelo menos 1 espaço de separação
+        if (esquerda.Length + direita.Length + 1 <= largura)
         {
-            return direita.Substring(0, largura);
+            int espacos = largura - esquerda.Length - direita.Length;
+            return esquerda + new string(' ', espacos) + direita;
         }
 
-        int maxEsq = largura - direita.Length - 1;
-        if (esquerda.Length > maxEsq)
-        {
-            esquerda = maxEsq > 0 ? esquerda.Substring(0, maxEsq) : string.Empty;
-        }
-
-        int espacos = largura - esquerda.Length - direita.Length;
-        return esquerda + new string(' ', Math.Max(0, espacos)) + direita;
+        // Se NÃO cabem na mesma linha (ex: valores muito altos ou descrições/quantidades longas),
+        // NUNCA corta os valores! Quebra em duas linhas para preservar a integridade total dos dados:
+        // Linha 1: Texto da esquerda
+        // Linha 2: Valor da direita alinhado à margem direita
+        string direitaAlinhada = direita.Length >= largura ? direita : direita.PadLeft(largura);
+        return $"{esquerda}{Environment.NewLine}{direitaAlinhada}";
     }
 
     public static string Truncar(string? texto, int max)

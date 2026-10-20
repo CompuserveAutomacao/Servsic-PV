@@ -349,14 +349,14 @@ internal class PedidoDocument : IDocument
             {
                 table.ColumnsDefinition(columns =>
                 {
-                    columns.ConstantColumn(22); // #
-                    columns.ConstantColumn(58); // Código
-                    columns.RelativeColumn(6);  // Descrição
-                    columns.ConstantColumn(30); // UN
-                    columns.ConstantColumn(45); // Qtd
-                    columns.ConstantColumn(60); // Unitário
-                    columns.ConstantColumn(50); // Desconto
-                    columns.ConstantColumn(68); // Total
+                    columns.ConstantColumn(20); // #
+                    columns.ConstantColumn(55); // Código
+                    columns.RelativeColumn(5);  // Descrição
+                    columns.ConstantColumn(26); // UN
+                    columns.ConstantColumn(54); // Qtd
+                    columns.ConstantColumn(64); // Unitário
+                    columns.ConstantColumn(52); // Desconto
+                    columns.ConstantColumn(76); // Total
                 });
 
                 // Header da Tabela em Navy

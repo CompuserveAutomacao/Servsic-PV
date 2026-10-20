@@ -811,36 +811,8 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Orçamento -->
+                                <!-- Pré-Venda (Principal / Padrão) -->
                                 <Border Grid.Column="0" 
-                                        Background="{Binding BrushOrcamentoBackground}"
-                                        BorderBrush="{Binding BrushOrcamentoBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="6">
-                                    <Button Command="{Binding SelecionarOrcamentoCommand}"
-                                            IsEnabled="{Binding IsEdicaoPermitida}"
-                                            IsTabStop="False"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Height="34"
-                                            CornerRadius="6"
-                                            HorizontalAlignment="Stretch"
-                                            VerticalAlignment="Stretch"
-                                            Padding="0"
-                                            ToolTipService.ToolTip="Orçamento (F9 para alternar)">
-                                        <Button.Resources>
-                                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
-                                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
-                                        </Button.Resources>
-                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                                            <ic:SymbolIcon Symbol="DocumentText" FontSize="14" Foreground="{Binding BrushOrcamentoForeground}"/>
-                                            <TextBlock Text="Orçamento (F9)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="12" Foreground="{Binding BrushOrcamentoForeground}"/>
-                                        </StackPanel>
-                                    </Button>
-                                </Border>
-
-                                <!-- Pré-Venda -->
-                                <Border Grid.Column="1" 
                                         Background="{Binding BrushVendaBackground}"
                                         BorderBrush="{Binding BrushVendaBorder}"
                                         BorderThickness="1"
@@ -863,6 +835,34 @@
                                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                             <ic:SymbolIcon Symbol="Cart" FontSize="14" Foreground="{Binding BrushVendaForeground}"/>
                                             <TextBlock Text="Pré-Venda (F9)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="12" Foreground="{Binding BrushVendaForeground}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </Border>
+
+                                <!-- Orçamento -->
+                                <Border Grid.Column="1" 
+                                        Background="{Binding BrushOrcamentoBackground}"
+                                        BorderBrush="{Binding BrushOrcamentoBorder}"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <Button Command="{Binding SelecionarOrcamentoCommand}"
+                                            IsEnabled="{Binding IsEdicaoPermitida}"
+                                            IsTabStop="False"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Height="34"
+                                            CornerRadius="6"
+                                            HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Stretch"
+                                            Padding="0"
+                                            ToolTipService.ToolTip="Orçamento (F9 para alternar)">
+                                        <Button.Resources>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="Transparent"/>
+                                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="Transparent"/>
+                                        </Button.Resources>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                            <ic:SymbolIcon Symbol="DocumentText" FontSize="14" Foreground="{Binding BrushOrcamentoForeground}"/>
+                                            <TextBlock Text="Orçamento (F9)" FontFamily="Segoe UI Semibold" FontWeight="SemiBold" FontSize="12" Foreground="{Binding BrushOrcamentoForeground}"/>
                                         </StackPanel>
                                     </Button>
                                 </Border>

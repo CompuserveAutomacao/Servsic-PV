@@ -819,9 +819,8 @@ public class PedidoViewModel : ViewModelBase
 
     public System.Collections.ObjectModel.ObservableCollection<PedidoItem> Itens => Pedido.Itens;
 
-    public bool IsOrcamento => string.Equals(Pedido?.Status, "O", StringComparison.OrdinalIgnoreCase)
-        || (!string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) && !string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase));
-    public bool IsVenda => string.Equals(Pedido?.Status, "P", StringComparison.OrdinalIgnoreCase) || string.Equals(Pedido?.Status, "V", StringComparison.OrdinalIgnoreCase);
+    public bool IsOrcamento => string.Equals(Pedido?.Status, "O", StringComparison.OrdinalIgnoreCase);
+    public bool IsVenda => !IsOrcamento;
     public string TituloTela => "Pedido de Venda";
 
     public bool LancarPagamentos
@@ -1736,7 +1735,7 @@ public class PedidoViewModel : ViewModelBase
 
         var novoPedido = new PedidoVenda
         {
-            Status = "O",
+            Status = "P",
             Data = DateTime.Today,
             HoraIni = DateTime.Now.ToString("HH:mm"),
             LkUsuario = UsuarioLogado?.Controle,
@@ -1891,9 +1890,9 @@ public class PedidoViewModel : ViewModelBase
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(tipo)) tipo = "O";
+        if (string.IsNullOrWhiteSpace(tipo)) tipo = "P";
         tipo = tipo.Trim().ToUpperInvariant();
-        if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "O";
+        if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "P";
 
         if (string.Equals(Pedido.Status, tipo, StringComparison.OrdinalIgnoreCase)) return;
 

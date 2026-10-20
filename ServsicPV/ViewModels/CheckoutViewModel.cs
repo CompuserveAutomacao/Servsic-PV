@@ -134,7 +134,7 @@ public class CheckoutViewModel : ViewModelBase
         {
             if (SetProperty(ref _valorInputTexto, value))
             {
-                if (decimal.TryParse(value.Replace(".", ","), NumberStyles.Any, CulturePtBr, out var v))
+                if (TentarConverterValor(value, out var v))
                 {
                     _valorInput = Math.Round(v, 2);
                     OnPropertyChanged(nameof(ValorInput));
@@ -143,6 +143,55 @@ public class CheckoutViewModel : ViewModelBase
                 }
             }
         }
+    }
+
+    public void FormatarValorInputTexto()
+    {
+        _valorInputTexto = _valorInput.ToString("N2", CulturePtBr);
+        OnPropertyChanged(nameof(ValorInputTexto));
+    }
+
+    private static bool TentarConverterValor(string? texto, out decimal valor)
+    {
+        valor = 0m;
+        if (string.IsNullOrWhiteSpace(texto)) return false;
+
+        string limpo = texto.Trim();
+
+        // 1. Formato com milhar e decimal: "109.000,00" ou "1.250,50"
+        if (limpo.Contains('.') && limpo.Contains(','))
+        {
+            string semMilhar = limpo.Replace(".", "");
+            if (decimal.TryParse(semMilhar, NumberStyles.Number, CulturePtBr, out valor))
+                return true;
+        }
+
+        // 2. Apenas vírgula: "109000,00" ou "50,25"
+        if (limpo.Contains(',') && !limpo.Contains('.'))
+        {
+            if (decimal.TryParse(limpo, NumberStyles.Number, CulturePtBr, out valor))
+                return true;
+        }
+
+        // 3. Apenas ponto: teclado numérico ("109000.50") ou múltiplos pontos de milhar ("1.000.000")
+        if (limpo.Contains('.') && !limpo.Contains(','))
+        {
+            if (limpo.Count(c => c == '.') > 1)
+            {
+                string semPontos = limpo.Replace(".", "");
+                if (decimal.TryParse(semPontos, NumberStyles.Number, CulturePtBr, out valor))
+                    return true;
+            }
+
+            if (decimal.TryParse(limpo, NumberStyles.Number, CultureInfo.InvariantCulture, out valor))
+                return true;
+        }
+
+        // 4. Número inteiro simples: "109000"
+        if (decimal.TryParse(limpo, NumberStyles.Number, CulturePtBr, out valor))
+            return true;
+
+        return false;
     }
 
     public int NumeroParcelas

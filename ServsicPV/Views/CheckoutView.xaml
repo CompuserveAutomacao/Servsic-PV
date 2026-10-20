@@ -228,6 +228,7 @@
                                                  Text="{Binding ValorInputTexto, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  BeforeTextChanging="DecimalOnly_BeforeTextChanging"
                                                  KeyDown="TxtValor_KeyDown"
+                                                 LostFocus="TxtValor_LostFocus"
                                                  Height="44"
                                                  FontSize="18"
                                                  FontWeight="Bold"

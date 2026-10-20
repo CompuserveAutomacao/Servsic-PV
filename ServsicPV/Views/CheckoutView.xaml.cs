@@ -131,9 +131,18 @@ public partial class CheckoutView : UserControl
     private void DecimalOnly_BeforeTextChanging(TextBox sender, TextBoxBeforeTextChangingEventArgs args)
     {
         if (string.IsNullOrEmpty(args.NewText)) return;
-        if (!System.Text.RegularExpressions.Regex.IsMatch(args.NewText, @"^[0-9]*[,\.]?[0-9]*$"))
+        // Permite números de qualquer magnitude, aceitando pontos de milhar e vírgula/ponto decimal
+        if (!System.Text.RegularExpressions.Regex.IsMatch(args.NewText, @"^[0-9\.,]*$"))
         {
             args.Cancel = true;
+        }
+    }
+
+    private void TxtValor_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (this.DataContext is CheckoutViewModel vm && vm.ValorInput > 0)
+        {
+            vm.FormatarValorInputTexto();
         }
     }
 
