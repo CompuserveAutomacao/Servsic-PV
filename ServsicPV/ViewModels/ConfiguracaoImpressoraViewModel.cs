@@ -45,12 +45,40 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
         {
             if (SetProperty(ref _larguraColunas, value))
             {
+                OnPropertyChanged(nameof(IsBobina42));
+                OnPropertyChanged(nameof(IsBobina40));
+                OnPropertyChanged(nameof(IsBobina48));
+                OnPropertyChanged(nameof(IsBobina32));
                 OnPropertyChanged(nameof(IsBobina80mm));
                 OnPropertyChanged(nameof(IsBobina80mm42));
                 OnPropertyChanged(nameof(IsBobina80mm40));
                 OnPropertyChanged(nameof(IsBobina58mm));
             }
         }
+    }
+
+    public bool IsBobina42
+    {
+        get => LarguraColunas == 42 || LarguraColunas <= 0;
+        set { if (value) LarguraColunas = 42; }
+    }
+
+    public bool IsBobina40
+    {
+        get => LarguraColunas == 40;
+        set { if (value) LarguraColunas = 40; }
+    }
+
+    public bool IsBobina48
+    {
+        get => LarguraColunas == 48;
+        set { if (value) LarguraColunas = 48; }
+    }
+
+    public bool IsBobina32
+    {
+        get => LarguraColunas == 32;
+        set { if (value) LarguraColunas = 32; }
     }
 
     public bool IsBobina80mm
@@ -61,7 +89,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
 
     public bool IsBobina80mm42
     {
-        get => LarguraColunas == 42 || LarguraColunas >= 48;
+        get => LarguraColunas == 42 || LarguraColunas <= 0;
         set { if (value) LarguraColunas = 42; }
     }
 
@@ -169,7 +197,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
         var config = _configService.ObterConfiguracao();
 
         SelectedImpressora = config.NomeImpressora;
-        LarguraColunas = config.LarguraColunas >= 48 ? 42 : config.LarguraColunas;
+        LarguraColunas = config.LarguraColunas > 0 ? config.LarguraColunas : 42;
         ModoImpressao = config.ModoImpressao;
         CortarPapel = config.CortarPapel;
         DuasVias = config.DuasVias;

@@ -20,8 +20,8 @@ public class CupomFormatadorService
     public string GerarTextoCupom(PedidoVenda pedido, DadosEmpresa empresa, ConfiguracaoImpressora config)
     {
         int colunas = config.LarguraColunas > 0 ? config.LarguraColunas : 42;
-        if (colunas >= 48) colunas = 42; // Protege contra estouro em impressoras 80mm de 42 colunas (Epson TM-T20, etc.)
         if (colunas < 32) colunas = 32;
+        if (colunas > 48) colunas = 48;
 
         string linhaDiv = new('-', colunas);
         string linhaDupla = new('=', colunas);
@@ -298,8 +298,8 @@ public class CupomFormatadorService
     public string GerarTextoCupomEntrega(PedidoVenda pedido, DadosEmpresa empresa, ConfiguracaoImpressora config)
     {
         int colunas = config.LarguraColunas > 0 ? config.LarguraColunas : 42;
-        if (colunas >= 48) colunas = 42;
         if (colunas < 32) colunas = 32;
+        if (colunas > 48) colunas = 48;
 
         string linhaDiv = new('-', colunas);
         string linhaDupla = new('=', colunas);
