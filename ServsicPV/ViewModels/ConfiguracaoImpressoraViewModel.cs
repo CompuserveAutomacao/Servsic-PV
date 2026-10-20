@@ -15,7 +15,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
 
     private bool _isOpen;
     private string _selectedImpressora = string.Empty;
-    private int _larguraColunas = 48;
+    private int _larguraColunas = 42;
     private string _modoImpressao = "Previa";
     private bool _cortarPapel = true;
     private bool _duasVias = false;
@@ -54,7 +54,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
     public bool IsBobina80mm
     {
         get => LarguraColunas >= 40;
-        set { if (value) LarguraColunas = 48; }
+        set { if (value) LarguraColunas = 42; }
     }
 
     public bool IsBobina58mm
@@ -227,7 +227,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
                 MensagemRodape = MensagemRodape
             };
 
-            int col = config.LarguraColunas >= 40 ? 48 : 32;
+            int col = config.LarguraColunas >= 40 ? 42 : 32;
             string linha = new('=', col);
             string div = new('-', col);
 

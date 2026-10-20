@@ -90,7 +90,7 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <RadioButton Grid.Column="0" Content="80mm (48 Colunas - Padrão)" IsChecked="{Binding IsBobina80mm, Mode=TwoWay}" FontSize="12.5"/>
+                                <RadioButton Grid.Column="0" Content="80mm (42 Colunas - Padrão Epson / Bematech)" IsChecked="{Binding IsBobina80mm, Mode=TwoWay}" FontSize="12.5"/>
                                 <RadioButton Grid.Column="1" Content="58mm (32 Colunas)" IsChecked="{Binding IsBobina58mm, Mode=TwoWay}" FontSize="12.5"/>
                             </Grid>
                         </StackPanel>

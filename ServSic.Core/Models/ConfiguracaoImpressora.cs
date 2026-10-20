@@ -11,9 +11,9 @@ public class ConfiguracaoImpressora
     public string NomeImpressora { get; set; } = string.Empty;
 
     /// <summary>
-    /// Largura da bobina em colunas de texto (48 colunas para 80mm; 32 colunas para 58mm)
+    /// Largura da bobina em colunas de texto (42 colunas para 80mm padrão Epson TM-T20 / Bematech; 32 colunas para 58mm)
     /// </summary>
-    public int LarguraColunas { get; set; } = 48;
+    public int LarguraColunas { get; set; } = 42;
 
     /// <summary>
     /// Ação padrão após finalizar:

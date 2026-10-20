@@ -35,6 +35,12 @@ public class ImpressoraConfigService
                 var config = JsonSerializer.Deserialize<ConfiguracaoImpressora>(json);
                 if (config != null)
                 {
+                    // Migração automática: 48 colunas estoura em impressoras 80mm de 42 colunas (Epson TM-T20, etc.)
+                    if (config.LarguraColunas >= 48)
+                    {
+                        config.LarguraColunas = 42;
+                    }
+
                     _cachedConfig = config;
                     return _cachedConfig;
                 }
