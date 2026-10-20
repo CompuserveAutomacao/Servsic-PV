@@ -59,10 +59,48 @@ public class PedidoConsultaViewModel : ViewModelBase
         set => SetProperty(ref _isBusy, value);
     }
 
+    private System.Threading.CancellationTokenSource? _mensagemCts;
+    private Microsoft.UI.Dispatching.DispatcherQueue? _dispatcherQueue;
+
     public string Mensagem
     {
         get => _mensagem;
-        set => SetProperty(ref _mensagem, value);
+        set
+        {
+            if (SetProperty(ref _mensagem, value))
+            {
+                _mensagemCts?.Cancel();
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    _dispatcherQueue ??= Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+                    _mensagemCts = new System.Threading.CancellationTokenSource();
+                    var token = _mensagemCts.Token;
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(4000, token);
+                            if (!token.IsCancellationRequested)
+                            {
+                                void Limpar()
+                                {
+                                    if (!token.IsCancellationRequested && _mensagem == value)
+                                    {
+                                        Mensagem = string.Empty;
+                                    }
+                                }
+
+                                if (_dispatcherQueue != null)
+                                    _dispatcherQueue.TryEnqueue(Limpar);
+                                else
+                                    Limpar();
+                            }
+                        }
+                        catch { }
+                    }, token);
+                }
+            }
+        }
     }
 
     private PedidoVenda? _pedidoDetalhe;
@@ -181,6 +219,7 @@ public class PedidoConsultaViewModel : ViewModelBase
     public ICommand CancelarExclusaoCommand { get; }
     public ICommand ImprimirCommand { get; }
     public ICommand SalvarPdfCommand { get; }
+    public ICommand FecharMensagemCommand { get; }
 
     public PedidoConsultaViewModel(PedidoService? pedidoService = null)
     {
@@ -197,6 +236,7 @@ public class PedidoConsultaViewModel : ViewModelBase
         CancelarExclusaoCommand = new RelayCommand(_ => IsConfirmacaoExclusaoOpen = false);
         ImprimirCommand = new RelayCommand(async _ => await ImprimirPedidoSelecionadoAsync());
         SalvarPdfCommand = new RelayCommand(async _ => await SalvarPdfSelecionadoAsync());
+        FecharMensagemCommand = new RelayCommand(_ => Mensagem = string.Empty);
 
         _ = PesquisarAsync();
     }
@@ -299,7 +339,8 @@ public class PedidoConsultaViewModel : ViewModelBase
                 termica.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel);
             }
 
-            Mensagem = $"Comprovante do Pedido Nº {completo.Pedido} enviado para a impressora '{config.NomeImpressora}'.";
+            // Conclui impressão silenciosamente sem poluir a interface com banner de status
+            Mensagem = string.Empty;
         }
         catch (Exception ex)
         {

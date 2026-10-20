@@ -2884,7 +2884,7 @@ public class PedidoViewModel : ViewModelBase
             });
 
             string acaoNome = troco > 0 || (pedidoFinalizado.Pagamentos != null && pedidoFinalizado.Pagamentos.Count > 0) ? "totalizado" : "finalizado";
-            ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} {acaoNome} e enviado para a impressora!{msgExtra}", true, 6000);
+            ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} {acaoNome} com sucesso!{msgExtra}", true, 4000);
         }
         else if (configImpressora.ModoImpressao == "Previa")
         {
@@ -2923,7 +2923,7 @@ public class PedidoViewModel : ViewModelBase
             {
                 _impressaoTermicaService.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel);
             }
-            ExibirMensagem($"✓ Comprovante da Venda #{Pedido.NumeroFormatado} reimpresso na impressora '{config.NomeImpressora}'.", true, 4000);
+            ExibirMensagem($"✓ Comprovante #{Pedido.NumeroFormatado} reimpresso com sucesso.", true, 3500);
         }
         catch (Exception ex)
         {
