@@ -61,21 +61,58 @@ O SERVSIC PV é uma aplicação de alta produtividade para frente de caixa e pr�
 ## 4. Banco de Dados e Persistência Direta (SQL Server)
 - **Persistência Direta:** Gravação imediata no SQL Server através de repositórios/serviços com Dapper. Não há gravação em arquivos intermediários.
 - **Tabelas Principais:**
-  - `TabEst3A`: Cabeçalho do pedido/orçamento (`Controle`, `Codigo`, `Status`, `LkCliente`, `Cliente`, `LkUsuario`, `LkVendedor`, `Subtotal`, `Total`, etc.).
-  - `TabEst3B`: Itens do pedido (`LkCab`, `LkProduto`, `Quantidade`, `VlUnitario`, `Desconto`, `Total`, `LkVendedor`).
-  - `TabEst3C`: Parcelas e formas de pagamento.
+  - `TabEst3A`: Cabeçalho do pedido/orçamento (`Controle`, `Pedido`, `Codigo`, `Status`, `Venda`, `Cancelada`, `LkCliente`, `Cliente`, `LkUsuario`, `LkVendedor`, `Subtotal`, `Total`, `Entrada`, `Faturado`, etc.).
+  - `TabEst3B`: Itens do pedido (`Controle`, `LkEst3A`, `PEDIDO`, `LkProduto`, `Quantidade`, `VlUnitario`, `Desconto`, `Total`, `LkVendedor`, `Entrega`).
+  - `TabEst3C`: Parcelas e formas de pagamento (`Controle`, `PEDIDO`, `RECEBIMENTO`, `LkTipo`, `VALOR`, `GERACONTA`, etc.).
   - `TabCli`: Cadastro completo de clientes.
   - `TabEst1`: Cadastro de produtos.
-  - `SERV`: Cadastro de usuários e operadores.
+  - `SERV`: Cadastro de usuários e operadores (`LkVendedor`).
+- **Atenção Técnica com Tipos `BIT` no Dapper:**
+  - As colunas `Venda` e `Cancelada` na `TabEst3A` e `GERACONTA` na `TabEst3C` são do tipo SQL Server `BIT`.
+  - Ao consultar usando Dapper com tipos dinâmicos (`dynamic`), **JAMAIS** realize cast direto para `(int)` (ex: `(int)cabAtual.Venda`), pois isso lança a exceção fatal `RuntimeBinderException: Cannot convert type 'bool' to 'int'`.
+  - Utilize sempre métodos seguros de conversão: `Convert.ToBoolean(cabAtual.Venda)` ou `Convert.ToInt32(...)`.
 - **Migrações Automáticas:**
   - A aplicação deve verificar e criar colunas necessárias automaticamente na inicialização (`DatabaseMigrationService`).
   - Campos essenciais: `TabEst1.PerDescMax`, `SERV.LkVendedor`, `CFG_VENDA.VendedorPorUsuario`, `TabEst3B.LkVendedor`.
 - **Stored Procedures Legadas:**
-  - Usar `NewCod_TabEst3A` e `NewCod_TabCli` para geração de identificadores sequenciais.
+  - Usar `NewCod_TabEst3A`, `NewCod_TabEst3c` e `NewCod_TabCli` para geração de identificadores sequenciais.
 
 ---
 
-## 5. Regras de Negócio e Políticas de Venda
+## 5. Mapeamento de Status, Ciclo de Vida e Regras de Bloqueio de Edição
+
+### A. Mapeamento de Status e Operação (`TabEst3A.Status` e `TabEst3A.Venda`)
+O SERVSIC PV é um sistema de **Pré-Venda e Orçamento (Frente de Balcão)**. O faturamento e concretização fiscal definitiva ocorrem no **Caixa / PDV Fiscal**:
+
+| Tipo de Documento | Status (`TabEst3A.Status`) | Venda (`TabEst3A.Venda`) | Cancelada (`TabEst3A.Cancelada`) | Situação no Sistema | Edição Permitida no SERVSIC PV? |
+|---|---|---|---|---|---|
+| **Orçamento** | `'O'` | `0` (False) | `0` (False) | `PENDENTE` | ✅ **SIM (Totalmente editável)** |
+| **Pré-Venda (Pedido de Balcão)** | `'P'` | `0` (False) | `0` (False) | `PENDENTE` | ✅ **SIM (Totalmente editável)** |
+| **Venda Concluída no Caixa** | `'V'` | `1` (True) | `0` (False) | `CONCLUIDA` | 🔒 **NÃO (Modo Somente Leitura)** |
+| **Documento Cancelado** | `'C'` ou qualquer | `0` ou `1` | `1` (True) | `CANCELADA` | 🔒 **NÃO (Modo Somente Leitura)** |
+
+### B. Leis Absolutas do SERVSIC PV sobre Gravação e Bloqueio:
+1. **O SERVSIC PV Jamais Salva como Venda Concluída:**
+   - Todo documento salvo pelo SERVSIC PV deve impreterivelmente ser gravado com `Venda = 0` e `Status = "P"` (se Pré-Venda) ou `Status = "O"` (se Orçamento).
+   - O SERVSIC PV **jamais** grava `Status = "V"` nem `Venda = 1`.
+2. **Regra de Bloqueio de Edição (`IsEdicaoBloqueada` / `IsConcluidaOuFechada`):**
+   - O documento só deve ser bloqueado para edição se for uma venda real efetivada pelo caixa (`Status == "V" || Venda == 1`, ex: Pedido 85) ou cancelada (`Cancelada == 1 || Status == "C"`).
+   - Pré-vendas (`Status == "P"`) e Orçamentos (`Status == "O"`) **NUNCA são bloqueados para edição**, independentemente de terem pagamentos lançados, adiantamentos, ou de terem sido totalizados.
+   - O operador deve ter total liberdade para reabrir pré-vendas e orçamentos, alterar produtos, adicionar/remover itens, ajustar quantidades e atualizar cliente ou pagamentos.
+3. **Preservação Sagrada do `Subtotal` (`TabEst3A.Subtotal`):**
+   - O campo `Subtotal` representa o **Subtotal Bruto** dos itens (`SUM(TabEst3B.Total)`).
+   - **É TERMINANTEMENTE PROIBIDO zerar o campo `Subtotal`** ao gravar pagamentos ou ao totalizar o pedido no balcão.
+4. **Conversão de Documentos:**
+   - A conversão de um Orçamento (`'O'`) no SERVSIC PV transforma-o em **Pré-Venda** (`Status = 'P'`, `Venda = 0`), e **nunca** diretamente em Venda (`'V'`).
+5. **Tipificação no Cupom Térmico (Impressão):**
+   - Venda do Caixa (`Status == "V" || Venda == 1`): Imprime `*** COMPROVANTE DE VENDA ***` com status `CONCLUIDA`.
+   - Pré-Venda (`Status == "P"`): Imprime `*** PEDIDO DE VENDA ***` com status `PED`.
+   - Orçamento (`Status == "O"`): Imprime `*** ORCAMENTO DE VENDA ***` com status `ORC`.
+
+---
+
+## 6. Políticas de Venda e Operação
 - **Preço Unitário Bloqueado:** O operador não altera preço unitário de produto. O valor vem fixo da tabela de preços.
 - **Desconto:** Permitida a aplicação de desconto em reais no item ou no total, respeitando o teto de desconto (`TabEst1.PerDescMax`).
 - **Vendedor Automático por Usuário:** O vendedor responsável pela venda é atrelado diretamente ao `LkVendedor` do usuário logado na tabela `SERV`. Não há seleção manual de vendedor na tela principal.
+
