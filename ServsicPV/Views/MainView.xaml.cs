@@ -47,6 +47,7 @@ public partial class MainView : Window
         }
         catch { /* Fallback para presenter.Maximize */ }
 
+        _ = Task.Run(async () => await ServSic.Core.Data.DatabaseMigrationService.ExecutarMigracaoAsync());
         _pedidoService = new PedidoService();
         _pedidoViewModel = new PedidoViewModel(_pedidoService);
         _pedidoViewModel.UsuarioLogado = usuario;

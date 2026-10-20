@@ -44,7 +44,7 @@ public partial class App : Application
     {
         try
         {
-            _ = ServSic.Core.Data.DatabaseMigrationService.ExecutarMigracaoAsync();
+            _ = Task.Run(async () => await ServSic.Core.Data.DatabaseMigrationService.ExecutarMigracaoAsync(forcar: true));
             _window = new LoginView();
             _window.Activate();
         }

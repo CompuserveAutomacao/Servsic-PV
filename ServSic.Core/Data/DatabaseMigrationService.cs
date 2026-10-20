@@ -274,17 +274,89 @@ public static class DatabaseMigrationService
                 END";
             await ExecutarPassoAsync(conn, "TabEst3B.Entrega", sqlTabEst3BEntrega);
 
-            // 12. Sincronização de INI (Venda/VendedorPorUsuario = N)
+            // 12. TabEst3B: QtdDevolvida e colunas complementares
+            const string sqlTabEst3BColunas = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_NAME) = 'TABEST3B')
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'QTDDEVOLVIDA')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD QtdDevolvida FLOAT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'DESCRATEIO')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD DescRateio FLOAT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'ACRESCRATEIO')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD AcrescRateio FLOAT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'TOTALLIQUIDO')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD TotalLiquido FLOAT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'LKPRECO')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD lkPreco INT NULL DEFAULT 1;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'LKGUICHE')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD LkGuiche INT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'LKBAIXA')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD LkBaixa INT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3B' AND UPPER(COLUMN_NAME) = 'LKVAREJO_ATACADO')
+                    BEGIN
+                        ALTER TABLE TabEst3B ADD lkVarejo_Atacado INT NULL DEFAULT 0;
+                    END
+                END";
+            await ExecutarPassoAsync(conn, "TabEst3B.QtdDevolvida e Complementos", sqlTabEst3BColunas);
+
+            // 13. TabEst3C: cAut e colunas complementares
+            const string sqlTabEst3CColunas = @"
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_NAME) = 'TABEST3C')
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3C' AND UPPER(COLUMN_NAME) = 'CAUT')
+                    BEGIN
+                        ALTER TABLE TabEst3C ADD cAut VARCHAR(20) NULL;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3C' AND UPPER(COLUMN_NAME) = 'LKCONTA')
+                    BEGIN
+                        ALTER TABLE TabEst3C ADD LkConta INT NULL;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3C' AND UPPER(COLUMN_NAME) = 'CONTA')
+                    BEGIN
+                        ALTER TABLE TabEst3C ADD Conta VARCHAR(20) NULL;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3C' AND UPPER(COLUMN_NAME) = 'NUMDOC')
+                    BEGIN
+                        ALTER TABLE TabEst3C ADD NumDoc VARCHAR(20) NULL;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3C' AND UPPER(COLUMN_NAME) = 'DIVIDA')
+                    BEGIN
+                        ALTER TABLE TabEst3C ADD divida FLOAT NULL DEFAULT 0;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABEST3C' AND UPPER(COLUMN_NAME) = 'VLFATURA')
+                    BEGIN
+                        ALTER TABLE TabEst3C ADD VlFatura FLOAT NULL DEFAULT 0;
+                    END
+                END";
+            await ExecutarPassoAsync(conn, "TabEst3C.cAut e Complementos", sqlTabEst3CColunas);
+
+            // 14. Sincronização de INI (Venda/VendedorPorUsuario = N)
             SincronizarIniVendedorPorUsuario();
 
             lock (_lock)
             {
                 _ultimoBancoMigrado = connKey;
             }
+
+            LogMigration($"[DatabaseMigrationService] Migrações concluídas com êxito no banco '{connKey}'.");
         }
         catch (Exception ex)
         {
-            // Registra erro silenciosamente para não interromper inicialização
+            LogMigration($"[DatabaseMigrationService] Erro ao conectar ou executar migração: {ex.Message}");
             System.Diagnostics.Debug.WriteLine($"[DatabaseMigrationService] Erro ao conectar banco para migração: {ex.Message}");
         }
     }
@@ -297,8 +369,19 @@ public static class DatabaseMigrationService
         }
         catch (Exception ex)
         {
+            LogMigration($"[DatabaseMigrationService] Erro no passo '{nomePasso}': {ex.Message}");
             System.Diagnostics.Debug.WriteLine($"[DatabaseMigrationService] Aviso/Erro no passo '{nomePasso}': {ex.Message}");
         }
+    }
+
+    private static void LogMigration(string mensagem)
+    {
+        try
+        {
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "migration.log");
+            File.AppendAllText(path, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {mensagem}\r\n");
+        }
+        catch { }
     }
 
     /// <summary>

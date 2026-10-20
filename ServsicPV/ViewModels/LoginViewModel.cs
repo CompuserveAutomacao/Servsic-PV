@@ -348,6 +348,8 @@ public class LoginViewModel : ViewModelBase
             var usuario = await _authService.AutenticarAsync(SelectedUser.Nome, Password);
             if (usuario != null)
             {
+                ConnectionStatus = "Sincronizando banco de dados...";
+                await DatabaseMigrationService.ExecutarMigracaoAsync(forcar: true);
                 OnLoginSuccess?.Invoke(usuario);
             }
             else
