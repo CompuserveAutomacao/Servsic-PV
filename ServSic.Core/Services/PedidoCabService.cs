@@ -201,8 +201,8 @@ public class PedidoCabService
         }
 
         if (pedido.LkCaixa <= 0) pedido.LkCaixa = 1;
-        if (string.IsNullOrWhiteSpace(pedido.Status)) pedido.Status = pedido.IsOrcamento ? "O" : "P";
-        pedido.Venda = 0; // Sempre balcão
+        if (string.IsNullOrWhiteSpace(pedido.Status) || pedido.Status == "V") pedido.Status = pedido.IsOrcamento ? "O" : "P";
+        pedido.Venda = 0; // Sempre balcão (SERVSIC PV é frente de pré-venda/orçamento)
 
         // Regra do ERP Legado: Pré-Vendas ('P') recebem bloqueado = 3 para aguardar caixa
         pedido.Bloqueado = string.Equals(pedido.Status, "P", StringComparison.OrdinalIgnoreCase) ? 3 : 0;

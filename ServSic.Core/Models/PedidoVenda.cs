@@ -101,12 +101,13 @@ public class PedidoVenda
     public string? Nota { get; set; }
 
     public bool IsOrcamento => Status == "O";
-    public bool IsVenda => Status == "P" || Status == "V" || Venda == 1;
+    public bool IsVenda => Status == "V" || Venda == 1;
 
     /// <summary>
-    /// Indica se a venda/pedido já está concluída, fechada pelo caixa ou cancelada, tornando qualquer edição proibida no sistema.
+    /// Indica se a venda/pedido já está concluída pelo caixa ou cancelada, tornando qualquer edição proibida no sistema.
+    /// Pré-vendas ('P') e Orçamentos ('O') jamais são bloqueados para edição pelo operador.
     /// </summary>
-    public bool IsConcluidaOuFechada => Status == "V" || Venda == 1 || SituacaoDescricao == "CONCLUIDA" || SituacaoDescricao == "FECHADO" || SituacaoDescricao == "CANCELADA";
+    public bool IsConcluidaOuFechada => (Status == "V" || Venda == 1) || (Cancelada == 1 || Status == "C");
 
     /// <summary>
     /// Operação / Tipo do documento conforme regra do ERP Legado:
@@ -125,11 +126,10 @@ public class PedidoVenda
     }
 
     /// <summary>
-    /// Situação operacional conforme regra do ERP Legado:
-    /// - PENDENTE: Orçamento ou Pré-Venda ativo aguardando faturamento/aprovação (Subtotal > 0).
-    /// - FECHADO: Orçamento ou Pré-Venda já baixado/concretizado pelo caixa (Subtotal == 0 e Entrada/Total > 0).
+    /// Situação operacional:
     /// - CONCLUIDA: Venda concretizada pelo caixa (Status 'V' ou Venda=1).
     /// - CANCELADA: Pedido/Orçamento cancelado.
+    /// - PENDENTE: Orçamento ou Pré-Venda ativo aguardando faturamento/aprovação no caixa.
     /// </summary>
     public string SituacaoDescricao
     {
@@ -137,7 +137,6 @@ public class PedidoVenda
         {
             if (Cancelada == 1 || Status == "C") return "CANCELADA";
             if (Status == "V" || Venda == 1) return "CONCLUIDA";
-            if ((Status == "O" || Status == "P") && Subtotal == 0 && (Total > 0 || Entrada > 0 || Faturado > 0)) return "FECHADO";
             return "PENDENTE";
         }
     }

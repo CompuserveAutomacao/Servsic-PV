@@ -401,9 +401,9 @@ public class PedidoConsultaViewModel : ViewModelBase
             bool ok = await _pedidoService.ConverterOrcamentoEmVendaAsync(item.Controle);
             if (ok)
             {
-                item.Status = "V";
-                item.Venda = 1;
-                Mensagem = $"Orçamento #{item.Pedido} convertido para Venda com sucesso!";
+                item.Status = "P";
+                item.Venda = 0;
+                Mensagem = $"Orçamento #{item.Pedido} convertido para Pré-Venda com sucesso!";
                 await PesquisarAsync();
             }
         }

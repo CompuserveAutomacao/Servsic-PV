@@ -1869,10 +1869,10 @@ public class PedidoViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(tipo)) tipo = "O";
         tipo = tipo.Trim().ToUpperInvariant();
-        if (tipo != "O" && tipo != "P" && tipo != "V") tipo = "O";
+        if (tipo != "O" && tipo != "P") tipo = "O";
 
         Pedido.Status = tipo;
-        Pedido.Venda = tipo == "V" ? 1 : 0;
+        Pedido.Venda = 0;
         NotificarAlteracaoTipo();
     }
 

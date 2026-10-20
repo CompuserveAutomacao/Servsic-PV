@@ -55,7 +55,7 @@ public class CupomFormatadorService
         sb.AppendLine(linhaDupla);
 
         // 2. Identificação do Documento
-        bool isVendaConcluida = pedido.Status == "V" || pedido.Venda == 1 || pedido.SituacaoDescricao == "CONCLUIDA" || pedido.SituacaoDescricao == "FECHADO";
+        bool isVendaConcluida = pedido.Status == "V" || pedido.Venda == 1;
         string tipoDoc = isVendaConcluida 
             ? "COMPROVANTE DE VENDA" 
             : (pedido.IsOrcamento ? "ORCAMENTO DE VENDA" : "PEDIDO DE VENDA");

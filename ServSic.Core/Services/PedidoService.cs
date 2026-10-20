@@ -78,31 +78,27 @@ public class PedidoService
 
         try
         {
-            // Trava de Segurança Defensiva: Vendas concluídas, fechadas pelo caixa ou canceladas jamais podem ser editadas
+            // Trava de Segurança Defensiva: Somente Vendas concluídas pelo caixa ('V' / Venda=1) ou Canceladas jamais podem ser alteradas
             if (pedido.Controle > 0)
             {
                 var cabAtual = await conn.QueryFirstOrDefaultAsync<dynamic>(
-                    "SELECT Status, ISNULL(Venda, 0) as Venda, ISNULL(Cancelada, 0) as Cancelada, ISNULL(SUBTOTAL, 0) as Subtotal, ISNULL(TOTAL, 0) as Total, ISNULL(Entrada, 0) as Entrada, ISNULL(Faturado, 0) as Faturado FROM TabEst3A WHERE Controle = @Controle",
+                    "SELECT Status, ISNULL(Venda, 0) as Venda, ISNULL(Cancelada, 0) as Cancelada FROM TabEst3A WHERE Controle = @Controle",
                     new { pedido.Controle }, transaction: trans);
 
                 if (cabAtual != null)
                 {
-                    string statusExistente = (string)(cabAtual.Status ?? string.Empty);
-                    int vendaExistente = (int)cabAtual.Venda;
-                    int canceladaExistente = (int)cabAtual.Cancelada;
-                    decimal subtotalExistente = (decimal)cabAtual.Subtotal;
-                    decimal totalExistente = (decimal)cabAtual.Total;
-                    decimal entradaExistente = (decimal)cabAtual.Entrada;
-                    decimal faturadoExistente = (decimal)cabAtual.Faturado;
+                    string statusExistente = Convert.ToString(cabAtual.Status ?? string.Empty).Trim().ToUpperInvariant();
+                    bool vendaExistente = Convert.ToBoolean(cabAtual.Venda);
+                    bool canceladaExistente = Convert.ToBoolean(cabAtual.Cancelada);
 
-                    bool isConcluidaOuFechada = vendaExistente == 1 
+                    bool isConcluidaOuCancelada = vendaExistente 
                         || statusExistente == "V" 
-                        || canceladaExistente == 1
-                        || (subtotalExistente == 0 && (totalExistente > 0 || entradaExistente > 0 || faturadoExistente > 0));
+                        || canceladaExistente 
+                        || statusExistente == "C";
 
-                    if (isConcluidaOuFechada)
+                    if (isConcluidaOuCancelada)
                     {
-                        throw new InvalidOperationException($"O Pedido/Venda Nº {pedido.Pedido} já está concluído/fechado ou cancelado e jamais pode ser alterado pelo sistema.");
+                        throw new InvalidOperationException($"O Pedido/Venda Nº {pedido.Pedido} já está concluído como venda pelo caixa ou cancelado e não pode ser alterado.");
                     }
                 }
             }
@@ -112,15 +108,6 @@ public class PedidoService
                 pedido.VlPago = pedido.Pagamentos.Sum(p => p.Valor);
                 pedido.Faturado = pedido.Pagamentos.Where(p => p.GeraConta).Sum(p => p.Valor);
                 pedido.Entrada = pedido.Pagamentos.Where(p => !p.GeraConta).Sum(p => p.Valor);
-
-                // Regra do ERP CompuServe: Quando o pedido/orçamento é quitado no balcão/checkout,
-                // o Subtotal (saldo a faturar) é zerado e o LkCxFecha é preenchido com o caixa que fechou.
-                // Isso faz o ERP exibir a Situação como 'FECHADO' e preenche a coluna 'À Vista' (Entrada).
-                if (pedido.VlPago >= pedido.Total && pedido.Total > 0)
-                {
-                    pedido.Subtotal = 0m;
-                    pedido.LkCxFecha = pedido.LkCaixa > 0 ? pedido.LkCaixa : 1;
-                }
             }
 
             // Regra de Entrega: Se a venda tem dados de entrega informados (por cliente ou avulso),
