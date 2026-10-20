@@ -97,13 +97,14 @@ public class PedidoPagService
                 @LkConta, @Conta, @NumDoc, @Divida, @VlFatura, @CAut
             );";
 
-        foreach (var pag in pagamentos)
+        foreach (var pag in pagamentos.Where(p => p.Valor > 0))
         {
             pag.Controle = await conn.ExecuteScalarAsync<int>(sqlNewCodC, transaction: trans);
             pag.Pedido = pedidoNum;
-            pag.Total = totalPedido;
+            pag.Valor = Math.Round(pag.Valor, 2);
+            pag.Total = Math.Round(totalPedido, 2);
             pag.NumDoc = pedidoNum.ToString();
-            pag.VlFatura = totalPedido;
+            pag.VlFatura = Math.Round(totalPedido, 2);
             pag.Divida = pag.Valor;
 
             if (pag.Data == default) pag.Data = DateTime.Today;

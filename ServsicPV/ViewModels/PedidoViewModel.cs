@@ -2957,6 +2957,7 @@ public class PedidoViewModel : ViewModelBase
 
     private async Task IniciarCheckoutModalAsync()
     {
+        Pedido.RecalcularTotais();
         Pedido.Status = Pedido.IsOrcamento ? "O" : "P";
         Pedido.Venda = 0;
 

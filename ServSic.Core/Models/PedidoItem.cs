@@ -158,7 +158,7 @@ public class PedidoItem : INotifyPropertyChanged
         ? CodInterno 
         : (!string.IsNullOrWhiteSpace(CodBarra) ? CodBarra : (LkProduto > 0 ? LkProduto.ToString() : ""));
 
-    public decimal SubtotalBruto => Quantidade * VlUnitario;
+    public decimal SubtotalBruto => Math.Round(Quantidade * VlUnitario, 2);
     public decimal PercentualDesconto => SubtotalBruto > 0 ? Math.Round((Desconto / SubtotalBruto) * 100m, 2) : 0m;
     public string PercentualDescontoFormatado => $"{PercentualDesconto:N2}%";
     public string PerDescMaxFormatado => $"{PerDescMax:N2}%";
@@ -169,7 +169,7 @@ public class PedidoItem : INotifyPropertyChanged
 
     public void RecalcularTotal()
     {
-        Total = SubtotalBruto - Desconto + Acrescimo;
+        Total = Math.Round(SubtotalBruto - Desconto + Acrescimo, 2);
         if (Total < 0) Total = 0;
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalFormatado));

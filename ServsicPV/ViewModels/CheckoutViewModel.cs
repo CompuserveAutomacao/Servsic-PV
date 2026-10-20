@@ -92,9 +92,13 @@ public class CheckoutViewModel : ViewModelBase
                         NumeroParcelas = 1;
                     }
 
-                    if (SaldoRestante > 0)
+                    if (SaldoRestante > 0.005m)
                     {
                         ValorInput = SaldoRestante;
+                    }
+                    else if (PagamentosLancados.Count == 0 && TotalPedido > 0)
+                    {
+                        ValorInput = TotalPedido;
                     }
                     else
                     {
@@ -103,6 +107,7 @@ public class CheckoutViewModel : ViewModelBase
                 }
                 RecalcularTroco();
                 RecalcularParcelas();
+                NotificarTotais();
             }
         }
     }
@@ -117,13 +122,13 @@ public class CheckoutViewModel : ViewModelBase
         set
         {
             decimal rounded = Math.Round(value, 2);
-            if (SetProperty(ref _valorInput, rounded))
-            {
-                _valorInputTexto = rounded.ToString("N2", CulturePtBr);
-                OnPropertyChanged(nameof(ValorInputTexto));
-                RecalcularTroco();
-                RecalcularParcelas();
-            }
+            _valorInput = rounded;
+            _valorInputTexto = rounded.ToString("N2", CulturePtBr);
+            OnPropertyChanged(nameof(ValorInput));
+            OnPropertyChanged(nameof(ValorInputTexto));
+            OnPropertyChanged(nameof(PodeFinalizar));
+            RecalcularTroco();
+            RecalcularParcelas();
         }
     }
 
@@ -132,15 +137,15 @@ public class CheckoutViewModel : ViewModelBase
         get => _valorInputTexto;
         set
         {
-            if (SetProperty(ref _valorInputTexto, value))
+            _valorInputTexto = value ?? string.Empty;
+            OnPropertyChanged(nameof(ValorInputTexto));
+            if (TentarConverterValor(value, out var v))
             {
-                if (TentarConverterValor(value, out var v))
-                {
-                    _valorInput = Math.Round(v, 2);
-                    OnPropertyChanged(nameof(ValorInput));
-                    RecalcularTroco();
-                    RecalcularParcelas();
-                }
+                _valorInput = Math.Round(v, 2);
+                OnPropertyChanged(nameof(ValorInput));
+                OnPropertyChanged(nameof(PodeFinalizar));
+                RecalcularTroco();
+                RecalcularParcelas();
             }
         }
     }
@@ -156,7 +161,7 @@ public class CheckoutViewModel : ViewModelBase
         valor = 0m;
         if (string.IsNullOrWhiteSpace(texto)) return false;
 
-        string limpo = texto.Trim();
+        string limpo = texto.Trim().Replace("R$", "").Trim();
 
         // 1. Formato com milhar e decimal: "109.000,00" ou "1.250,50"
         if (limpo.Contains('.') && limpo.Contains(','))
@@ -249,11 +254,11 @@ public class CheckoutViewModel : ViewModelBase
         set => SetProperty(ref _isBusy, value);
     }
 
-    // Totais calculados
-    public decimal TotalPedido => Pedido?.Total ?? 0m;
+    // Totais calculados com arredondamento estrito para 2 casas decimais
+    public decimal TotalPedido => Pedido != null ? Math.Round(Pedido.Total, 2) : 0m;
     public decimal TotalAProcessar => TotalPedido;
-    public decimal TotalPago => PagamentosLancados.Sum(p => p.Valor);
-    public decimal SaldoRestante => Math.Max(0m, TotalPedido - TotalPago);
+    public decimal TotalPago => Math.Round(PagamentosLancados.Sum(p => p.Valor), 2);
+    public decimal SaldoRestante => Math.Max(0m, Math.Round(TotalPedido - TotalPago, 2));
     public decimal TotalRestante => SaldoRestante;
 
     public decimal Troco
@@ -275,10 +280,11 @@ public class CheckoutViewModel : ViewModelBase
     public bool TrocoVisivel => Troco > 0;
     public bool TemTroco => TrocoVisivel;
     public bool TemSaldoRestante => !TrocoVisivel;
-    public bool IsQuitado => TotalPago >= TotalPedido && TotalPedido > 0;
+    public bool IsQuitado => TotalPedido > 0 && Math.Round(TotalPago, 2) >= (Math.Round(TotalPedido, 2) - 0.005m);
+    public bool PodeFinalizar => IsQuitado || (HasNoPagamentos && FormaSelecionada != null && ValorInput > 0);
     public bool HasPagamentos => PagamentosLancados.Count > 0;
     public bool HasNoPagamentos => PagamentosLancados.Count == 0;
-    public bool IsPagamentoHabilitado => SaldoRestante > 0;
+    public bool IsPagamentoHabilitado => SaldoRestante > 0.005m;
 
     // Textos formatados
     public string TotalPedidoFormatado => TotalPedido.ToString("C2", CulturePtBr);
@@ -355,10 +361,13 @@ public class CheckoutViewModel : ViewModelBase
                 FormasDisponiveis.Add(f);
             }
 
-            // Se o pedido já tiver pagamentos pré-gravados, carrega
+            // Recalcula totais do pedido preventivamente
+            pedido.RecalcularTotais();
+
+            // Se o pedido já tiver pagamentos pré-gravados, carrega apenas os válidos com Valor > 0
             if (pedido.Pagamentos.Count > 0)
             {
-                foreach (var p in pedido.Pagamentos)
+                foreach (var p in pedido.Pagamentos.Where(p => p.Valor > 0))
                 {
                     PagamentosLancados.Add(p);
                 }
@@ -368,7 +377,7 @@ public class CheckoutViewModel : ViewModelBase
             FormaSelecionada = FormasDisponiveis.FirstOrDefault(f => f.Controle == 1) 
                                ?? FormasDisponiveis.FirstOrDefault();
 
-            decimal sugerido = SaldoRestante > 0 ? SaldoRestante : TotalPedido;
+            decimal sugerido = SaldoRestante > 0.005m ? SaldoRestante : TotalPedido;
             ValorInput = sugerido;
             NumeroParcelas = 1;
             IntervaloDias = 30;
@@ -451,9 +460,11 @@ public class CheckoutViewModel : ViewModelBase
 
     public void AdicionarPagamento()
     {
-        if (SaldoRestante <= 0)
+        // Se o valor do pedido já está quitado e foi acionado Confirmar Valor / Enter novamente,
+        // interpreta como intenção de concluir a venda diretamente!
+        if (IsQuitado || SaldoRestante <= 0.005m)
         {
-            Mensagem = "O valor do pedido já está totalmente quitado. Para finalizar, clique em Concluir (F6).";
+            FinalizarCheckout();
             return;
         }
 
@@ -463,14 +474,33 @@ public class CheckoutViewModel : ViewModelBase
             return;
         }
 
-        if (ValorInput <= 0)
+        // Tenta recuperar do texto digitado no TextBox caso ValorInput esteja zerado
+        if (ValorInput <= 0 && !string.IsNullOrWhiteSpace(ValorInputTexto))
         {
-            Mensagem = "Informe um valor maior que zero.";
-            return;
+            if (TentarConverterValor(ValorInputTexto, out var vRecuperado) && vRecuperado > 0)
+            {
+                ValorInput = vRecuperado;
+            }
         }
 
-        // Para formas que NÃO sejam Dinheiro, não permite valor maior que o saldo restante
-        if (!FormaSelecionada.IsDinheiro && ValorInput > SaldoRestante)
+        // Se ainda for <= 0 mas houver saldo restante, assume o saldo restante sugerido
+        if (ValorInput <= 0)
+        {
+            if (SaldoRestante > 0.005m)
+            {
+                ValorInput = SaldoRestante;
+            }
+            else
+            {
+                Mensagem = "Informe um valor maior que zero.";
+                return;
+            }
+        }
+
+        decimal saldoRestanteArredondado = Math.Round(SaldoRestante, 2);
+
+        // Para formas que NÃO sejam Dinheiro, não permite valor maior que o saldo restante (+ tolerância de arredondamento)
+        if (!FormaSelecionada.IsDinheiro && Math.Round(ValorInput, 2) > saldoRestanteArredondado + 0.005m)
         {
             Mensagem = $"Para a forma '{FormaSelecionada.DescricaoFormatada}', o valor recebido ({ValorInput:C2}) não pode ser maior que o saldo restante ({SaldoRestanteFormatado}). Apenas Dinheiro admite troco.";
             return;
@@ -488,11 +518,16 @@ public class CheckoutViewModel : ViewModelBase
 
         // Se for Dinheiro com troco
         decimal trocoAdicionar = 0m;
-        decimal valorEfetivo = ValorInput;
-        if (FormaSelecionada.IsDinheiro && ValorInput > SaldoRestante)
+        decimal valorEfetivo = Math.Round(ValorInput, 2);
+        if (FormaSelecionada.IsDinheiro && valorEfetivo > saldoRestanteArredondado)
         {
-            trocoAdicionar = ValorInput - SaldoRestante;
-            valorEfetivo = SaldoRestante;
+            trocoAdicionar = Math.Round(valorEfetivo - saldoRestanteArredondado, 2);
+            valorEfetivo = saldoRestanteArredondado;
+        }
+        else if (!FormaSelecionada.IsDinheiro && valorEfetivo > saldoRestanteArredondado)
+        {
+            // Clampa pequenos centavos residuais
+            valorEfetivo = saldoRestanteArredondado;
         }
 
         // Se forma a prazo e parcelas > 1
@@ -569,7 +604,7 @@ public class CheckoutViewModel : ViewModelBase
         NotificarTotais();
         RecalcularTroco();
 
-        if (SaldoRestante > 0)
+        if (SaldoRestante > 0.005m)
         {
             ValorInput = SaldoRestante;
             OnSolicitarFocoValor?.Invoke();
@@ -596,6 +631,21 @@ public class CheckoutViewModel : ViewModelBase
 
     public void FinalizarCheckout()
     {
+        // Se ainda não adicionou nenhum pagamento à grade mas o valor está informado,
+        // lança o pagamento automaticamente antes de finalizar para agilizar o fluxo!
+        if (PagamentosLancados.Count == 0 && FormaSelecionada != null)
+        {
+            if (ValorInput <= 0 && SaldoRestante > 0.005m)
+            {
+                ValorInput = SaldoRestante;
+            }
+
+            if (ValorInput > 0)
+            {
+                AdicionarPagamento();
+            }
+        }
+
         if (!IsQuitado)
         {
             Mensagem = $"O valor pago ({TotalPagoFormatado}) deve cobrir o total do pedido ({TotalPedidoFormatado}) para finalizar.";
@@ -626,6 +676,7 @@ public class CheckoutViewModel : ViewModelBase
         OnPropertyChanged(nameof(TemTroco));
         OnPropertyChanged(nameof(TemSaldoRestante));
         OnPropertyChanged(nameof(IsQuitado));
+        OnPropertyChanged(nameof(PodeFinalizar));
         OnPropertyChanged(nameof(HasPagamentos));
         OnPropertyChanged(nameof(HasNoPagamentos));
         OnPropertyChanged(nameof(IsPagamentoHabilitado));

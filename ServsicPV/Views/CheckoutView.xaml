@@ -394,7 +394,7 @@
 
                             <Button x:Name="BtnFinalizar"
                                     Command="{Binding FinalizarCheckoutCommand}" 
-                                    IsEnabled="{Binding IsQuitado}"
+                                    IsEnabled="{Binding PodeFinalizar}"
                                     Style="{StaticResource BtnPrimary}" 
                                     Height="38" 
                                     Padding="18,0"

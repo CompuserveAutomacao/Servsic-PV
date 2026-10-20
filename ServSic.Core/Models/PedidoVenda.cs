@@ -267,13 +267,13 @@ public class PedidoVenda
             item.RecalcularTotal();
         }
 
-        Subtotal = Itens.Sum(i => i.SubtotalBruto);
-        decimal somaDescontosItens = Itens.Sum(i => i.Desconto);
-        decimal somaAcrescimosItens = Itens.Sum(i => i.Acrescimo);
+        Subtotal = Math.Round(Itens.Sum(i => i.SubtotalBruto), 2);
+        decimal somaDescontosItens = Math.Round(Itens.Sum(i => i.Desconto), 2);
+        decimal somaAcrescimosItens = Math.Round(Itens.Sum(i => i.Acrescimo), 2);
 
         // O total geral respeita os descontos dos itens e adicionais globais
         decimal totalFinal = Subtotal - (somaDescontosItens + Desconto) + (somaAcrescimosItens + Acrescimo);
-        Total = totalFinal < 0 ? 0 : totalFinal;
+        Total = totalFinal < 0 ? 0 : Math.Round(totalFinal, 2);
         QtdItens = Itens.Count;
     }
 }

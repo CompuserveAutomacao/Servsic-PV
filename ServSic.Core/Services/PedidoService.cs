@@ -105,9 +105,15 @@ public class PedidoService
 
             if (pedido.Pagamentos != null && pedido.Pagamentos.Count > 0)
             {
-                pedido.VlPago = pedido.Pagamentos.Sum(p => p.Valor);
-                pedido.Faturado = pedido.Pagamentos.Where(p => p.GeraConta).Sum(p => p.Valor);
-                pedido.Entrada = pedido.Pagamentos.Where(p => !p.GeraConta).Sum(p => p.Valor);
+                pedido.VlPago = Math.Round(pedido.Pagamentos.Sum(p => p.Valor), 2);
+                pedido.Faturado = Math.Round(pedido.Pagamentos.Where(p => p.GeraConta).Sum(p => p.Valor), 2);
+                pedido.Entrada = Math.Round(pedido.Pagamentos.Where(p => !p.GeraConta).Sum(p => p.Valor), 2);
+            }
+            else
+            {
+                pedido.VlPago = 0m;
+                pedido.Faturado = 0m;
+                pedido.Entrada = 0m;
             }
 
             // Regra de Entrega: Se a venda tem dados de entrega informados (por cliente ou avulso),
