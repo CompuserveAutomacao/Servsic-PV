@@ -169,6 +169,7 @@ public class PedidoConsultaViewModel : ViewModelBase
     }
 
     public Action<int>? OnEditarPedido { get; set; }
+    public Func<string, Task<string?>>? OnEscolherCaminhoSalvarPdf { get; set; }
 
     public ICommand PesquisarCommand { get; }
     public ICommand EditarCommand { get; }
@@ -179,6 +180,7 @@ public class PedidoConsultaViewModel : ViewModelBase
     public ICommand ConfirmarExclusaoCommand { get; }
     public ICommand CancelarExclusaoCommand { get; }
     public ICommand ImprimirCommand { get; }
+    public ICommand SalvarPdfCommand { get; }
 
     public PedidoConsultaViewModel(PedidoService? pedidoService = null)
     {
@@ -194,6 +196,7 @@ public class PedidoConsultaViewModel : ViewModelBase
         ConfirmarExclusaoCommand = new RelayCommand(async _ => await ExecutarExclusaoConfirmadaAsync());
         CancelarExclusaoCommand = new RelayCommand(_ => IsConfirmacaoExclusaoOpen = false);
         ImprimirCommand = new RelayCommand(async _ => await ImprimirPedidoSelecionadoAsync());
+        SalvarPdfCommand = new RelayCommand(async _ => await SalvarPdfSelecionadoAsync());
 
         _ = PesquisarAsync();
     }
@@ -301,6 +304,72 @@ public class PedidoConsultaViewModel : ViewModelBase
         catch (Exception ex)
         {
             Mensagem = $"Erro ao imprimir comprovante: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SalvarPdfSelecionadoAsync()
+    {
+        var item = PedidoSelecionado ?? PedidoDetalhe;
+        if (item == null)
+        {
+            Mensagem = "Selecione um pedido ou orçamento para gerar o PDF.";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            Mensagem = "Gerando documento PDF profissional...";
+
+            var completo = await _pedidoService.ObterPorIdAsync(item.Controle) ?? item;
+            var configService = new ImpressoraConfigService();
+            var empresa = await configService.ObterDadosEmpresaAsync();
+
+            string tipoDoc = completo.IsOrcamento ? "Orcamento" : "Pedido";
+            string nomeArquivoSugerido = $"{tipoDoc}_{completo.Pedido}.pdf";
+
+            string? caminhoFinal = null;
+            if (OnEscolherCaminhoSalvarPdf != null)
+            {
+                caminhoFinal = await OnEscolherCaminhoSalvarPdf.Invoke(nomeArquivoSugerido);
+                if (string.IsNullOrWhiteSpace(caminhoFinal))
+                {
+                    Mensagem = "Geração de PDF cancelada pelo usuário.";
+                    return;
+                }
+            }
+            else
+            {
+                string pastaDownloads = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                if (!System.IO.Directory.Exists(pastaDownloads))
+                {
+                    pastaDownloads = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                }
+                caminhoFinal = System.IO.Path.Combine(pastaDownloads, nomeArquivoSugerido);
+            }
+
+            var pdfService = new PedidoPdfService();
+            await pdfService.SalvarPdfArquivoAsync(completo, empresa, caminhoFinal);
+
+            Mensagem = $"PDF gerado com sucesso: {System.IO.Path.GetFileName(caminhoFinal)}";
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = caminhoFinal,
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+        catch (Exception ex)
+        {
+            Mensagem = $"Erro ao gerar PDF: {ex.Message}";
         }
         finally
         {

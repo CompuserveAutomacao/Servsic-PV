@@ -414,30 +414,65 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Botão de Ação: Imprimir Comprovante em Navy #0B192C -->
-                    <Button Grid.Row="4" x:Name="BtnImprimirPedidoLateral"
-                            Command="{Binding ImprimirCommand}"
-                            Height="38" HorizontalAlignment="Stretch"
-                            GotFocus="BtnNavy_GotFocus"
-                            LostFocus="BtnNavy_LostFocus"
-                            PointerEntered="BtnNavy_PointerEntered"
-                            PointerExited="BtnNavy_PointerExited"
-                            ToolTipService.ToolTip="Imprimir comprovante do pedido na impressora configurada">
-                        <Button.Resources>
-                            <SolidColorBrush x:Key="ButtonBackground" Color="#0B192C"/>
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
-                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
-                            <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
-                            <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
-                            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
-                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
-                            <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
-                        </Button.Resources>
-                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                            <ic:SymbolIcon Symbol="Print" FontSize="16" Foreground="#FFFFFF"/>
-                            <TextBlock Text="Imprimir Comprovante" FontWeight="Bold" Foreground="#FFFFFF"/>
-                        </StackPanel>
-                    </Button>
+                    <!-- Botões de Ação: Salvar PDF e Imprimir Comprovante -->
+                    <Grid Grid.Row="4" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Botão Salvar PDF (QuestPDF 2025/2026) em Azul Primário #0284C7 -->
+                        <Button Grid.Column="0" x:Name="BtnSalvarPdfLateral"
+                                Command="{Binding SalvarPdfCommand}"
+                                Height="38" HorizontalAlignment="Stretch"
+                                CornerRadius="6"
+                                GotFocus="BtnNavy_GotFocus"
+                                LostFocus="BtnNavy_LostFocus"
+                                PointerEntered="BtnNavy_PointerEntered"
+                                PointerExited="BtnNavy_PointerExited"
+                                ToolTipService.ToolTip="Gerar e salvar documento PDF profissional (A4) do orçamento / pré-venda">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="ArrowDownload" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Salvar PDF" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Botão Imprimir Comprovante Térmico em Navy #0B192C -->
+                        <Button Grid.Column="1" x:Name="BtnImprimirPedidoLateral"
+                                Command="{Binding ImprimirCommand}"
+                                Height="38" HorizontalAlignment="Stretch"
+                                CornerRadius="6"
+                                GotFocus="BtnNavy_GotFocus"
+                                LostFocus="BtnNavy_LostFocus"
+                                PointerEntered="BtnNavy_PointerEntered"
+                                PointerExited="BtnNavy_PointerExited"
+                                ToolTipService.ToolTip="Imprimir comprovante do pedido na impressora configurada">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0369A1"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="Print" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Imprimir" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
