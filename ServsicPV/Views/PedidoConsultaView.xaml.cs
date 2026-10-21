@@ -79,9 +79,15 @@ public partial class PedidoConsultaView : UserControl
 
         if (e.Key == Windows.System.VirtualKey.Enter)
         {
-            // Se o foco não for o campo de pesquisa ou se estiver na lista de pedidos
+            // Se o diálogo de confirmação estiver aberto, não interfere
+            if (this.DataContext is PedidoConsultaViewModel vm && vm.IsConfirmacaoExclusaoOpen)
+            {
+                return;
+            }
+
+            // Se o foco não for o campo de pesquisa nem botão interativo
             var focused = FocusManager.GetFocusedElement(this.XamlRoot);
-            if (focused is not TextBox)
+            if (focused is not TextBox && focused is not Button)
             {
                 AbrirPedidoSelecionado();
                 e.Handled = true;
@@ -136,9 +142,16 @@ public partial class PedidoConsultaView : UserControl
         }
     }
 
-    private void BtnAbrirPedidoLateral_Click(object sender, RoutedEventArgs e)
+    private void BtnExcluirPedido_Click(object sender, RoutedEventArgs e)
     {
-        AbrirPedidoSelecionado();
+        if (sender is Button btn && btn.DataContext is PedidoVenda pedido)
+        {
+            if (this.DataContext is PedidoConsultaViewModel vm)
+            {
+                vm.PedidoSelecionado = pedido;
+                vm.SolicitarExcluir(pedido);
+            }
+        }
     }
 
     public System.Action? OnVoltarAoPedido { get; set; }

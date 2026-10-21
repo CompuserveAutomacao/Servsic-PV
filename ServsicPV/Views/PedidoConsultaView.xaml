@@ -13,7 +13,6 @@
             <RowDefinition Height="Auto"/> <!-- 1. Barra de Filtros -->
             <RowDefinition Height="Auto"/> <!-- 2. Mensagem de Status -->
             <RowDefinition Height="*"/>    <!-- 3. Área Central: Grade Principal + Card Lateral -->
-            <RowDefinition Height="Auto"/> <!-- 4. Barra Inferior de Ações -->
         </Grid.RowDefinitions>
 
         <!-- 0. Cabeçalho Superior da Tela: Título e Botão Voltar Livres no Topo -->
@@ -171,7 +170,7 @@
                                         <ColumnDefinition Width="95"/>  <!-- OPERAÇÃO -->
                                         <ColumnDefinition Width="95"/>  <!-- SITUAÇÃO -->
                                         <ColumnDefinition Width="105"/> <!-- VALOR TOTAL -->
-                                        <ColumnDefinition Width="50"/>  <!-- AÇÃO -->
+                                        <ColumnDefinition Width="75"/>  <!-- AÇÕES -->
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="PEDIDO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="DATA" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
@@ -180,7 +179,7 @@
                                     <TextBlock Grid.Column="4" Text="OPERAÇÃO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="5" Text="SITUAÇÃO" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="6" Text="VALOR TOTAL" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="7" Text="ABRIR" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="7" Text="AÇÕES" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -197,7 +196,7 @@
                                         <ColumnDefinition Width="95"/>
                                         <ColumnDefinition Width="95"/>
                                         <ColumnDefinition Width="105"/>
-                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="75"/>
                                     </Grid.ColumnDefinitions>
 
                                     <!-- 0. Pedido -->
@@ -227,10 +226,30 @@
                                     <!-- 6. Valor Total -->
                                     <TextBlock Grid.Column="6" Text="{Binding Total, Converter={StaticResource CurrencyConverter}}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
 
-                                    <!-- 7. Ações -->
-                                    <Button Grid.Column="7" Click="BtnAbrirPedido_Click" Style="{StaticResource BtnSecondary}" Padding="6,3" Height="28" HorizontalAlignment="Center" ToolTipService.ToolTip="Abrir Pedido (Enter)">
-                                        <ic:SymbolIcon Symbol="Open" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
-                                    </Button>
+                                    <!-- 7. Ações: Abrir e Excluir -->
+                                    <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <!-- Botão Abrir -->
+                                        <Button Click="BtnAbrirPedido_Click" Style="{StaticResource BtnSecondary}" Padding="6,3" Height="28" ToolTipService.ToolTip="Abrir Pedido (Enter)">
+                                            <Button.Resources>
+                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#E0F2FE"/>
+                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#0284C7"/>
+                                            </Button.Resources>
+                                            <ic:SymbolIcon Symbol="Open" FontSize="13" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        </Button>
+
+                                        <!-- Botão Excluir (Lixeira) - Oculto para Vendas Concluídas -->
+                                        <Button Click="BtnExcluirPedido_Click"
+                                                Style="{StaticResource BtnSecondary}"
+                                                Padding="6,3" Height="28"
+                                                Visibility="{Binding PodeExcluir, Converter={StaticResource BoolToVisibilityConverter}}"
+                                                ToolTipService.ToolTip="Excluir este pedido ou orçamento definitivamente">
+                                            <Button.Resources>
+                                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FEE2E2"/>
+                                                <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#DC2626"/>
+                                            </Button.Resources>
+                                            <ic:SymbolIcon Symbol="Delete" FontSize="13" Foreground="{StaticResource BrushDanger}"/>
+                                        </Button>
+                                    </StackPanel>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -486,48 +505,8 @@
             </Border>
         </Grid>
 
-        <!-- 4. Barra Inferior de Ações: Exclusão Segura -->
-        <Border Grid.Row="4" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14,10">
-            <!-- Grupo de Exclusão Segura com Confirmação -->
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <!-- Botão Excluir Selecionado -->
-                <Button Command="{Binding SolicitarExcluirSelecionadoCommand}"
-                        Height="36" Padding="14,0"
-                        GotFocus="BtnDanger_GotFocus"
-                        LostFocus="BtnDanger_LostFocus"
-                        PointerEntered="BtnDanger_PointerEntered"
-                        PointerExited="BtnDanger_PointerExited"
-                        ToolTipService.ToolTip="Excluir o pedido selecionado definitivamente do banco de dados (após confirmação)">
-                    <Button.Resources>
-                        <SolidColorBrush x:Key="ButtonBackground" Color="#DC2626"/>
-                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#B91C1C"/>
-                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#991B1B"/>
-                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#DC2626"/>
-                        <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
-                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
-                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
-                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
-                    </Button.Resources>
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ic:SymbolIcon Symbol="Delete" FontSize="16" Foreground="#FFFFFF"/>
-                        <TextBlock Text="Excluir Selecionado" FontWeight="Bold" Foreground="#FFFFFF"/>
-                    </StackPanel>
-                </Button>
-
-                <!-- Botão Excluir Pendentes -->
-                <Button Command="{Binding SolicitarExcluirPendentesCommand}"
-                        Style="{StaticResource BtnSecondary}" Height="36" Padding="14,0"
-                        ToolTipService.ToolTip="Excluir todos os orçamentos e pré-vendas pendentes do seu usuário (após confirmação)">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <ic:SymbolIcon Symbol="DismissCircle" FontSize="16" Foreground="{StaticResource BrushDanger}"/>
-                        <TextBlock Text="Excluir Pendentes" FontWeight="SemiBold" Foreground="{StaticResource BrushDanger}"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
-        </Border>
-
-        <!-- 5. Diálogo / Modal de Confirmação de Exclusão Segura -->
-        <Grid Grid.RowSpan="5" Background="#80000000"
+        <!-- 4. Diálogo / Modal de Confirmação de Exclusão Segura -->
+        <Grid Grid.Row="0" Grid.RowSpan="4" Background="#80000000"
               Visibility="{Binding IsConfirmacaoExclusaoOpen, Converter={StaticResource BoolToVisibilityConverter}}">
             <Border Background="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="10"
                     Width="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24">

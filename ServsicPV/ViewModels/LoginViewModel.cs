@@ -13,6 +13,7 @@ namespace ServsicPV.ViewModels;
 public class LoginViewModel : ViewModelBase
 {
     private readonly AuthService _authService;
+    private readonly UserPreferencesService _userPreferencesService = new();
     private Usuario? _selectedUser;
     private string _password = string.Empty;
     private string _errorMessage = string.Empty;
@@ -325,9 +326,18 @@ public class LoginViewModel : ViewModelBase
                 ActiveUsers.Add(u);
             }
 
-            if (ActiveUsers.Count > 0 && SelectedUser == null)
+            if (ActiveUsers.Count > 0)
             {
-                SelectedUser = ActiveUsers[0];
+                var ultimoUsuario = _userPreferencesService.ObterUltimoUsuario();
+                Usuario? usuarioParaSelecionar = null;
+
+                if (!string.IsNullOrWhiteSpace(ultimoUsuario))
+                {
+                    usuarioParaSelecionar = System.Linq.Enumerable.FirstOrDefault(ActiveUsers, u =>
+                        string.Equals(u.Nome?.Trim(), ultimoUsuario.Trim(), StringComparison.OrdinalIgnoreCase));
+                }
+
+                SelectedUser = usuarioParaSelecionar ?? ActiveUsers[0];
             }
         }
         catch (Exception ex)
@@ -348,6 +358,9 @@ public class LoginViewModel : ViewModelBase
             var usuario = await _authService.AutenticarAsync(SelectedUser.Nome, Password);
             if (usuario != null)
             {
+                // Guarda o último usuário logado com sucesso
+                _userPreferencesService.SalvarUltimoUsuario(usuario.Nome);
+
                 ConnectionStatus = "Sincronizando banco de dados...";
                 await DatabaseMigrationService.ExecutarMigracaoAsync(forcar: true);
                 OnLoginSuccess?.Invoke(usuario);

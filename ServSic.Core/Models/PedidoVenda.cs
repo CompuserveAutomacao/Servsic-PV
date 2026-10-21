@@ -106,6 +106,12 @@ public class PedidoVenda
     public bool IsVenda => Status == "V" || Venda == 1;
 
     /// <summary>
+    /// Pré-vendas e orçamentos podem ser excluídos (mesmo com pagamentos).
+    /// Vendas concluídas pelo caixa jamais podem ser excluídas.
+    /// </summary>
+    public bool PodeExcluir => !IsVenda;
+
+    /// <summary>
     /// Indica se a venda/pedido já está concluída pelo caixa ou cancelada, tornando qualquer edição proibida no sistema.
     /// Pré-vendas ('P') e Orçamentos ('O') jamais são bloqueados para edição pelo operador.
     /// </summary>

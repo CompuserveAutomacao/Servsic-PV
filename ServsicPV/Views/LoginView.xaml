@@ -72,8 +72,10 @@
                 <!-- Seleção do Usuário -->
                 <StackPanel Spacing="6">
                     <TextBlock Text="Usuário" Style="{StaticResource TextLabel}"/>
-                    <ComboBox ItemsSource="{Binding ActiveUsers}"
+                    <ComboBox x:Name="CmbUsuarios"
+                              ItemsSource="{Binding ActiveUsers}"
                               SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
+                              SelectionChanged="CmbUsuarios_SelectionChanged"
                               DisplayMemberPath="Nome"
                               PlaceholderText="Selecione seu usuário"
                               HorizontalAlignment="Stretch"

@@ -45,6 +45,35 @@ public partial class LoginView : Window
             mainView.Activate();
             this.Close();
         };
+
+        this.Activated += LoginView_Activated;
+    }
+
+    private bool _focoInicialDefinido;
+
+    private void LoginView_Activated(object sender, WindowActivatedEventArgs args)
+    {
+        if (!_focoInicialDefinido && args.WindowActivationState != WindowActivationState.Deactivated)
+        {
+            _focoInicialDefinido = true;
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(150);
+                TxtPassword?.Focus(FocusState.Programmatic);
+            });
+        }
+    }
+
+    private void CmbUsuarios_SelectionChanged(object sender, Microsoft.UI.Xaml.Controls.SelectionChangedEventArgs e)
+    {
+        if (CmbUsuarios.SelectedItem != null)
+        {
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(50);
+                TxtPassword?.Focus(FocusState.Programmatic);
+            });
+        }
     }
 
     private void TxtPassword_KeyDown(object sender, KeyRoutedEventArgs e)

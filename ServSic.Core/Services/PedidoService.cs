@@ -183,7 +183,8 @@ public class PedidoService
     }
 
     /// <summary>
-    /// Exclui o pedido das tabelas TabEst3A (cabeçalho), TabEst3B (itens) e TabEst3C (pagamentos).
+    /// Exclui o pedido das tabelas TabEst3C (pagamentos), TabEst3B (itens) e TabEst3A (cabeçalho), estritamente nessa sequência.
+    /// Vendas concluídas pelo caixa (Venda = 1 ou Status = 'V') jamais podem ser excluídas.
     /// </summary>
     public async Task<bool> ExcluirPedidoCompletoAsync(int controle, int numeroPedido)
     {
@@ -192,91 +193,29 @@ public class PedidoService
         using var trans = conn.BeginTransaction();
         try
         {
+            // Trava de segurança no banco: Venda concluída jamais pode ser excluída
+            var cab = await conn.QueryFirstOrDefaultAsync<dynamic>(
+                "SELECT Status, Venda FROM TabEst3A WHERE Controle = @controle",
+                new { controle },
+                trans);
+
+            if (cab != null)
+            {
+                string status = cab.Status?.ToString()?.Trim() ?? "";
+                bool isVenda = Convert.ToBoolean(cab.Venda) || status == "V";
+                if (isVenda)
+                {
+                    throw new InvalidOperationException("Vendas concluídas não podem ser excluídas.");
+                }
+            }
+
+            // Exclusão sequencial obrigatória: TabEst3C -> TabEst3B -> TabEst3A
             await _pagService.ExcluirPagamentosPorPedidoAsync(numeroPedido, conn, trans);
             await _itemService.ExcluirItensPorPedidoAsync(controle, numeroPedido, conn, trans);
             await conn.ExecuteAsync("DELETE FROM TabEst3A WHERE Controle = @controle", new { controle }, trans);
+
             trans.Commit();
             return true;
-        }
-        catch
-        {
-            trans.Rollback();
-            throw;
-        }
-    }
-
-    /// <summary>
-    /// Exclui todos os orçamentos e pré-vendas estritamente PENDENTES (não fechados, sem pagamentos) vinculados ao operador/vendedor logado.
-    /// Nunca exclui pedidos fechados, concluídos, faturados ou que possuam formas de pagamento em TabEst3C.
-    /// </summary>
-    public async Task<int> ExcluirPendentesAsync(int? lkUsuario, int? lkVendedor)
-    {
-        // Trava de segurança: Se não houver operador nem vendedor definido, aborta para não apagar a base inteira
-        if ((!lkUsuario.HasValue || lkUsuario.Value <= 0) && (!lkVendedor.HasValue || lkVendedor.Value <= 0))
-        {
-            return 0;
-        }
-
-        using var conn = DbConnectionFactory.CreateConnection();
-        conn.Open();
-        using var trans = conn.BeginTransaction();
-        try
-        {
-            // Monta o filtro estrito de usuário/vendedor
-            string userFilter;
-            var param = new DynamicParameters();
-
-            if (lkUsuario.HasValue && lkUsuario.Value > 0 && lkVendedor.HasValue && lkVendedor.Value > 0)
-            {
-                userFilter = "(ta.LkUsuario = @lkUsuario OR ta.LkVendedor = @lkVendedor)";
-                param.Add("lkUsuario", lkUsuario.Value);
-                param.Add("lkVendedor", lkVendedor.Value);
-            }
-            else if (lkUsuario.HasValue && lkUsuario.Value > 0)
-            {
-                userFilter = "ta.LkUsuario = @lkUsuario";
-                param.Add("lkUsuario", lkUsuario.Value);
-            }
-            else
-            {
-                userFilter = "ta.LkVendedor = @lkVendedor";
-                param.Add("lkVendedor", lkVendedor!.Value);
-            }
-
-            // Regra estrita de PENDENTE:
-            // 1. Status 'O' (Orçamento) ou 'P' (Pré-venda)
-            // 2. Não cancelado (Cancelada = 0 e Status <> 'C')
-            // 3. Não convertido em venda direta (Venda = 0 e Status <> 'V')
-            // 4. Saldo em aberto (Subtotal > 0)
-            // 5. Sem fechamento de caixa ou faturamento (LkCxFecha = 0, Entrada = 0, Faturado = 0, Vlpago = 0)
-            // 6. JAMAIS ter registros em TabEst3C (sem pagamentos!)
-            string sqlBusca = $@"
-                SELECT ta.Controle, ta.Pedido 
-                FROM TabEst3A ta
-                WHERE ta.Status IN ('O', 'P')
-                  AND ISNULL(ta.Cancelada, 0) = 0
-                  AND ISNULL(ta.Venda, 0) = 0
-                  AND ISNULL(ta.LkCxFecha, 0) = 0
-                  AND ISNULL(ta.Entrada, 0) = 0
-                  AND ISNULL(ta.Faturado, 0) = 0
-                  AND ISNULL(ta.Vlpago, 0) = 0
-                  AND ISNULL(ta.Subtotal, 0) > 0
-                  AND NOT EXISTS (SELECT 1 FROM TabEst3C tc WHERE tc.PEDIDO = ta.Pedido)
-                  AND {userFilter}";
-
-            var pendentes = (await conn.QueryAsync<(int Controle, int Pedido)>(sqlBusca, param, trans)).ToList();
-            foreach (var p in pendentes)
-            {
-                await _pagService.ExcluirPagamentosPorPedidoAsync(p.Pedido, conn, trans);
-                await _itemService.ExcluirItensPorPedidoAsync(p.Controle, p.Pedido, conn, trans);
-                await conn.ExecuteAsync("DELETE FROM TabEst3A WHERE Controle = @controle", new { controle = p.Controle }, trans);
-            }
-
-            // Limpa eventuais pagamentos órfãos que possam ter sobrado
-            await _pagService.LimparPagamentosOrfaosAsync(conn, trans);
-
-            trans.Commit();
-            return pendentes.Count;
         }
         catch
         {

@@ -186,7 +186,7 @@ public class PedidoConsultaViewModel : ViewModelBase
     private bool _isConfirmacaoExclusaoOpen;
     private string _tituloConfirmacaoExclusao = string.Empty;
     private string _mensagemConfirmacaoExclusao = string.Empty;
-    private string _tipoExclusaoPendente = string.Empty;
+    private PedidoVenda? _pedidoParaExcluir;
 
     public bool IsConfirmacaoExclusaoOpen
     {
@@ -213,8 +213,7 @@ public class PedidoConsultaViewModel : ViewModelBase
     public ICommand EditarCommand { get; }
     public ICommand ConverterVendaCommand { get; }
     public ICommand SelecionarAbaCommand { get; }
-    public ICommand SolicitarExcluirSelecionadoCommand { get; }
-    public ICommand SolicitarExcluirPendentesCommand { get; }
+    public ICommand SolicitarExcluirCommand { get; }
     public ICommand ConfirmarExclusaoCommand { get; }
     public ICommand CancelarExclusaoCommand { get; }
     public ICommand ImprimirCommand { get; }
@@ -230,10 +229,13 @@ public class PedidoConsultaViewModel : ViewModelBase
         ConverterVendaCommand = new RelayCommand<PedidoVenda>(async p => await ConverterVendaAsync(p));
         SelecionarAbaCommand = new RelayCommand<string>(aba => { if (!string.IsNullOrEmpty(aba)) AbaDetalhes = aba; });
 
-        SolicitarExcluirSelecionadoCommand = new RelayCommand(_ => SolicitarExcluirSelecionado());
-        SolicitarExcluirPendentesCommand = new RelayCommand(_ => SolicitarExcluirPendentes());
+        SolicitarExcluirCommand = new RelayCommand<PedidoVenda>(p => SolicitarExcluir(p));
         ConfirmarExclusaoCommand = new RelayCommand(async _ => await ExecutarExclusaoConfirmadaAsync());
-        CancelarExclusaoCommand = new RelayCommand(_ => IsConfirmacaoExclusaoOpen = false);
+        CancelarExclusaoCommand = new RelayCommand(_ =>
+        {
+            _pedidoParaExcluir = null;
+            IsConfirmacaoExclusaoOpen = false;
+        });
         ImprimirCommand = new RelayCommand(async _ => await ImprimirPedidoSelecionadoAsync());
         SalvarPdfCommand = new RelayCommand(async _ => await SalvarPdfSelecionadoAsync());
         FecharMensagemCommand = new RelayCommand(_ => Mensagem = string.Empty);
@@ -241,60 +243,59 @@ public class PedidoConsultaViewModel : ViewModelBase
         _ = PesquisarAsync();
     }
 
-    private void SolicitarExcluirSelecionado()
+    public void SolicitarExcluir(PedidoVenda? item = null)
     {
-        var item = PedidoSelecionado ?? PedidoDetalhe;
+        item ??= PedidoSelecionado ?? PedidoDetalhe;
         if (item == null)
         {
             Mensagem = "Nenhum pedido ou orçamento selecionado para exclusão.";
             return;
         }
 
-        // Trava de segurança: Pedidos já fechados ou concluídos possuem faturamento e quitação
-        if (item.SituacaoDescricao == "FECHADO" || item.SituacaoDescricao == "FECHADA" || item.SituacaoDescricao == "CONCLUIDA")
+        // Vendas concluídas pelo caixa jamais podem ser excluídas
+        if (item.IsVenda || item.Status == "V" || item.Venda == 1)
         {
-            Mensagem = $"O Pedido/Orçamento Nº {item.Pedido} já está {item.SituacaoDescricao} e possui faturamento/pagamento. Não é permitido excluir pedidos finalizados.";
+            Mensagem = $"O Pedido Nº {item.Pedido} é uma venda concluída e faturada. Vendas não podem ser excluídas.";
             return;
         }
 
-        _tipoExclusaoPendente = "SELECIONADO";
-        TituloConfirmacaoExclusao = "Excluir Pedido / Orçamento";
-        MensagemConfirmacaoExclusao = $"Deseja realmente excluir em definitivo o pedido Nº {item.Pedido} ({item.OperacaoDescricao}) do cliente '{item.Cliente}'? Esta ação apagará permanentemente o cabeçalho, itens e pagamentos das tabelas do banco de dados.";
-        IsConfirmacaoExclusaoOpen = true;
-    }
-
-    private void SolicitarExcluirPendentes()
-    {
-        _tipoExclusaoPendente = "PENDENTES";
-        TituloConfirmacaoExclusao = "Excluir Todos os Pendentes";
-        MensagemConfirmacaoExclusao = "Deseja realmente excluir em definitivo TODOS os orçamentos e pré-vendas PENDENTES (em aberto e sem formas de pagamento) vinculados ao seu usuário? Pedidos já fechados ou concluídos não serão alterados.";
+        _pedidoParaExcluir = item;
+        TituloConfirmacaoExclusao = item.IsOrcamento ? "Excluir Orçamento" : "Excluir Pré-Venda";
+        MensagemConfirmacaoExclusao = $"Deseja realmente excluir em definitivo o {item.OperacaoDescricao} Nº {item.Pedido} do cliente '{item.Cliente}'?\n\nEsta ação apagará permanentemente o documento, itens e pagamentos das tabelas do banco de dados.";
         IsConfirmacaoExclusaoOpen = true;
     }
 
     private async Task ExecutarExclusaoConfirmadaAsync()
     {
         IsConfirmacaoExclusaoOpen = false;
+        var item = _pedidoParaExcluir;
+        _pedidoParaExcluir = null;
+
+        if (item == null) return;
+
+        // Trava final de segurança: Vendas jamais podem ser excluídas
+        if (item.IsVenda || item.Status == "V" || item.Venda == 1)
+        {
+            Mensagem = "Vendas concluídas não podem ser excluídas.";
+            return;
+        }
+
         try
         {
             IsBusy = true;
-            if (_tipoExclusaoPendente == "SELECIONADO")
+            await _pedidoService.ExcluirPedidoCompletoAsync(item.Controle, item.Pedido);
+
+            if (PedidoSelecionado?.Controle == item.Controle)
             {
-                var item = PedidoSelecionado ?? PedidoDetalhe;
-                if (item != null)
-                {
-                    await _pedidoService.ExcluirPedidoCompletoAsync(item.Controle, item.Pedido);
-                    Mensagem = $"Pedido/Orçamento Nº {item.Pedido} excluído com sucesso das tabelas do banco.";
-                    await PesquisarAsync();
-                }
+                PedidoSelecionado = null;
             }
-            else if (_tipoExclusaoPendente == "PENDENTES")
+            if (PedidoDetalhe?.Controle == item.Controle)
             {
-                int totalExcluidos = await _pedidoService.ExcluirPendentesAsync(UsuarioLogado?.Controle, UsuarioLogado?.LkVendedor);
-                Mensagem = totalExcluidos > 0 
-                    ? $"{totalExcluidos} pedido(s) pendente(s) excluído(s) com sucesso das tabelas." 
-                    : "Nenhum pedido pendente encontrado para exclusão.";
-                await PesquisarAsync();
+                PedidoDetalhe = null;
             }
+
+            Mensagem = $"{item.OperacaoDescricao} Nº {item.Pedido} excluído com sucesso das tabelas do banco de dados.";
+            await PesquisarAsync();
         }
         catch (Exception ex)
         {
