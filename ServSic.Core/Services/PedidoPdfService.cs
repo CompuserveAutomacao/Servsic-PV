@@ -98,65 +98,19 @@ internal class PedidoDocument : IDocument
         {
             col.Item().Row(row =>
             {
-                // Coluna Esquerda: Dados da Empresa
-                row.RelativeItem(3).Column(c =>
+                // Coluna Esquerda: Dados da Empresa (com Logotipo se disponível)
+                if (_empresa.HasLogo)
                 {
-                    string nomeFantasia = !string.IsNullOrWhiteSpace(_empresa.NomeFantasia) 
-                        ? _empresa.NomeFantasia 
-                        : "COMPUSERVE SISTEMAS";
-
-                    c.Item().Text(nomeFantasia)
-                        .FontSize(14)
-                        .Bold()
-                        .FontColor(CorNavy);
-
-                    if (!string.IsNullOrWhiteSpace(_empresa.RazaoSocial) && _empresa.RazaoSocial != _empresa.NomeFantasia)
+                    row.RelativeItem(3).Row(empRow =>
                     {
-                        c.Item().Text(_empresa.RazaoSocial).FontSize(8).FontColor(CorTextoSubtle);
-                    }
-
-                    // CNPJ e Inscrição Estadual
-                    string cnpjIe = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(_empresa.Cnpj)) 
-                        cnpjIe += $"CNPJ: {CupomFormatadorService.FormatarCnpj(_empresa.Cnpj)}";
-                    if (!string.IsNullOrWhiteSpace(_empresa.InscricaoEstadual))
-                    {
-                        if (cnpjIe.Length > 0) cnpjIe += "   •   ";
-                        cnpjIe += $"IE: {_empresa.InscricaoEstadual}";
-                    }
-                    if (cnpjIe.Length > 0)
-                    {
-                        c.Item().Text(cnpjIe).FontSize(8).FontColor(CorTextoSubtle);
-                    }
-
-                    // Endereço e Cidade
-                    string endLinha = _empresa.EnderecoLinha1;
-                    if (!string.IsNullOrWhiteSpace(endLinha))
-                    {
-                        c.Item().Text(endLinha).FontSize(8).FontColor(CorTextoSubtle);
-                    }
-                    string cidLinha = _empresa.EnderecoLinha2;
-                    if (!string.IsNullOrWhiteSpace(cidLinha))
-                    {
-                        c.Item().Text(cidLinha).FontSize(8).FontColor(CorTextoSubtle);
-                    }
-
-                    // Contatos: Telefone e Email
-                    string contatos = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(_empresa.Telefone))
-                    {
-                        contatos += $"Fone: {CupomFormatadorService.FormatarTelefone(_empresa.Telefone)}";
-                    }
-                    if (!string.IsNullOrWhiteSpace(_empresa.Email))
-                    {
-                        if (contatos.Length > 0) contatos += "   •   ";
-                        contatos += $"E-mail: {_empresa.Email.ToLowerInvariant()}";
-                    }
-                    if (contatos.Length > 0)
-                    {
-                        c.Item().Text(contatos).FontSize(8).Bold().FontColor(CorAzul);
-                    }
-                });
+                        empRow.AutoItem().PaddingRight(10).MaxHeight(55).MaxWidth(115).Image(_empresa.LogoBytes!).FitArea();
+                        empRow.RelativeItem().Column(c => ComposeEmpresaTextos(c, 11, 7.5f));
+                    });
+                }
+                else
+                {
+                    row.RelativeItem(3).Column(c => ComposeEmpresaTextos(c, 14, 8f));
+                }
 
                 // Coluna Direita: Box do Pedido / Orçamento em Navy
                 row.RelativeItem(2).AlignRight().Width(190).Border(1).BorderColor(CorBorda).CornerRadius(6).Background(CorNavy).Padding(8).Column(c =>
@@ -201,6 +155,65 @@ internal class PedidoDocument : IDocument
             // Linha divisória suave
             col.Item().PaddingTop(8).PaddingBottom(6).LineHorizontal(1.5f).LineColor(CorAzul);
         });
+    }
+
+    private void ComposeEmpresaTextos(ColumnDescriptor c, float fontSizeTitulo, float fontSizeDetalhe)
+    {
+        string nomeFantasia = !string.IsNullOrWhiteSpace(_empresa.NomeFantasia) 
+            ? _empresa.NomeFantasia 
+            : "COMPUSERVE SISTEMAS";
+
+        c.Item().Text(nomeFantasia)
+            .FontSize(fontSizeTitulo)
+            .Bold()
+            .FontColor(CorNavy);
+
+        if (!string.IsNullOrWhiteSpace(_empresa.RazaoSocial) && _empresa.RazaoSocial != _empresa.NomeFantasia)
+        {
+            c.Item().Text(_empresa.RazaoSocial).FontSize(fontSizeDetalhe).FontColor(CorTextoSubtle);
+        }
+
+        // CNPJ e Inscrição Estadual
+        string cnpjIe = string.Empty;
+        if (!string.IsNullOrWhiteSpace(_empresa.Cnpj)) 
+            cnpjIe += $"CNPJ: {CupomFormatadorService.FormatarCnpj(_empresa.Cnpj)}";
+        if (!string.IsNullOrWhiteSpace(_empresa.InscricaoEstadual))
+        {
+            if (cnpjIe.Length > 0) cnpjIe += "   •   ";
+            cnpjIe += $"IE: {_empresa.InscricaoEstadual}";
+        }
+        if (cnpjIe.Length > 0)
+        {
+            c.Item().Text(cnpjIe).FontSize(fontSizeDetalhe).FontColor(CorTextoSubtle);
+        }
+
+        // Endereço e Cidade
+        string endLinha = _empresa.EnderecoLinha1;
+        if (!string.IsNullOrWhiteSpace(endLinha))
+        {
+            c.Item().Text(endLinha).FontSize(fontSizeDetalhe).FontColor(CorTextoSubtle);
+        }
+        string cidLinha = _empresa.EnderecoLinha2;
+        if (!string.IsNullOrWhiteSpace(cidLinha))
+        {
+            c.Item().Text(cidLinha).FontSize(fontSizeDetalhe).FontColor(CorTextoSubtle);
+        }
+
+        // Contatos: Telefone e Email
+        string contatos = string.Empty;
+        if (!string.IsNullOrWhiteSpace(_empresa.Telefone))
+        {
+            contatos += $"Fone: {CupomFormatadorService.FormatarTelefone(_empresa.Telefone)}";
+        }
+        if (!string.IsNullOrWhiteSpace(_empresa.Email))
+        {
+            if (contatos.Length > 0) contatos += "   •   ";
+            contatos += $"E-mail: {_empresa.Email.ToLowerInvariant()}";
+        }
+        if (contatos.Length > 0)
+        {
+            c.Item().Text(contatos).FontSize(fontSizeDetalhe).Bold().FontColor(CorAzul);
+        }
     }
 
     private void ComposeContent(IContainer container)
@@ -364,9 +377,9 @@ internal class PedidoDocument : IDocument
                     columns.ConstantColumn(55); // Código
                     columns.RelativeColumn(5);  // Descrição
                     columns.ConstantColumn(26); // UN
-                    columns.ConstantColumn(54); // Qtd
-                    columns.ConstantColumn(64); // Unitário
-                    columns.ConstantColumn(52); // Desconto
+                    columns.ConstantColumn(50); // Qtd
+                    columns.ConstantColumn(66); // Unitário
+                    columns.ConstantColumn(74); // Unit. c/ Desc
                     columns.ConstantColumn(76); // Total
                 });
 
@@ -379,7 +392,7 @@ internal class PedidoDocument : IDocument
                     header.Cell().Background(CorNavy).Padding(4).Text("UN").FontSize(8).Bold().FontColor("#FFFFFF").AlignCenter();
                     header.Cell().Background(CorNavy).Padding(4).Text("QTD").FontSize(8).Bold().FontColor("#FFFFFF").AlignRight();
                     header.Cell().Background(CorNavy).Padding(4).Text("UNIT (R$)").FontSize(8).Bold().FontColor("#FFFFFF").AlignRight();
-                    header.Cell().Background(CorNavy).Padding(4).Text("DESC (R$)").FontSize(8).Bold().FontColor("#FFFFFF").AlignRight();
+                    header.Cell().Background(CorNavy).Padding(4).Text("UNIT C/ DESC").FontSize(8).Bold().FontColor("#FFFFFF").AlignRight();
                     header.Cell().Background(CorNavy).Padding(4).Text("TOTAL (R$)").FontSize(8).Bold().FontColor("#FFFFFF").AlignRight();
                 });
 
@@ -409,9 +422,13 @@ internal class PedidoDocument : IDocument
                     table.Cell().Background(fundo).BorderBottom(1).BorderColor(CorBorda).Padding(4)
                         .Text(item.VlUnitario.ToString("N2", _ptBr)).FontSize(8).AlignRight();
 
-                    string descStr = item.Desconto > 0 ? item.Desconto.ToString("N2", _ptBr) : "-";
-                    table.Cell().Background(fundo).BorderBottom(1).BorderColor(CorBorda).Padding(4)
-                        .Text(descStr).FontSize(8).FontColor(item.Desconto > 0 ? "#DC2626" : CorTextoSubtle).AlignRight();
+                    string unitDescStr = item.VlUnitarioComDesconto.ToString("N2", _ptBr);
+                    var cellUnitDesc = table.Cell().Background(fundo).BorderBottom(1).BorderColor(CorBorda).Padding(4)
+                        .Text(unitDescStr).FontSize(8).FontColor(item.Desconto > 0 ? CorAzul : CorTextoSubtle).AlignRight();
+                    if (item.Desconto > 0)
+                    {
+                        cellUnitDesc.Bold();
+                    }
 
                     table.Cell().Background(fundo).BorderBottom(1).BorderColor(CorBorda).Padding(4)
                         .Text(item.Total.ToString("N2", _ptBr)).FontSize(8).Bold().AlignRight();
@@ -499,10 +516,14 @@ internal class PedidoDocument : IDocument
             row.RelativeItem(2).Border(1).BorderColor(CorBorda).CornerRadius(4).Column(tCol =>
             {
                 // Subtotal
+                decimal subtotalExibicao = _pedido.Subtotal > 0 
+                    ? _pedido.Subtotal 
+                    : (_pedido.Itens.Count > 0 ? _pedido.Itens.Sum(i => i.Total + i.Desconto) : _pedido.Total);
+
                 tCol.Item().Padding(4).PaddingLeft(8).PaddingRight(8).Row(r =>
                 {
                     r.RelativeItem().Text("Subtotal dos Itens:").FontSize(8).FontColor(CorTextoSubtle);
-                    r.RelativeItem().Text(_pedido.Subtotal.ToString("C2", _ptBr)).FontSize(8).Bold().AlignRight();
+                    r.RelativeItem().Text(subtotalExibicao.ToString("C2", _ptBr)).FontSize(8).Bold().AlignRight();
                 });
 
                 // Desconto

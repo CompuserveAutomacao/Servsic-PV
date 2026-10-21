@@ -175,8 +175,14 @@ public class CupomFormatadorService
                 string totItem = item.Total.ToString("N2", PtBr);
                 string linhaQtd = $"      {qtdUnit}";
 
-                // Se couber na mesma linha com folga segura (mínimo 5 espaços) e não for valor alto (>= 1000)
-                if (item.Total < 1000m && item.Quantidade < 1000m && (linhaQtd.Length + totItem.Length + 5 <= colunas))
+                // Se o item tem desconto, exibe quantidade x unitário original, unitário com desconto e total
+                if (item.Desconto > 0)
+                {
+                    sb.AppendLine(linhaQtd);
+                    sb.AppendLine(AlinharEsquerdaDireita("      UNIT. C/ DESC (R$):", item.VlUnitarioComDesconto.ToString("N2", PtBr), colunas));
+                    sb.AppendLine(AlinharEsquerdaDireita("      TOTAL ITEM (R$):", totItem, colunas));
+                }
+                else if (item.Total < 1000m && item.Quantidade < 1000m && (linhaQtd.Length + totItem.Length + 5 <= colunas))
                 {
                     sb.AppendLine(AlinharEsquerdaDireita(linhaQtd, totItem, colunas));
                 }
@@ -187,15 +193,6 @@ public class CupomFormatadorService
                     // Linha 2: Total do Item à direita com indicação clara, sem risco de corte
                     sb.AppendLine(linhaQtd);
                     sb.AppendLine(AlinharEsquerdaDireita("      TOTAL ITEM (R$):", totItem, colunas));
-                }
-
-                if (item.Desconto > 0)
-                {
-                    decimal percDesc = item.PercentualDesconto;
-                    string descTexto = percDesc > 0
-                        ? $"      DESCONTO ITEM ({percDesc:N2}%):"
-                        : "      DESCONTO ITEM:";
-                    sb.AppendLine(AlinharEsquerdaDireita(descTexto, $"- {item.Desconto:N2}", colunas));
                 }
             }
             else
@@ -212,7 +209,13 @@ public class CupomFormatadorService
                 string totItem = item.Total.ToString("N2", PtBr);
                 string linhaQtd = $"   {qtdUnit}";
 
-                if (item.Total < 1000m && item.Quantidade < 100m && (linhaQtd.Length + totItem.Length + 3 <= colunas))
+                if (item.Desconto > 0)
+                {
+                    sb.AppendLine(linhaQtd);
+                    sb.AppendLine(AlinharEsquerdaDireita("   UNIT. C/ DESC:", item.VlUnitarioComDesconto.ToString("N2", PtBr), colunas));
+                    sb.AppendLine(AlinharEsquerdaDireita("   TOTAL (R$):", totItem, colunas));
+                }
+                else if (item.Total < 1000m && item.Quantidade < 100m && (linhaQtd.Length + totItem.Length + 3 <= colunas))
                 {
                     sb.AppendLine(AlinharEsquerdaDireita(linhaQtd, totItem, colunas));
                 }
@@ -220,11 +223,6 @@ public class CupomFormatadorService
                 {
                     sb.AppendLine(linhaQtd);
                     sb.AppendLine(AlinharEsquerdaDireita("   TOTAL (R$):", totItem, colunas));
-                }
-
-                if (item.Desconto > 0)
-                {
-                    sb.AppendLine(AlinharEsquerdaDireita("   DESC. ITEM:", $"- {item.Desconto:N2}", colunas));
                 }
             }
             seq++;

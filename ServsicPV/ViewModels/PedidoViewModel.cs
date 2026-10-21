@@ -26,6 +26,7 @@ public class PedidoViewModel : ViewModelBase
     private readonly CupomFormatadorService _cupomFormatadorService = new();
     private readonly ConfiguracaoVendaService _configuracaoVendaService = new();
     private readonly AuthService _authService = new();
+    private readonly PedidoPdfService _pedidoPdfService = new();
 
     // --- Modal: Componente Independente de Checkout ---
     private bool _isCheckoutOpen;
@@ -510,6 +511,7 @@ public class PedidoViewModel : ViewModelBase
         {
             if (SetProperty(ref _descontoGeralInputTexto, value))
             {
+                LimparPagamentosAoAlterarPedido();
                 if (decimal.TryParse(value?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var num))
                 {
                     if (TipoDescontoGeral == "P")
@@ -570,6 +572,7 @@ public class PedidoViewModel : ViewModelBase
         {
             if (SetProperty(ref _acrescimoGeralInputTexto, value))
             {
+                LimparPagamentosAoAlterarPedido();
                 if (decimal.TryParse(value?.Trim().Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var num))
                 {
                     if (TipoAcrescimoGeral == "P")
@@ -1188,6 +1191,31 @@ public class PedidoViewModel : ViewModelBase
 
     public Action? OnSolicitarFocoSenhaGerente;
 
+    // --- Modal: Decisão de Emissão de Orçamento (PDF vs Bobina) ---
+    private bool _isDecisaoOrcamentoOpen;
+    private PedidoVenda? _orcamentoFinalizado;
+    private decimal _trocoOrcamentoFinalizado;
+
+    public bool IsDecisaoOrcamentoOpen
+    {
+        get => _isDecisaoOrcamentoOpen;
+        set => SetProperty(ref _isDecisaoOrcamentoOpen, value);
+    }
+
+    public PedidoVenda? OrcamentoFinalizado => _orcamentoFinalizado;
+    public string OrcamentoDecisaoNumero => _orcamentoFinalizado != null ? _orcamentoFinalizado.NumeroFormatado : string.Empty;
+    public string OrcamentoDecisaoCliente => !string.IsNullOrWhiteSpace(_orcamentoFinalizado?.Cliente) ? _orcamentoFinalizado.Cliente : "Consumidor / Balcão";
+    public string OrcamentoDecisaoTotalFormatado => _orcamentoFinalizado != null ? _orcamentoFinalizado.Total.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")) : "R$ 0,00";
+    public int OrcamentoDecisaoQtdItens => _orcamentoFinalizado?.Itens.Count ?? 0;
+    public string OrcamentoDecisaoQtdItensTexto => $"{OrcamentoDecisaoQtdItens} item(ns)";
+    public bool OrcamentoDecisaoTemTroco => _trocoOrcamentoFinalizado > 0;
+    public string OrcamentoDecisaoTrocoFormatado => _trocoOrcamentoFinalizado.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+    public Action? OnDecisaoOrcamentoAberta;
+
+    public ICommand SalvarPdfOrcamentoCommand { get; }
+    public ICommand ImprimirCupomOrcamentoCommand { get; }
+    public ICommand FecharDecisaoOrcamentoCommand { get; }
+
     // --- Comandos ---
     public ICommand SalvarCommand { get; }
     public ICommand ReimprimirComprovanteCommand { get; }
@@ -1447,6 +1475,10 @@ public class PedidoViewModel : ViewModelBase
         ConsultarCnpjCommand = new RelayCommand(async _ => await ConsultarCnpjAsync());
         SalvarCadastroRapidoClienteCommand = new RelayCommand(async _ => await SalvarCadastroRapidoClienteAsync());
         UsarClienteDuplicadoExistenteCommand = new RelayCommand(_ => UsarClienteDuplicadoExistente());
+
+        SalvarPdfOrcamentoCommand = new RelayCommand(async _ => await SalvarPdfOrcamentoAsync());
+        ImprimirCupomOrcamentoCommand = new RelayCommand(async _ => await ImprimirCupomOrcamentoAsync());
+        FecharDecisaoOrcamentoCommand = new RelayCommand(_ => FecharDecisaoOrcamento());
 
         NotificarAlteracaoTipo();
         _ = CarregarDadosIniciaisAsync();
@@ -2590,9 +2622,23 @@ public class PedidoViewModel : ViewModelBase
         InserirItemInterno(QuantidadeInput, DescontoItemInput);
     }
 
+    /// <summary>
+    /// Limpa pagamentos previamente lançados caso o usuário modifique itens ou valores de um pedido existente/importado,
+    /// garantindo que ao totalizar (F6) o operador lance o novo valor correto com total segurança.
+    /// </summary>
+    private void LimparPagamentosAoAlterarPedido()
+    {
+        if (Pedido != null && Pedido.Pagamentos.Count > 0)
+        {
+            Pedido.Pagamentos.Clear();
+        }
+    }
+
     private void InserirItemInterno(decimal qtd, decimal desconto, string? observacaoLiberacao = null, bool estoqueLiberado = false)
     {
         if (ProdutoSelecionado == null) return;
+
+        LimparPagamentosAoAlterarPedido();
 
         bool isLiberado = estoqueLiberado || _produtosEstoqueLiberados.Contains(ProdutoSelecionado.Controle) || (UsuarioLogado?.Nivel >= 2);
 
@@ -2691,6 +2737,7 @@ public class PedidoViewModel : ViewModelBase
 
         if (item != null && Pedido.Itens.Contains(item))
         {
+            LimparPagamentosAoAlterarPedido();
             Pedido.Itens.Remove(item);
             Pedido.RecalcularTotais();
             OnPropertyChanged(nameof(Pedido));
@@ -2716,6 +2763,7 @@ public class PedidoViewModel : ViewModelBase
             return false;
         }
 
+        LimparPagamentosAoAlterarPedido();
         item.Quantidade = novaQuantidade;
 
         // Se o desconto em reais ficou superior ao subtotal bruto com a nova quantidade, ajusta
@@ -2785,6 +2833,7 @@ public class PedidoViewModel : ViewModelBase
 
                     _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
                     {
+                        LimparPagamentosAoAlterarPedido();
                         item.Desconto = novoDesconto;
                         item.RecalcularTotal();
                         Pedido.RecalcularTotais();
@@ -2799,6 +2848,7 @@ public class PedidoViewModel : ViewModelBase
             }
         }
 
+        LimparPagamentosAoAlterarPedido();
         item.Desconto = novoDesconto;
         item.RecalcularTotal();
         Pedido.RecalcularTotais();
@@ -2847,7 +2897,14 @@ public class PedidoViewModel : ViewModelBase
 
     private void ProcessarImpressaoEResetar(PedidoVenda pedidoFinalizado, decimal troco = 0)
     {
-        string tipoDescricao = pedidoFinalizado.IsOrcamento ? "Orçamento" : "Pedido de Venda";
+        // 📄 Orçamento: Em vez de imprimir diretamente na bobina térmica, abre o modal de decisão (Salvar PDF / Imprimir Cupom / Apenas Concluir)
+        if (pedidoFinalizado.IsOrcamento)
+        {
+            AbrirDecisaoOrcamento(pedidoFinalizado, troco);
+            return;
+        }
+
+        string tipoDescricao = "Pedido de Venda";
         string msgExtra = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
 
         // Prepara a tela para um novo pedido preservando a mensagem de sucesso
@@ -2898,6 +2955,171 @@ public class PedidoViewModel : ViewModelBase
             // Modo NaoImprimir
             string acaoNome = troco > 0 || (pedidoFinalizado.Pagamentos != null && pedidoFinalizado.Pagamentos.Count > 0) ? "totalizado" : "finalizado";
             ExibirMensagem($"✓ {tipoDescricao} Nº {pedidoFinalizado.NumeroFormatado} {acaoNome} e gravado com sucesso!{msgExtra}", true, 6000);
+        }
+    }
+
+    // ==============================================================
+    // MODAL DE DECISÃO DE EMISSÃO DE ORÇAMENTO (PDF vs BOBINA)
+    // ==============================================================
+
+    public void AbrirDecisaoOrcamento(PedidoVenda orcamento, decimal troco = 0)
+    {
+        _orcamentoFinalizado = orcamento;
+        _trocoOrcamentoFinalizado = troco;
+
+        // Prepara a tela para um novo pedido preservando a mensagem
+        NovoPedido(preservarMensagem: true);
+
+        IsDecisaoOrcamentoOpen = true;
+        OnPropertyChanged(nameof(OrcamentoFinalizado));
+        OnPropertyChanged(nameof(OrcamentoDecisaoNumero));
+        OnPropertyChanged(nameof(OrcamentoDecisaoCliente));
+        OnPropertyChanged(nameof(OrcamentoDecisaoTotalFormatado));
+        OnPropertyChanged(nameof(OrcamentoDecisaoQtdItens));
+        OnPropertyChanged(nameof(OrcamentoDecisaoQtdItensTexto));
+        OnPropertyChanged(nameof(OrcamentoDecisaoTemTroco));
+        OnPropertyChanged(nameof(OrcamentoDecisaoTrocoFormatado));
+
+        OnDecisaoOrcamentoAberta?.Invoke();
+    }
+
+    public async Task SalvarPdfOrcamentoAsync()
+    {
+        if (_orcamentoFinalizado == null)
+        {
+            IsDecisaoOrcamentoOpen = false;
+            return;
+        }
+
+        var orcamento = _orcamentoFinalizado;
+        decimal troco = _trocoOrcamentoFinalizado;
+
+        try
+        {
+            IsBusy = true;
+            IsDecisaoOrcamentoOpen = false;
+
+            var empresa = await _impressoraConfigService.ObterDadosEmpresaAsync();
+            string nomeArquivo = $"Orcamento_{orcamento.Pedido}.pdf";
+
+            string pastaDestino;
+            try
+            {
+                pastaDestino = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "SERVSIC",
+                    "Orcamentos"
+                );
+                if (!System.IO.Directory.Exists(pastaDestino))
+                {
+                    System.IO.Directory.CreateDirectory(pastaDestino);
+                }
+            }
+            catch
+            {
+                pastaDestino = System.IO.Path.GetTempPath();
+            }
+
+            string caminhoFinal = System.IO.Path.Combine(pastaDestino, nomeArquivo);
+            await _pedidoPdfService.SalvarPdfArquivoAsync(orcamento, empresa, caminhoFinal);
+
+            string msgTroco = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
+            ExibirMensagem($"✓ Orçamento Nº {orcamento.NumeroFormatado} gravado e PDF aberto com sucesso!{msgTroco}", true, 5000);
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = caminhoFinal,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception exProc)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PDF] Erro ao abrir processo: {exProc.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            ExibirMensagem($"Erro ao gerar PDF do orçamento: {ex.Message}", false, 6000);
+        }
+        finally
+        {
+            IsBusy = false;
+            _orcamentoFinalizado = null;
+        }
+    }
+
+    public async Task ImprimirCupomOrcamentoAsync()
+    {
+        if (_orcamentoFinalizado == null)
+        {
+            IsDecisaoOrcamentoOpen = false;
+            return;
+        }
+
+        var orcamento = _orcamentoFinalizado;
+        decimal troco = _trocoOrcamentoFinalizado;
+        IsDecisaoOrcamentoOpen = false;
+
+        try
+        {
+            var configImpressora = _impressoraConfigService.ObterConfiguracao();
+            if (string.IsNullOrWhiteSpace(configImpressora.NomeImpressora))
+            {
+                ExibirMensagem("Nenhuma impressora configurada. Acesse as configurações no topo para definir a impressora.", false, 5000);
+                return;
+            }
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var empresa = await _impressoraConfigService.ObterDadosEmpresaAsync();
+                    string textoCupom = _cupomFormatadorService.GerarTextoCupom(orcamento, empresa, configImpressora);
+                    int vias = configImpressora.DuasVias ? 2 : 1;
+                    for (int i = 0; i < vias; i++)
+                    {
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
+                    }
+
+                    var configVenda = await _configuracaoVendaService.ObterConfiguracaoAsync();
+                    if (configVenda.ImprimeItensEntregaAutomaticamente && orcamento.TemItensEntrega)
+                    {
+                        string textoEntrega = _cupomFormatadorService.GerarTextoCupomEntrega(orcamento, empresa, configImpressora);
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Impressao] Erro: {ex.Message}");
+                }
+            });
+
+            string msgTroco = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
+            ExibirMensagem($"✓ Orçamento Nº {orcamento.NumeroFormatado} gravado e impresso na impressora térmica!{msgTroco}", true, 4000);
+        }
+        finally
+        {
+            _orcamentoFinalizado = null;
+        }
+    }
+
+    public void FecharDecisaoOrcamento()
+    {
+        if (_orcamentoFinalizado != null)
+        {
+            var orcamento = _orcamentoFinalizado;
+            decimal troco = _trocoOrcamentoFinalizado;
+            IsDecisaoOrcamentoOpen = false;
+
+            string msgTroco = troco > 0 ? $" DEVOLVER TROCO: {troco:C2}." : "";
+            ExibirMensagem($"✓ Orçamento Nº {orcamento.NumeroFormatado} totalizado e salvo com sucesso!{msgTroco}", true, 4000);
+            _orcamentoFinalizado = null;
+        }
+        else
+        {
+            IsDecisaoOrcamentoOpen = false;
         }
     }
 

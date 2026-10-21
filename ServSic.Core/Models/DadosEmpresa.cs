@@ -18,6 +18,8 @@ public class DadosEmpresa
     public string Telefone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Slogan { get; set; } = string.Empty;
+    public byte[]? LogoBytes { get; set; }
+    public bool HasLogo => LogoBytes != null && LogoBytes.Length > 0;
 
     public string EnderecoLinha1
     {

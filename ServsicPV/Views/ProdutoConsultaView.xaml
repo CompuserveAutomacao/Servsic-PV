@@ -243,6 +243,7 @@
                                             <ColumnDefinition Width="Auto"/> <!-- 3. Divisória -->
                                             <ColumnDefinition Width="Auto"/> <!-- 4. Desconto Máximo (Card 1) -->
                                             <ColumnDefinition Width="Auto"/> <!-- 5. Preço (Card 2) -->
+                                            <ColumnDefinition Width="Auto"/> <!-- 6. Estoque (Card 3) -->
                                         </Grid.ColumnDefinitions>
                                         <!-- 0. Códigos (Controle e Cód. Interno / EAN) -->
                                         <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center" MinWidth="90">
@@ -288,6 +289,20 @@
                                             <StackPanel Spacing="1" HorizontalAlignment="Center">
                                                 <TextBlock Text="PREÇO" FontSize="7.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" CharacterSpacing="30" HorizontalAlignment="Center"/>
                                                 <TextBlock Text="{Binding PrVendaFormatado}" FontSize="14.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <!-- 6. CARD 3: Estoque (Verde Positivo / Vermelho Negativo) -->
+                                        <Border Grid.Column="6" 
+                                                Background="{Binding EstoqueBadgeBg}" 
+                                                BorderBrush="{Binding EstoqueBadgeBorder}" 
+                                                BorderThickness="1" 
+                                                CornerRadius="6" 
+                                                Padding="12,4" 
+                                                VerticalAlignment="Center" 
+                                                MinWidth="95">
+                                            <StackPanel Spacing="1" HorizontalAlignment="Center">
+                                                <TextBlock Text="ESTOQUE" FontSize="7.5" FontWeight="Bold" Foreground="{Binding EstoqueBadgeHeaderColor}" CharacterSpacing="30" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding EstoqueFormatado}" FontSize="14" FontWeight="Bold" Foreground="{Binding EstoqueBadgeForeground}" HorizontalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
                                     </Grid>
@@ -347,18 +362,18 @@
                                         <ic:SymbolIcon Symbol="Box" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
                                         <TextBlock Text="ESTOQUE POR LOCAL" FontSize="10" FontWeight="Bold" Foreground="#475569" CharacterSpacing="40"/>
                                     </StackPanel>
-                                    <!-- Estoque Total Geral em Destaque -->
-                                    <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                                    <!-- Estoque Total Geral em Destaque Dinâmico -->
+                                    <Border Background="{Binding ProdutoDetalhe.EstoqueBadgeBg}" BorderBrush="{Binding ProdutoDetalhe.EstoqueBadgeBorder}" BorderThickness="1" CornerRadius="6" Padding="10,6">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0" Spacing="1">
-                                                <TextBlock Text="ESTOQUE TOTAL GERAL" FontSize="8.5" FontWeight="Bold" Foreground="#047857" CharacterSpacing="30"/>
-                                                <TextBlock Text="{Binding ProdutoDetalhe.EstoqueTotalFormatado}" FontSize="16" FontWeight="Bold" Foreground="#065F46"/>
+                                                <TextBlock Text="ESTOQUE TOTAL GERAL" FontSize="8.5" FontWeight="Bold" Foreground="{Binding ProdutoDetalhe.EstoqueBadgeHeaderColor}" CharacterSpacing="30"/>
+                                                <TextBlock Text="{Binding ProdutoDetalhe.EstoqueTotalFormatado}" FontSize="16" FontWeight="Bold" Foreground="{Binding ProdutoDetalhe.EstoqueBadgeForeground}"/>
                                             </StackPanel>
-                                            <Ellipse Grid.Column="1" Width="8" Height="8" Fill="#059669" VerticalAlignment="Center"/>
+                                            <Ellipse Grid.Column="1" Width="8" Height="8" Fill="{Binding ProdutoDetalhe.EstoqueBadgeDotColor}" VerticalAlignment="Center"/>
                                         </Grid>
                                     </Border>
                                     <!-- Grid Loja e Depósito -->

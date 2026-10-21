@@ -75,6 +75,8 @@ public class ImpressoraConfigService
         }
     }
 
+    public static void InvalidateCache() => _cachedEmpresa = null;
+
     public async Task<DadosEmpresa> ObterDadosEmpresaAsync()
     {
         if (_cachedEmpresa != null && !string.IsNullOrWhiteSpace(_cachedEmpresa.NomeFantasia)) return _cachedEmpresa;
@@ -83,7 +85,40 @@ public class ImpressoraConfigService
         {
             using var conn = DbConnectionFactory.CreateConnection();
             
-            // Tenta obter de CFG_EMPRESA
+            // 1. Tenta obter da tabela oficial nfe_emitente (inclui o campo Logotipo da empresa)
+            const string sqlNfe = @"
+                SELECT TOP 1
+                    ISNULL(Nome_Fantasia, Razao_Social) as NomeFantasia,
+                    ISNULL(Razao_Social, Nome_Fantasia) as RazaoSocial,
+                    ISNULL(CNPJ, '') as Cnpj,
+                    ISNULL(Insc_Estadual, '') as InscricaoEstadual,
+                    ISNULL(Endereco, '') as Endereco,
+                    ISNULL(Numero, '') as Numero,
+                    ISNULL(Bairro, '') as Bairro,
+                    ISNULL(Municipio, '') as Cidade,
+                    ISNULL(UF, '') as UF,
+                    ISNULL(CEP, '') as CEP,
+                    ISNULL(Fone, '') as Telefone,
+                    ISNULL(Email, '') as Email,
+                    Logotipo as LogoBytes
+                FROM nfe_emitente
+                ORDER BY EmitentePadrao DESC, Ativo DESC, Codigo ASC";
+
+            try
+            {
+                var nfe = await conn.QueryFirstOrDefaultAsync<DadosEmpresa>(sqlNfe);
+                if (nfe != null && !string.IsNullOrWhiteSpace(nfe.NomeFantasia))
+                {
+                    _cachedEmpresa = nfe;
+                    return _cachedEmpresa;
+                }
+            }
+            catch (Exception exNfe)
+            {
+                System.Diagnostics.Debug.WriteLine($"[ImpressoraConfigService] nfe_emitente indisponível: {exNfe.Message}");
+            }
+
+            // 2. Tenta obter de CFG_EMPRESA
             const string sqlCfg = @"
                 SELECT TOP 1
                     ISNULL(NOME, RAZAOSOCIAL) as NomeFantasia,
@@ -105,30 +140,47 @@ public class ImpressoraConfigService
             if (empresa != null && !string.IsNullOrWhiteSpace(empresa.NomeFantasia))
             {
                 _cachedEmpresa = empresa;
-                return _cachedEmpresa;
             }
-
-            // Fallback para TabEmpre
-            const string sqlEmpre = @"
-                SELECT TOP 1
-                    ISNULL(FANTASIA, Empresa) as NomeFantasia,
-                    ISNULL(Empresa, FANTASIA) as RazaoSocial,
-                    ISNULL(CGC, '') as Cnpj,
-                    ISNULL(INSC, '') as InscricaoEstadual,
-                    ISNULL(Endereco, '') as Endereco,
-                    ISNULL(Bairro, '') as Bairro,
-                    ISNULL(Cidade, '') as Cidade,
-                    ISNULL(Estado, '') as UF,
-                    ISNULL(CEP, '') as CEP,
-                    ISNULL(Telefone, '') as Telefone
-                FROM TabEmpre";
-
-            var empre = await conn.QueryFirstOrDefaultAsync<DadosEmpresa>(sqlEmpre);
-            if (empre != null)
+            else
             {
-                _cachedEmpresa = empre;
-                return _cachedEmpresa;
+                // 3. Fallback para TabEmpre
+                const string sqlEmpre = @"
+                    SELECT TOP 1
+                        ISNULL(FANTASIA, Empresa) as NomeFantasia,
+                        ISNULL(Empresa, FANTASIA) as RazaoSocial,
+                        ISNULL(CGC, '') as Cnpj,
+                        ISNULL(INSC, '') as InscricaoEstadual,
+                        ISNULL(Endereco, '') as Endereco,
+                        ISNULL(Bairro, '') as Bairro,
+                        ISNULL(Cidade, '') as Cidade,
+                        ISNULL(Estado, '') as UF,
+                        ISNULL(CEP, '') as CEP,
+                        ISNULL(Telefone, '') as Telefone
+                    FROM TabEmpre";
+
+                var empre = await conn.QueryFirstOrDefaultAsync<DadosEmpresa>(sqlEmpre);
+                if (empre != null)
+                {
+                    _cachedEmpresa = empre;
+                }
             }
+
+            // Se carregou de CFG_EMPRESA ou TabEmpre e ainda não tem LogoBytes, tenta buscar o Logotipo de nfe_emitente
+            if (_cachedEmpresa != null && !_cachedEmpresa.HasLogo)
+            {
+                try
+                {
+                    var logoBytes = await conn.ExecuteScalarAsync<byte[]>(
+                        "SELECT TOP 1 Logotipo FROM nfe_emitente WHERE Logotipo IS NOT NULL ORDER BY EmitentePadrao DESC, Ativo DESC, Codigo ASC");
+                    if (logoBytes != null && logoBytes.Length > 0)
+                    {
+                        _cachedEmpresa.LogoBytes = logoBytes;
+                    }
+                }
+                catch { }
+            }
+
+            if (_cachedEmpresa != null) return _cachedEmpresa;
         }
         catch (Exception ex)
         {

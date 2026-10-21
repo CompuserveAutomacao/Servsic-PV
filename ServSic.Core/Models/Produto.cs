@@ -95,7 +95,7 @@ public class Produto
         : "Sem quantidade mínima fixada";
     public string PrCustoFormatado => PrCusto.ToString("C2");
 
-    public string EstoqueFormatado => $"{Estoque:N2} {Unidade}";
+    public string EstoqueFormatado => !string.IsNullOrWhiteSpace(Unidade) ? $"{Estoque:N2} {Unidade.Trim()}" : $"{Estoque:N2} UN";
     public string EstoqueLojaFormatado => $"{EstoqueLoja:N2} {Unidade}";
     public string EstoqueDepositoFormatado => $"{EstoqueDeposito:N2} {Unidade}";
     public string EstMinimoFormatado => $"{EstMinimo:N2} {Unidade}";
@@ -107,6 +107,7 @@ public class Produto
     // Helpers visuais modernos para badges e cards de estoque
     public string EstoqueBadgeBg => HasEstoque ? "#ECFDF5" : "#FEF2F2";
     public string EstoqueBadgeBorder => HasEstoque ? "#A7F3D0" : "#FECACA";
+    public string EstoqueBadgeHeaderColor => HasEstoque ? "#047857" : "#DC2626";
     public string EstoqueBadgeForeground => HasEstoque ? "#065F46" : "#991B1B";
     public string EstoqueBadgeDotColor => HasEstoque ? "#059669" : "#DC2626";
     public string CardBackground => HasEstoque ? "#FFFFFF" : "#FEF2F2";
@@ -118,7 +119,7 @@ public class Produto
     public string GrupoFormatado => !string.IsNullOrWhiteSpace(Grupo) ? Grupo.Trim() : "Sem grupo";
     public bool HasGrupo => !string.IsNullOrWhiteSpace(Grupo);
     public bool HasAtacado => PrAtacado > 0 || PrAtacado1 > 0;
-    public string EstoqueTotalFormatado => $"{Estoque:N2} {Unidade}";
+    public string EstoqueTotalFormatado => !string.IsNullOrWhiteSpace(Unidade) ? $"{Estoque:N2} {Unidade.Trim()}" : $"{Estoque:N2} UN";
     public string PerDescMaxFormatado => PerDescMax > 0 ? $"{PerDescMax:N2}%" : "0,00%";
     public string PerDescMaxValorFormatado => $"{PerDescMax:N2}%";
     public bool HasPerDescMax => PerDescMax > 0;

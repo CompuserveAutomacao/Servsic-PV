@@ -167,11 +167,22 @@ public class PedidoItem : INotifyPropertyChanged
     public string DescontoFormatado => $"{Desconto:C2}";
     public string TotalFormatado => $"{Total:C2}";
 
+    /// <summary>
+    /// Preço unitário líquido do item após a aplicação do desconto (VlUnitario - (Desconto / Quantidade)).
+    /// </summary>
+    public decimal VlUnitarioComDesconto => Quantidade > 0 
+        ? Math.Max(0m, Math.Round((SubtotalBruto - Desconto) / Quantidade, 2)) 
+        : VlUnitario;
+
+    public string VlUnitarioComDescontoFormatado => $"{VlUnitarioComDesconto:C2}";
+
     public void RecalcularTotal()
     {
         Total = Math.Round(SubtotalBruto - Desconto + Acrescimo, 2);
         if (Total < 0) Total = 0;
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(TotalFormatado));
+        OnPropertyChanged(nameof(VlUnitarioComDesconto));
+        OnPropertyChanged(nameof(VlUnitarioComDescontoFormatado));
     }
 }

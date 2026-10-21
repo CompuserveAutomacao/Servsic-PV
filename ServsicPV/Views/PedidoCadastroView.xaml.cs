@@ -40,6 +40,14 @@ public partial class PedidoCadastroView : UserControl
             vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
             vm.OnCheckoutAberto = () => FocarCheckoutValor();
             vm.OnSolicitarFocoSenhaGerente = () => FocarSenhaGerente();
+            vm.OnDecisaoOrcamentoAberta = () =>
+            {
+                DispatcherQueue.TryEnqueue(async () =>
+                {
+                    await Task.Delay(40);
+                    BtnSalvarPdfOrcamento?.Focus(FocusState.Programmatic);
+                });
+            };
 
             vm.PropertyChanged += (s, e) =>
             {
@@ -89,6 +97,21 @@ public partial class PedidoCadastroView : UserControl
                     if (vm.IsCheckoutOpen)
                     {
                         FocarCheckoutValor();
+                    }
+                    else
+                    {
+                        FocarCodigoProduto();
+                    }
+                }
+                else if (e.PropertyName == nameof(PedidoViewModel.IsDecisaoOrcamentoOpen))
+                {
+                    if (vm.IsDecisaoOrcamentoOpen)
+                    {
+                        DispatcherQueue.TryEnqueue(async () =>
+                        {
+                            await Task.Delay(40);
+                            BtnSalvarPdfOrcamento?.Focus(FocusState.Programmatic);
+                        });
                     }
                     else
                     {
@@ -246,6 +269,53 @@ public partial class PedidoCadastroView : UserControl
             if (vm.IsCadastroRapidoClienteOpen && e.Key == Windows.System.VirtualKey.Escape)
             {
                 vm.IsCadastroRapidoClienteOpen = false;
+                e.Handled = true;
+                return;
+            }
+
+            // Se o modal de decisão de orçamento estiver aberto (Salvar PDF / Imprimir Cupom / Concluir)
+            if (vm.IsDecisaoOrcamentoOpen)
+            {
+                if (e.Key == Windows.System.VirtualKey.Escape)
+                {
+                    if (vm.FecharDecisaoOrcamentoCommand.CanExecute(null))
+                    {
+                        vm.FecharDecisaoOrcamentoCommand.Execute(null);
+                        e.Handled = true;
+                        return;
+                    }
+                }
+                else if (e.Key == Windows.System.VirtualKey.Enter)
+                {
+                    var focused = FocusManager.GetFocusedElement(this.XamlRoot);
+                    if (ReferenceEquals(focused, BtnImprimirCupomOrcamento))
+                    {
+                        if (vm.ImprimirCupomOrcamentoCommand.CanExecute(null))
+                        {
+                            vm.ImprimirCupomOrcamentoCommand.Execute(null);
+                            e.Handled = true;
+                            return;
+                        }
+                    }
+                    else if (ReferenceEquals(focused, BtnConcluirSemImprimir))
+                    {
+                        if (vm.FecharDecisaoOrcamentoCommand.CanExecute(null))
+                        {
+                            vm.FecharDecisaoOrcamentoCommand.Execute(null);
+                            e.Handled = true;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (vm.SalvarPdfOrcamentoCommand.CanExecute(null))
+                        {
+                            vm.SalvarPdfOrcamentoCommand.Execute(null);
+                            e.Handled = true;
+                            return;
+                        }
+                    }
+                }
                 e.Handled = true;
                 return;
             }
@@ -454,6 +524,7 @@ public partial class PedidoCadastroView : UserControl
     private static bool TemModalAberto(PedidoViewModel vm)
     {
         return vm.IsCheckoutOpen ||
+               vm.IsDecisaoOrcamentoOpen ||
                vm.IsConfirmarAlteracaoTipoOpen ||
                vm.IsConfirmarSalvarPendenteOpen ||
                vm.IsCadastroRapidoClienteOpen ||

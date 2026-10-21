@@ -1779,6 +1779,189 @@
         </Grid>
 
         <!-- ============================================================== -->
+        <!-- MODAL DE DECISÃO DE ORÇAMENTO (SALVAR PDF / IMPRIMIR BOBINA)   -->
+        <!-- ============================================================== -->
+        <Grid x:Name="ModalDecisaoOrcamentoOverlay"
+              Grid.RowSpan="2"
+              Background="#750B192C"
+              Visibility="{Binding IsDecisaoOrcamentoOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+              Padding="16">
+            <Border Background="#FFFFFF"
+                    BorderBrush="{StaticResource BrushBorder}"
+                    BorderThickness="1"
+                    CornerRadius="12"
+                    MaxWidth="500"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Padding="22">
+                <StackPanel Spacing="14">
+                    <!-- Cabeçalho -->
+                    <Grid ColumnSpacing="12" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Background="#E0F2FE" Width="44" Height="44" CornerRadius="22" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="DocumentPdf" FontSize="22" Foreground="#0284C7"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="ORÇAMENTO TOTALIZADO" FontSize="16" FontFamily="Segoe UI Semibold" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            <TextBlock Text="Escolha como deseja emitir este orçamento" FontSize="12" FontFamily="Segoe UI" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Card de Resumo do Orçamento -->
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,12">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Linha 1: Número e Qtd Itens -->
+                            <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <Border Background="#0284C7" CornerRadius="4" Padding="6,2">
+                                    <TextBlock Text="{Binding OrcamentoDecisaoNumero, FallbackValue='ORÇAMENTO'}"
+                                               FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                </Border>
+                                <TextBlock Text="{Binding OrcamentoDecisaoCliente}"
+                                           FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="0" Grid.Column="1"
+                                       Text="{Binding OrcamentoDecisaoQtdItensTexto}"
+                                       FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}"
+                                       VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                            <!-- Linha 2: Valor Total em Destaque -->
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,4,0,0">
+                                <TextBlock Text="VALOR TOTAL:" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                <TextBlock Text="{Binding OrcamentoDecisaoTotalFormatado}"
+                                           FontSize="22" FontWeight="Bold" Foreground="#0B192C"/>
+                            </StackPanel>
+
+                            <!-- Linha 3: Aviso de Troco (se houver) -->
+                            <Border Grid.Row="2" Grid.ColumnSpan="2"
+                                    Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1"
+                                    CornerRadius="6" Padding="8,4" Margin="0,4,0,0"
+                                    Visibility="{Binding OrcamentoDecisaoTemTroco, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="Money" FontSize="14" Foreground="#D97706"/>
+                                    <TextBlock Text="DEVOLVER TROCO:" FontSize="11.5" FontWeight="Bold" Foreground="#B45309"/>
+                                    <TextBlock Text="{Binding OrcamentoDecisaoTrocoFormatado}" FontSize="12" FontWeight="Bold" Foreground="#B45309"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Opções de Ação (Botões) -->
+                    <StackPanel Spacing="10" Margin="0,4,0,0">
+                        <!-- Opção 1: Salvar / Abrir PDF (Principal) -->
+                        <Button x:Name="BtnSalvarPdfOrcamento"
+                                Command="{Binding SalvarPdfOrcamentoCommand}"
+                                Height="48"
+                                HorizontalAlignment="Stretch"
+                                CornerRadius="8"
+                                BorderThickness="0"
+                                Padding="16,0"
+                                ToolTipService.ToolTip="Salvar e abrir documento PDF em formato A4 com logotipo da empresa">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0369A1"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <Grid ColumnSpacing="12" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ic:SymbolIcon Grid.Column="0" Symbol="DocumentPdf" FontSize="22" Foreground="#FFFFFF" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Salvar / Abrir PDF (A4)" FontSize="13.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                    <TextBlock Text="Documento A4 pronto p/ WhatsApp, e-mail ou salvar" FontSize="11" Foreground="#BAE6FD"/>
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+
+                        <!-- Opção 2: Imprimir Cupom Térmico -->
+                        <Button x:Name="BtnImprimirCupomOrcamento"
+                                Command="{Binding ImprimirCupomOrcamentoCommand}"
+                                Height="46"
+                                HorizontalAlignment="Stretch"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{StaticResource BrushBorder}"
+                                Padding="16,0"
+                                ToolTipService.ToolTip="Imprimir na impressora de bobina térmica configurada">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0284C7"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#0F172A"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <Grid ColumnSpacing="12" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ic:SymbolIcon Grid.Column="0" Symbol="Print" FontSize="20" VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="Imprimir Cupom Térmico" FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Imprime o comprovante na bobina térmica" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Button>
+
+                        <!-- Opção 3: Apenas Concluir / Sair sem Imprimir -->
+                        <Button x:Name="BtnConcluirSemImprimir"
+                                Command="{Binding FecharDecisaoOrcamentoCommand}"
+                                Height="40"
+                                HorizontalAlignment="Stretch"
+                                CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="#E2E8F0"
+                                Padding="16,0"
+                                ToolTipService.ToolTip="Concluir sem imprimir nem gerar PDF e iniciar novo atendimento">
+                            <Button.Resources>
+                                <SolidColorBrush x:Key="ButtonBackground" Color="#F8FAFC"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#0284C7"/>
+                                <SolidColorBrush x:Key="ButtonForeground" Color="#64748B"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                                <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                            </Button.Resources>
+                            <Grid ColumnSpacing="10" HorizontalAlignment="Stretch">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ic:SymbolIcon Grid.Column="0" Symbol="Checkmark" FontSize="16" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Apenas Concluir (Não Imprimir)" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
         <!-- COMPONENTE INDEPENDENTE: CHECKOUT MODAL DE CONDIÇÕES DE PAGAMENTO-->
         <!-- ============================================================== -->
         <views:CheckoutView x:Name="CheckoutModal"

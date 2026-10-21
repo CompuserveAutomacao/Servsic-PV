@@ -366,7 +366,26 @@ public class CheckoutViewModel : ViewModelBase
             {
                 foreach (var p in pedido.Pagamentos.Where(p => p.Valor > 0))
                 {
-                    PagamentosLancados.Add(p);
+                    p.Total = TotalPedido;
+                    var existente = !p.GeraConta
+                        ? PagamentosLancados.FirstOrDefault(x => x.LkTipo == p.LkTipo && !x.GeraConta)
+                        : null;
+
+                    if (existente != null)
+                    {
+                        existente.Valor += p.Valor;
+                        existente.VlTroco += p.VlTroco;
+                        if (existente.VlTroco > 0)
+                        {
+                            existente.AtivaTroco = 1;
+                            existente.TipoTroco = "DINHEIRO";
+                            existente.LkTroco = 1;
+                        }
+                    }
+                    else
+                    {
+                        PagamentosLancados.Add(p);
+                    }
                 }
             }
 
@@ -565,35 +584,66 @@ public class CheckoutViewModel : ViewModelBase
         }
         else
         {
-            int proximaParcela = FormaSelecionada.GeraConta 
-                ? (PagamentosLancados.Count(p => p.LkTipo == FormaSelecionada.Controle) + 1) 
-                : 1;
+            var existente = !FormaSelecionada.GeraConta
+                ? PagamentosLancados.FirstOrDefault(p => p.LkTipo == FormaSelecionada.Controle && !p.GeraConta)
+                : (NumeroParcelas == 1
+                    ? PagamentosLancados.FirstOrDefault(p => p.LkTipo == FormaSelecionada.Controle && p.GeraConta && p.Vencimento.Date == DataPrimeiroVencimento.DateTime.Date)
+                    : null);
 
-            var pag = new FormaPagamento
+            if (existente != null)
             {
-                Pedido = numPedido,
-                LkTipo = FormaSelecionada.Controle,
-                Recebimento = FormaSelecionada.Recebimento,
-                Data = DateTime.Today,
-                Total = TotalPedido,
-                Valor = valorEfetivo,
-                Parcela = proximaParcela,
-                Caixa = "LOJA",
-                LkCaixa = 1,
-                Operador = UsuarioLogado?.Nome ?? "LOJA",
-                LkOperador = UsuarioLogado?.Controle ?? 1,
-                GeraConta = FormaSelecionada.GeraConta,
-                Vencimento = FormaSelecionada.GeraConta ? DataPrimeiroVencimento.DateTime : DateTime.Today,
-                LkConta = FormaSelecionada.LkConta,
-                Conta = FormaSelecionada.ContaRec,
-                NumDoc = numDoc,
-                Autorizacao = CodigoAutorizacao?.Trim(),
-                AtivaTroco = trocoAdicionar > 0 ? 1 : 0,
-                VlTroco = trocoAdicionar,
-                TipoTroco = trocoAdicionar > 0 ? "DINHEIRO" : null,
-                LkTroco = trocoAdicionar > 0 ? 1 : 0
-            };
-            PagamentosLancados.Add(pag);
+                existente.Valor += valorEfetivo;
+                existente.Total = TotalPedido;
+                if (trocoAdicionar > 0)
+                {
+                    existente.VlTroco += trocoAdicionar;
+                    existente.AtivaTroco = 1;
+                    existente.TipoTroco = "DINHEIRO";
+                    existente.LkTroco = 1;
+                }
+                if (!string.IsNullOrWhiteSpace(CodigoAutorizacao))
+                {
+                    existente.Autorizacao = CodigoAutorizacao.Trim();
+                }
+
+                int idx = PagamentosLancados.IndexOf(existente);
+                if (idx >= 0)
+                {
+                    PagamentosLancados[idx] = existente;
+                }
+            }
+            else
+            {
+                int proximaParcela = FormaSelecionada.GeraConta 
+                    ? (PagamentosLancados.Count(p => p.LkTipo == FormaSelecionada.Controle) + 1) 
+                    : 1;
+
+                var pag = new FormaPagamento
+                {
+                    Pedido = numPedido,
+                    LkTipo = FormaSelecionada.Controle,
+                    Recebimento = FormaSelecionada.Recebimento,
+                    Data = DateTime.Today,
+                    Total = TotalPedido,
+                    Valor = valorEfetivo,
+                    Parcela = proximaParcela,
+                    Caixa = "LOJA",
+                    LkCaixa = 1,
+                    Operador = UsuarioLogado?.Nome ?? "LOJA",
+                    LkOperador = UsuarioLogado?.Controle ?? 1,
+                    GeraConta = FormaSelecionada.GeraConta,
+                    Vencimento = FormaSelecionada.GeraConta ? DataPrimeiroVencimento.DateTime : DateTime.Today,
+                    LkConta = FormaSelecionada.LkConta,
+                    Conta = FormaSelecionada.ContaRec,
+                    NumDoc = numDoc,
+                    Autorizacao = CodigoAutorizacao?.Trim(),
+                    AtivaTroco = trocoAdicionar > 0 ? 1 : 0,
+                    VlTroco = trocoAdicionar,
+                    TipoTroco = trocoAdicionar > 0 ? "DINHEIRO" : null,
+                    LkTroco = trocoAdicionar > 0 ? 1 : 0
+                };
+                PagamentosLancados.Add(pag);
+            }
         }
 
         CodigoAutorizacao = string.Empty;
