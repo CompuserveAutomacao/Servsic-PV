@@ -111,7 +111,7 @@ public class CupomVisualizacaoViewModel : ViewModelBase
 
             for (int i = 0; i < vias; i++)
             {
-                var res = await Task.Run(() => _impressaoService.ImprimirTexto(_configAtual.NomeImpressora, TextoCupom, _configAtual.CortarPapel));
+                var res = await Task.Run(() => _impressaoService.ImprimirTexto(_configAtual.NomeImpressora, TextoCupom, _configAtual.CortarPapel, _configAtual.ImprimirNegrito));
                 if (!res.Sucesso)
                 {
                     sucessoGeral = false;

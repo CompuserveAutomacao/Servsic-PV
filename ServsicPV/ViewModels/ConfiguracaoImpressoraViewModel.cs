@@ -18,6 +18,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
     private int _larguraColunas = 42;
     private string _modoImpressao = "Previa";
     private bool _cortarPapel = true;
+    private bool _imprimirNegrito = true;
     private bool _duasVias = false;
     private string _mensagemRodape = "OBRIGADO PELA PREFERENCIA!";
     private string _statusMensagem = string.Empty;
@@ -143,6 +144,12 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
         set => SetProperty(ref _cortarPapel, value);
     }
 
+    public bool ImprimirNegrito
+    {
+        get => _imprimirNegrito;
+        set => SetProperty(ref _imprimirNegrito, value);
+    }
+
     public bool DuasVias
     {
         get => _duasVias;
@@ -200,6 +207,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
         LarguraColunas = config.LarguraColunas > 0 ? config.LarguraColunas : 42;
         ModoImpressao = config.ModoImpressao;
         CortarPapel = config.CortarPapel;
+        ImprimirNegrito = config.ImprimirNegrito;
         DuasVias = config.DuasVias;
         MensagemRodape = config.MensagemRodape;
         StatusMensagem = string.Empty;
@@ -237,6 +245,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
             LarguraColunas = LarguraColunas,
             ModoImpressao = ModoImpressao,
             CortarPapel = CortarPapel,
+            ImprimirNegrito = ImprimirNegrito,
             DuasVias = DuasVias,
             MensagemRodape = MensagemRodape?.Trim() ?? string.Empty
         };
@@ -266,6 +275,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
                 NomeImpressora = SelectedImpressora,
                 LarguraColunas = LarguraColunas,
                 CortarPapel = CortarPapel,
+                ImprimirNegrito = ImprimirNegrito,
                 MensagemRodape = MensagemRodape
             };
 
@@ -282,6 +292,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
             sb.AppendLine($"IMPRESSORA: {SelectedImpressora}");
             sb.AppendLine($"LARGURA BOBINA: {(config.IsBobina80mm ? $"80mm ({col} colunas)" : "58mm (32 colunas)")}");
             sb.AppendLine($"GUILHOTINA: {(CortarPapel ? "HABILITADA" : "DESABILITADA")}");
+            sb.AppendLine($"IMPRESSAO NEGRITO: {(ImprimirNegrito ? "ATIVADA (MAIS FORTE)" : "DESATIVADA")}");
             sb.AppendLine(div);
             sb.AppendLine("123456789012345678901234567890123456789012345678".Substring(0, col));
             sb.AppendLine(div);
@@ -290,7 +301,7 @@ public class ConfiguracaoImpressoraViewModel : ViewModelBase
             sb.AppendLine(new string(' ', col));
             sb.AppendLine(new string(' ', col));
 
-            var resultado = await Task.Run(() => _impressaoService.ImprimirTexto(SelectedImpressora, sb.ToString(), CortarPapel));
+            var resultado = await Task.Run(() => _impressaoService.ImprimirTexto(SelectedImpressora, sb.ToString(), CortarPapel, ImprimirNegrito));
 
             if (resultado.Sucesso)
             {

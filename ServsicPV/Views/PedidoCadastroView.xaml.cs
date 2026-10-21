@@ -168,7 +168,7 @@ public partial class PedidoCadastroView : UserControl
 
     public void FocarCheckoutValor()
     {
-        CheckoutModal?.FocarValor();
+        CheckoutModal?.FocarInicial();
     }
 
     public void FocarSenhaGerente()

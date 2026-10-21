@@ -114,6 +114,7 @@
                         <!-- 4. Recursos Adicionais -->
                         <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10">
                             <StackPanel Spacing="8">
+                                <CheckBox Content="Imprimir em Negrito (impressão mais forte/escura no papel térmico)" IsChecked="{Binding ImprimirNegrito, Mode=TwoWay}" FontSize="12.5"/>
                                 <CheckBox Content="Acionar corte de papel (Guilhotina) ao final do cupom" IsChecked="{Binding CortarPapel, Mode=TwoWay}" FontSize="12.5"/>
                                 <CheckBox Content="Imprimir 2 vias automaticamente (Via Loja e Via Cliente)" IsChecked="{Binding DuasVias, Mode=TwoWay}" FontSize="12.5"/>
                             </StackPanel>

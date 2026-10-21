@@ -29,6 +29,11 @@ public class ConfiguracaoImpressora
     public bool CortarPapel { get; set; } = true;
 
     /// <summary>
+    /// Se true, imprime em negrito com duplo impacto térmico (ESC E 1 + ESC G 1) para gerar letras mais fortes e escuras
+    /// </summary>
+    public bool ImprimirNegrito { get; set; } = true;
+
+    /// <summary>
     /// Se true, imprime duas vias automaticamente (via loja / via cliente)
     /// </summary>
     public bool DuasVias { get; set; } = false;

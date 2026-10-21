@@ -2923,7 +2923,7 @@ public class PedidoViewModel : ViewModelBase
                     int vias = configImpressora.DuasVias ? 2 : 1;
                     for (int i = 0; i < vias; i++)
                     {
-                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel, configImpressora.ImprimirNegrito);
                     }
 
                     // 🚚 Impressão Automática de Itens para Entrega conforme configuração do ERP (CFG_VENDA)
@@ -2931,7 +2931,7 @@ public class PedidoViewModel : ViewModelBase
                     if (configVenda.ImprimeItensEntregaAutomaticamente && pedidoFinalizado.TemItensEntrega)
                     {
                         string textoEntrega = _cupomFormatadorService.GerarTextoCupomEntrega(pedidoFinalizado, empresa, configImpressora);
-                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel);
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel, configImpressora.ImprimirNegrito);
                     }
                 }
                 catch (Exception ex)
@@ -3080,14 +3080,14 @@ public class PedidoViewModel : ViewModelBase
                     int vias = configImpressora.DuasVias ? 2 : 1;
                     for (int i = 0; i < vias; i++)
                     {
-                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel);
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoCupom, configImpressora.CortarPapel, configImpressora.ImprimirNegrito);
                     }
 
                     var configVenda = await _configuracaoVendaService.ObterConfiguracaoAsync();
                     if (configVenda.ImprimeItensEntregaAutomaticamente && orcamento.TemItensEntrega)
                     {
                         string textoEntrega = _cupomFormatadorService.GerarTextoCupomEntrega(orcamento, empresa, configImpressora);
-                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel);
+                        _impressaoTermicaService.ImprimirTexto(configImpressora.NomeImpressora, textoEntrega, configImpressora.CortarPapel, configImpressora.ImprimirNegrito);
                     }
                 }
                 catch (Exception ex)
@@ -3143,7 +3143,7 @@ public class PedidoViewModel : ViewModelBase
             int vias = config.DuasVias ? 2 : 1;
             for (int i = 0; i < vias; i++)
             {
-                _impressaoTermicaService.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel);
+                _impressaoTermicaService.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel, config.ImprimirNegrito);
             }
             ExibirMensagem($"✓ Comprovante #{Pedido.NumeroFormatado} reimpresso com sucesso.", true, 3500);
         }

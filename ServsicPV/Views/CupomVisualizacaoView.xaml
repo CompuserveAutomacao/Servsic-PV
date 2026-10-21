@@ -65,7 +65,8 @@
                             <TextBlock Text="{Binding TextoCupom}"
                                        FontFamily="Cascadia Mono, Consolas, Courier New"
                                        FontSize="11.5"
-                                       Foreground="#1E293B"
+                                       FontWeight="SemiBold"
+                                       Foreground="#0F172A"
                                        LineHeight="16"
                                        TextWrapping="NoWrap"/>
                         </ScrollViewer>

@@ -207,9 +207,12 @@
                                     <StackPanel Spacing="14">
                                     <!-- Seleção da Forma de Pagamento -->
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Forma de Pagamento" Style="{StaticResource TextLabel}"/>
-                                        <ComboBox ItemsSource="{Binding FormasDisponiveis}"
+                                        <TextBlock Text="Forma de Pagamento (↑/↓ Navega, Enter Seleciona)" Style="{StaticResource TextLabel}"/>
+                                        <ComboBox x:Name="CmbFormaPagamento"
+                                                  ItemsSource="{Binding FormasDisponiveis}"
                                                   SelectedItem="{Binding FormaSelecionada, Mode=TwoWay}"
+                                                  PreviewKeyDown="CmbFormaPagamento_PreviewKeyDown"
+                                                  KeyDown="CmbFormaPagamento_KeyDown"
                                                   HorizontalAlignment="Stretch"
                                                   Height="38"
                                                   CornerRadius="6">
@@ -395,6 +398,7 @@
                             <Button x:Name="BtnFinalizar"
                                     Command="{Binding FinalizarCheckoutCommand}" 
                                     IsEnabled="{Binding IsQuitado}"
+                                    KeyDown="BtnFinalizar_KeyDown"
                                     Style="{StaticResource BtnPrimary}" 
                                     Height="38" 
                                     Padding="18,0"

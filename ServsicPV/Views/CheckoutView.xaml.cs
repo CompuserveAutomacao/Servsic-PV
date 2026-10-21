@@ -22,6 +22,28 @@ public partial class CheckoutView : UserControl
         {
             vm.OnSolicitarFocoValor = () => FocarValor();
             vm.OnSolicitarFocoFinalizar = () => FocarBotaoFinalizar();
+            vm.OnSolicitarFocoFormaPagamento = () => FocarFormaPagamento();
+        }
+    }
+
+    public void FocarFormaPagamento()
+    {
+        DispatcherQueue.TryEnqueue(async () =>
+        {
+            await Task.Delay(50);
+            CmbFormaPagamento?.Focus(FocusState.Programmatic);
+        });
+    }
+
+    public void FocarInicial()
+    {
+        if (this.DataContext is CheckoutViewModel vm && vm.IsQuitado)
+        {
+            FocarBotaoFinalizar();
+        }
+        else
+        {
+            FocarFormaPagamento();
         }
     }
 
@@ -42,6 +64,61 @@ public partial class CheckoutView : UserControl
             await Task.Delay(50);
             BtnFinalizar?.Focus(FocusState.Programmatic);
         });
+    }
+
+    private void CmbFormaPagamento_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (this.DataContext is not CheckoutViewModel vm) return;
+
+        if (e.Key == Windows.System.VirtualKey.Down)
+        {
+            if (!CmbFormaPagamento.IsDropDownOpen)
+            {
+                int nextIndex = CmbFormaPagamento.SelectedIndex + 1;
+                if (nextIndex < CmbFormaPagamento.Items.Count)
+                {
+                    CmbFormaPagamento.SelectedIndex = nextIndex;
+                }
+                e.Handled = true;
+                return;
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Up)
+        {
+            if (!CmbFormaPagamento.IsDropDownOpen)
+            {
+                int prevIndex = CmbFormaPagamento.SelectedIndex - 1;
+                if (prevIndex >= 0)
+                {
+                    CmbFormaPagamento.SelectedIndex = prevIndex;
+                }
+                e.Handled = true;
+                return;
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            if (CmbFormaPagamento.IsDropDownOpen)
+            {
+                CmbFormaPagamento.IsDropDownOpen = false;
+            }
+            FocarValor();
+            e.Handled = true;
+            return;
+        }
+    }
+
+    private void CmbFormaPagamento_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            if (CmbFormaPagamento.IsDropDownOpen)
+            {
+                CmbFormaPagamento.IsDropDownOpen = false;
+            }
+            FocarValor();
+            e.Handled = true;
+        }
     }
 
     private void CheckoutView_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -112,6 +189,11 @@ public partial class CheckoutView : UserControl
                 }
             }
         }
+        else if (e.Key == Windows.System.VirtualKey.Up)
+        {
+            FocarFormaPagamento();
+            e.Handled = true;
+        }
     }
 
     private void TxtParcelas_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -123,6 +205,28 @@ public partial class CheckoutView : UserControl
             {
                 vm.AdicionarPagamento();
             }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Up)
+        {
+            FocarValor();
+            e.Handled = true;
+        }
+    }
+
+    private void BtnFinalizar_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            if (this.DataContext is CheckoutViewModel vm && vm.IsQuitado)
+            {
+                vm.FinalizarCheckout();
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Up)
+        {
+            FocarFormaPagamento();
+            e.Handled = true;
         }
     }
 

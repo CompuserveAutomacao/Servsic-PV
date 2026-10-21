@@ -308,6 +308,7 @@ public class CheckoutViewModel : ViewModelBase
     public event Action? CheckoutCancelado;
     public Action? OnSolicitarFocoValor { get; set; }
     public Action? OnSolicitarFocoFinalizar { get; set; }
+    public Action? OnSolicitarFocoFormaPagamento { get; set; }
 
     // Comandos
     public ICommand SelecionarFormaCommand { get; }
@@ -403,7 +404,14 @@ public class CheckoutViewModel : ViewModelBase
             NotificarTotais();
             RecalcularTroco();
             RecalcularParcelas();
-            OnSolicitarFocoValor?.Invoke();
+            if (IsQuitado)
+            {
+                OnSolicitarFocoFinalizar?.Invoke();
+            }
+            else
+            {
+                OnSolicitarFocoFormaPagamento?.Invoke();
+            }
         }
         catch (Exception ex)
         {
@@ -654,7 +662,7 @@ public class CheckoutViewModel : ViewModelBase
         if (SaldoRestante > 0.005m)
         {
             ValorInput = SaldoRestante;
-            OnSolicitarFocoValor?.Invoke();
+            OnSolicitarFocoFormaPagamento?.Invoke();
         }
         else
         {
@@ -672,7 +680,14 @@ public class CheckoutViewModel : ViewModelBase
             RecalcularTroco();
             ValorInput = SaldoRestante;
             Mensagem = string.Empty;
-            OnSolicitarFocoValor?.Invoke();
+            if (SaldoRestante > 0.005m)
+            {
+                OnSolicitarFocoFormaPagamento?.Invoke();
+            }
+            else
+            {
+                OnSolicitarFocoFinalizar?.Invoke();
+            }
         }
     }
 

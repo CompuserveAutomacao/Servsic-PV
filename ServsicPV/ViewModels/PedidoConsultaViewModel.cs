@@ -337,7 +337,7 @@ public class PedidoConsultaViewModel : ViewModelBase
             int vias = config.DuasVias ? 2 : 1;
             for (int i = 0; i < vias; i++)
             {
-                termica.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel);
+                termica.ImprimirTexto(config.NomeImpressora, textoCupom, config.CortarPapel, config.ImprimirNegrito);
             }
 
             // Conclui impressão silenciosamente sem poluir a interface com banner de status

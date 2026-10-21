@@ -124,7 +124,7 @@ public class ImpressaoTermicaService
     /// <summary>
     /// Envia o texto formatado para a impressora térmica selecionada via RAW Spooler
     /// </summary>
-    public (bool Sucesso, string? Mensagem) ImprimirTexto(string nomeImpressora, string texto, bool cortarPapel = true)
+    public (bool Sucesso, string? Mensagem) ImprimirTexto(string nomeImpressora, string texto, bool cortarPapel = true, bool imprimirNegrito = true)
     {
         if (string.IsNullOrWhiteSpace(nomeImpressora))
         {
@@ -156,8 +156,34 @@ public class ImpressaoTermicaService
             ms.WriteByte(0x1B);
             ms.WriteByte(0x40);
 
+            // Modo Negrito e Duplo Impacto (ESC/POS):
+            // ESC E 1 (0x1B, 0x45, 0x01): Ativa modo Negrito (Emphasized)
+            // ESC G 1 (0x1B, 0x47, 0x01): Ativa modo Double-Strike (aquece mais a cabeça térmica, deixando o traço escuro e forte)
+            if (imprimirNegrito)
+            {
+                ms.WriteByte(0x1B);
+                ms.WriteByte(0x45);
+                ms.WriteByte(0x01);
+
+                ms.WriteByte(0x1B);
+                ms.WriteByte(0x47);
+                ms.WriteByte(0x01);
+            }
+
             // Conteúdo do Cupom
             ms.Write(bytesTexto, 0, bytesTexto.Length);
+
+            // Desativa Negrito e Double-Strike para não interferir em outras impressões
+            if (imprimirNegrito)
+            {
+                ms.WriteByte(0x1B);
+                ms.WriteByte(0x45);
+                ms.WriteByte(0x00);
+
+                ms.WriteByte(0x1B);
+                ms.WriteByte(0x47);
+                ms.WriteByte(0x00);
+            }
 
             // Avanço de papel (4 linhas para sair da guilhotina)
             ms.WriteByte(0x0A);
