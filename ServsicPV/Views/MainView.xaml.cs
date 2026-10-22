@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
+using ServsicPV.Common;
 using ServsicPV.ViewModels;
 using ServSic.Core.Models;
 using ServSic.Core.Services;
@@ -22,6 +23,9 @@ public partial class MainView : Window
     private readonly LiberacoesViewModel _liberacoesViewModel;
     private readonly LiberacaoService _liberacaoService;
     private readonly PedidoService _pedidoService;
+    private readonly DesempenhoView _desempenhoView;
+    private readonly DesempenhoViewModel _desempenhoViewModel;
+    private readonly DesempenhoService _desempenhoService;
 
     public MainView(Usuario usuario)
     {
@@ -58,7 +62,8 @@ public partial class MainView : Window
         {
             if (ReferenceEquals(ContentArea.Content, _consultaView) 
                 || ReferenceEquals(ContentArea.Content, _clienteConsultaView)
-                || ReferenceEquals(ContentArea.Content, _produtoConsultaView))
+                || ReferenceEquals(ContentArea.Content, _produtoConsultaView)
+                || ReferenceEquals(ContentArea.Content, _desempenhoView))
             {
                 MostrarCadastro();
             }
@@ -137,8 +142,22 @@ public partial class MainView : Window
                     DispatcherQueue.TryEnqueue(() => AtualizarBadgeSupervisor(_liberacoesViewModel.ContadorPendentes));
                 }
             };
+            NotificationService.OnNotificacaoClicada = () =>
+            {
+                DispatcherQueue.TryEnqueue(() => MostrarLiberacoes());
+            };
             _liberacoesViewModel.IniciarMonitoramento();
         }
+
+        // Painel de Desempenho Individual (Últimos 7 dias)
+        _desempenhoService = new DesempenhoService();
+        _desempenhoViewModel = new DesempenhoViewModel(_desempenhoService) { UsuarioLogado = usuario };
+        _desempenhoViewModel.OnVoltarAoBalcao = () =>
+        {
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+        };
+        _desempenhoView = new DesempenhoView { DataContext = _desempenhoViewModel };
 
         // Exibe tela de cadastro inicialmente
         MostrarCadastro();
@@ -178,6 +197,25 @@ public partial class MainView : Window
         else
         {
             MostrarLiberacoes();
+        }
+    }
+
+    private void MostrarDesempenho()
+    {
+        ContentArea.Content = _desempenhoView;
+        _ = _desempenhoViewModel.CarregarDadosAsync();
+    }
+
+    private void BtnDesempenho_Click(object sender, RoutedEventArgs e)
+    {
+        if (ReferenceEquals(ContentArea.Content, _desempenhoView))
+        {
+            MostrarCadastro();
+            _cadastroView.FocarCodigoProduto();
+        }
+        else
+        {
+            MostrarDesempenho();
         }
     }
 
@@ -416,7 +454,8 @@ public partial class MainView : Window
 
         if (ReferenceEquals(ContentArea.Content, _consultaView)
             || ReferenceEquals(ContentArea.Content, _clienteConsultaView)
-            || ReferenceEquals(ContentArea.Content, _produtoConsultaView))
+            || ReferenceEquals(ContentArea.Content, _produtoConsultaView)
+            || ReferenceEquals(ContentArea.Content, _desempenhoView))
         {
             MostrarCadastro();
             _cadastroView.FocarCodigoProduto();

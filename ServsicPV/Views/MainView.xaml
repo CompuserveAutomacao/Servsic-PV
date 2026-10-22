@@ -70,6 +70,26 @@
                         </StackPanel>
                     </Button>
 
+                    <!-- Botão Meu Painel de Desempenho (Temporariamente oculto - código preservado para uso futuro)
+                    <Button x:Name="BtnDesempenho" Click="BtnDesempenho_Click"
+                            IsTabStop="False" CornerRadius="8" Padding="12,5"
+                            ToolTipService.ToolTip="Meu Painel de Desempenho (Últimos 7 dias)">
+                        <Button.Resources>
+                            <SolidColorBrush x:Key="ButtonBackground" Color="#1E293B"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ic:SymbolIcon Symbol="DataTrending" FontSize="18" Foreground="#38BDF8"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="MEU PAINEL" FontSize="9.5" FontWeight="Bold" Foreground="#94A3B8" CharacterSpacing="50"/>
+                                <TextBlock Text="Desempenho" FontSize="12.5" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                    -->
+
                     <!-- Badge do Vendedor Vinculado ao Usuário -->
                     <Border Background="#1E293B" BorderBrush="#334155" BorderThickness="1" CornerRadius="8" Padding="12,5" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="8">

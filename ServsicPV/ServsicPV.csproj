@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -22,7 +22,7 @@
     <NoWarn>CA1416;CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8625</NoWarn>
     <!-- Limita montagem de recursos apenas para Português, evitando gerar dezenas de pastas de idiomas -->
     <SatelliteResourceLanguages>pt-BR;pt</SatelliteResourceLanguages>
-    <Version>1.0.16</Version>
+    <Version>1.0.19</Version>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Assets\**">

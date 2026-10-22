@@ -45,8 +45,9 @@ O SERVSIC PV é uma aplicação de alta produtividade para frente de caixa e pr�
   - **TERMINANTEMENTE PROIBIDO** o uso de foco branco ou fundo desbotado/fantasma em botões e componentes interativos.
   - O estado de foco (<kbd>Tab</kbd> / navegação por teclado) e de hover/apontamento de botões de ação e botões principais deve obrigatoriamente utilizar o **Azul Escuro Navy padrão do sistema (`#0B192C`)** com texto e ícones em **Branco Puro (`#FFFFFF`)**, garantindo alto contraste, legibilidade imediata e presença visual firme.
   - Nunca permitir que estilos padrão do WinUI 3 (ex: `ButtonBackgroundPointerOver`, `ButtonBackgroundFocused`) transformem o botão em branco ou apaguem o contraste do texto.
-- **Ícones Modernos:**
-  - Usar exclusivamente Fluent Icons (`using:FluentIcons.WinUI` com `<ic:SymbolIcon Symbol="..." />`).
+- **Ícones Modernos & Proibição Absoluta de Emojis:**
+  - **TERMINANTEMENTE PROIBIDO O USO DE EMOJIS:** É terminantemente proibido o uso de qualquer caractere de emoji em todo o sistema (telas, textos, mensagens, modelos, notificações, tooltips, diálogos ou logs de interface). O SERVSIC PV é uma solução corporativa séria e profissional.
+  - **Apenas Bibliotecas de Ícones Modernos:** A representação visual deve utilizar exclusivamente Fluent Icons (`using:FluentIcons.WinUI` com `<ic:SymbolIcon Symbol="..." />`).
   - Nunca duplicar símbolos textuais com ícones (ex: botões com ícone de `Add` devem exibir apenas o texto `Novo Cliente`, nunca `+ Novo Cliente`).
 - **Layout Estrutural:**
   - **Coluna Esquerda (`*`):** Identificação do Cliente, Grade de Produtos/Itens e Barra de Ações Inferior.

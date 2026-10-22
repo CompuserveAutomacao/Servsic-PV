@@ -1822,26 +1822,34 @@ public class PedidoViewModel : ViewModelBase
                             {
                                 _dispatcherQueue.TryEnqueue(async () =>
                                 {
-                                    IsLiberacaoGerenteOpen = false;
-                                    IsAguardandoLiberacaoRemota = false;
-                                    IdSolicitacaoRemotaAtual = null;
-                                    _solicitacoesLiberadasNesteAtendimento.Add(solId);
-
-                                    var gerenteAprovador = new Usuario
+                                    try
                                     {
-                                        Controle = atual.LkSupervisor ?? 0,
-                                        Nome = atual.NomeSupervisor ?? "Supervisor",
-                                        Nivel = 1
-                                    };
+                                        IsLiberacaoGerenteOpen = false;
+                                        IsAguardandoLiberacaoRemota = false;
+                                        IdSolicitacaoRemotaAtual = null;
+                                        _solicitacoesLiberadasNesteAtendimento.Add(solId);
 
-                                    var acao = _callbackAcaoLiberada;
-                                    _callbackAcaoLiberada = null;
-                                    if (acao != null)
-                                    {
-                                        await acao.Invoke(gerenteAprovador);
+                                        var gerenteAprovador = new Usuario
+                                        {
+                                            Controle = atual.LkSupervisor ?? 0,
+                                            Nome = atual.NomeSupervisor ?? "Supervisor",
+                                            Nivel = 1
+                                        };
+
+                                        var acao = _callbackAcaoLiberada;
+                                        _callbackAcaoLiberada = null;
+                                        if (acao != null)
+                                        {
+                                            await acao.Invoke(gerenteAprovador);
+                                        }
+
+                                        ExibirMensagem($"Operação liberada remotamente por {gerenteAprovador.Nome}!", true, 4000);
                                     }
-
-                                    ExibirMensagem($"Operação liberada remotamente por {gerenteAprovador.Nome}!", true, 4000);
+                                    catch (Exception ex)
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"[PedidoViewModel] Erro ao aplicar liberação remota: {ex.Message}");
+                                        ExibirMensagem($"Erro ao aplicar liberação remota: {ex.Message}", false, 5000);
+                                    }
                                 });
                             }
                             break;
@@ -1852,8 +1860,15 @@ public class PedidoViewModel : ViewModelBase
                             {
                                 _dispatcherQueue.TryEnqueue(() =>
                                 {
-                                    IsAguardandoLiberacaoRemota = false;
-                                    MensagemErroLiberacao = $"Solicitação recusada por {atual.NomeSupervisor ?? "Supervisor"}: {atual.MotivoRecusa ?? "Sem justificativa"}";
+                                    try
+                                    {
+                                        IsAguardandoLiberacaoRemota = false;
+                                        MensagemErroLiberacao = $"Solicitação recusada por {atual.NomeSupervisor ?? "Supervisor"}: {atual.MotivoRecusa ?? "Sem justificativa"}";
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        System.Diagnostics.Debug.WriteLine($"[PedidoViewModel] Erro ao aplicar recusa remota: {ex.Message}");
+                                    }
                                 });
                             }
                             break;

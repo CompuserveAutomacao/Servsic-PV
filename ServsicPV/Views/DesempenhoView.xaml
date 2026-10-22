@@ -1,0 +1,510 @@
+<UserControl
+    x:Class="ServsicPV.Views.DesempenhoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ic="using:FluentIcons.WinUI"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource BrushIceBackground}" Padding="20,16" RowSpacing="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho Superior -->
+            <RowDefinition Height="*"/>    <!-- 1. Conteúdo do Painel com Scroll -->
+        </Grid.RowDefinitions>
+
+        <!-- ============================================================== -->
+        <!-- 0. CABEÇALHO SUPERIOR DA TELA                                  -->
+        <!-- ============================================================== -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lado Esquerdo: Identidade da Tela -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <Border Width="46" Height="46" CornerRadius="12" Background="{StaticResource BrushServsicDark}" VerticalAlignment="Center">
+                    <ic:SymbolIcon Symbol="DataTrending" FontSize="24" Foreground="#38BDF8"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <TextBlock Text="Meu Painel de Desempenho" FontSize="21" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                        <Border Background="{StaticResource BrushServsicBlue}" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ic:SymbolIcon Symbol="Calendar" FontSize="12" Foreground="#FFFFFF"/>
+                                <TextBlock Text="{Binding PeriodoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="#FFFFFF" CharacterSpacing="40"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Acompanhamento exclusivo de suas vendas, pré-vendas, orçamentos e tíquete médio dos últimos 7 dias" FontSize="12.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Lado Direito: Ações Rápidas -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+
+                <!-- Botão Atualizar -->
+                <Button Click="BtnAtualizar_Click" Height="38" Padding="14,0" Style="{StaticResource BtnSecondary}" ToolTipService.ToolTip="Recarregar Indicadores">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ic:SymbolIcon Symbol="ArrowSync" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                        <TextBlock Text="Atualizar" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Botão Voltar ao Balcão -->
+                <Button Click="BtnVoltar_Click" Height="38" Padding="16,0" Style="{StaticResource BtnSecondary}" ToolTipService.ToolTip="Voltar ao Balcão">
+                    <Button.Resources>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                        <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                    </Button.Resources>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ic:SymbolIcon Symbol="ArrowLeft" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                        <TextBlock Text="Voltar ao Balcão" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ============================================================== -->
+        <!-- 1. CORPO PRINCIPAL COM ROLAGEM SUAVE                           -->
+        <!-- ============================================================== -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16" Margin="0,0,8,16">
+
+                <!-- BARRA DE PROGRESSO DE CARREGAMENTO -->
+                <ProgressBar IsIndeterminate="{Binding IsCarregando}" 
+                             Visibility="{Binding IsCarregando, Converter={StaticResource BoolToVisibilityConverter}}"
+                             Foreground="{StaticResource BrushServsicBlue}" Height="3"/>
+
+                <!-- ========================================================== -->
+                <!-- SEÇÃO 1: LINHA DE CARDS DE KPI / MÉTRICAS PRINCIPAIS       -->
+                <!-- ========================================================== -->
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- CARD 1: VENDAS CONCLUÍDAS -->
+                    <Border Grid.Column="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="16,14">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="VENDAS CONCLUÍDAS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="50"/>
+                                <Border HorizontalAlignment="Right" Width="28" Height="28" CornerRadius="6" Background="{StaticResource BrushServsicBlueSoft}">
+                                    <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1" Text="{Binding TotalVendasFormatado}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <TextBlock Grid.Row="2" Text="{Binding QtdVendasDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 2: PRÉ-VENDAS EM ABERTO -->
+                    <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="16,14">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="PRÉ-VENDAS BALCÃO" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="50"/>
+                                <Border HorizontalAlignment="Right" Width="28" Height="28" CornerRadius="6" Background="#F1F5F9">
+                                    <ic:SymbolIcon Symbol="Cart" FontSize="16" Foreground="{StaticResource BrushServsicDark}"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1" Text="{Binding TotalPreVendasFormatado}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushServsicDark}"/>
+                            <TextBlock Grid.Row="2" Text="{Binding QtdPreVendasDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 3: ORÇAMENTOS GERADOS -->
+                    <Border Grid.Column="2" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="16,14">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="ORÇAMENTOS" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="50"/>
+                                <Border HorizontalAlignment="Right" Width="28" Height="28" CornerRadius="6" Background="#E0F2FE">
+                                    <ic:SymbolIcon Symbol="DocumentBulletList" FontSize="16" Foreground="#0284C7"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1" Text="{Binding TotalOrcamentosFormatado}" FontSize="20" FontWeight="Bold" Foreground="#0369A1"/>
+                            <TextBlock Grid.Row="2" Text="{Binding QtdOrcamentosDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 4: TÍQUETE MÉDIO -->
+                    <Border Grid.Column="3" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="16,14">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="TÍQUETE MÉDIO (VENDAS)" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="50"/>
+                                <Border HorizontalAlignment="Right" Width="28" Height="28" CornerRadius="6" Background="#EFF6FF">
+                                    <ic:SymbolIcon Symbol="MoneyHand" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1" Text="{Binding TicketMedioVendasFormatado}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            <TextBlock Grid.Row="2" Text="{Binding TicketMedioGeralSubtitulo}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD 5: TAXA DE CONVERSÃO -->
+                    <Border Grid.Column="4" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="16,14">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid Grid.Row="0">
+                                <TextBlock Text="CONVERSÃO / TOTAL" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" CharacterSpacing="50"/>
+                                <Border HorizontalAlignment="Right" Width="28" Height="28" CornerRadius="6" Background="#F8FAFC">
+                                    <ic:SymbolIcon Symbol="TargetArrow" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1" Text="{Binding TaxaConversaoFormatada}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                            <TextBlock Grid.Row="2" Text="{Binding TotalAtendimentosDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ========================================================== -->
+                <!-- SEÇÃO 2: GRÁFICO MODERNO TIPO RAIO (RADIAL) + DIAS DA SEMANA-->
+                <!-- ========================================================== -->
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="460"/> <!-- Gráfico de Raios Radiais -->
+                        <ColumnDefinition Width="*"/>   <!-- Evolução Diária dos 7 Dias -->
+                    </Grid.ColumnDefinitions>
+
+                    <!-- CARD GRÁFICO TIPO RAIO (CONCÊNTRICO RADIAL) -->
+                    <Border Grid.Column="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                        <Grid RowSpacing="14">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/> <!-- Título do Card -->
+                                <RowDefinition Height="Auto"/> <!-- Canvas do Gráfico Radial e Indicador Central -->
+                                <RowDefinition Height="Auto"/> <!-- Legenda com Indicadores e Percentuais -->
+                            </Grid.RowDefinitions>
+
+                            <!-- Título do Card -->
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                                <ic:SymbolIcon Symbol="ChartMultiple" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Distribuição Operacional (Gráfico Raio)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            </StackPanel>
+
+                            <!-- Área do Gráfico Radial (Anéis Concêntricos / Raios) -->
+                            <Grid Grid.Row="1" Height="220" HorizontalAlignment="Center">
+                                <Canvas x:Name="CanvasRadialRings" Width="220" Height="220" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                
+                                <!-- Centro do Gráfico: Resumo Central -->
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="1">
+                                    <TextBlock Text="TOTAL FATURADO" FontSize="9" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center" CharacterSpacing="50"/>
+                                    <TextBlock Text="{Binding TotalFaturadoFormatado}" FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushServsicDark}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="7 dias" FontSize="11" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Legenda dos Raios com Percentuais e Cores -->
+                            <StackPanel Grid.Row="2" Spacing="10">
+                                <!-- Raio 1: Vendas Concluídas -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="Vendas Concluídas" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding QtdVendasDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Right" Margin="0,0,14,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding PercentualVendasFormatado}" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </Grid>
+
+                                <!-- Raio 2: Pré-Vendas Balcão -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="{StaticResource BrushServsicDark}"/>
+                                        <TextBlock Text="Pré-Vendas Balcão" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding QtdPreVendasDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Right" Margin="0,0,14,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding PercentualPreVendasFormatado}" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicDark}"/>
+                                </Grid>
+
+                                <!-- Raio 3: Orçamentos -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Border Width="12" Height="12" CornerRadius="6" Background="#38BDF8"/>
+                                        <TextBlock Text="Orçamentos" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding QtdOrcamentosDescricao}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Right" Margin="0,0,14,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding PercentualOrcamentosFormatado}" FontSize="12.5" FontWeight="Bold" Foreground="#0284C7"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD EVOLUÇÃO DIÁRIA (ÚLTIMOS 7 DIAS) -->
+                    <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                        <Grid RowSpacing="14">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/> <!-- Título e Total Geral -->
+                                <RowDefinition Height="*"/>    <!-- Gráfico de 7 Barras Diárias -->
+                                <RowDefinition Height="Auto"/> <!-- Resumo do Período -->
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="ArrowTrendingLines" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    <TextBlock Text="Evolução de Vendas por Dia" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="6" VerticalAlignment="Center">
+                                    <TextBlock Text="Total Vendas Reais:" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                    <TextBlock Text="{Binding TotalVendasFormatado}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Gráfico de 7 Colunas com Barras de Faturamento -->
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Dias}" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="14"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid RowSpacing="6" Margin="4,0" VerticalAlignment="Bottom">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/> <!-- Valor R$ do dia -->
+                                                <RowDefinition Height="90"/>   <!-- Coluna / Barra de Progresso Vertical -->
+                                                <RowDefinition Height="Auto"/> <!-- Dia da Semana / Data -->
+                                                <RowDefinition Height="Auto"/> <!-- Quantidade de docs -->
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Valor em R$ no Topo da Barra -->
+                                            <TextBlock Grid.Row="0" Text="{Binding TotalVendidoFormatado}" FontSize="10.5" FontWeight="Bold" 
+                                                       Foreground="{StaticResource BrushServsicBlue}" HorizontalAlignment="Center"/>
+
+                                            <!-- Barra Vertical Estilizada -->
+                                            <Border Grid.Row="1" Width="36" CornerRadius="6" Background="#F1F5F9" VerticalAlignment="Stretch">
+                                                <Border Width="36" Height="{Binding AlturaBarraPx}" CornerRadius="6" 
+                                                        Background="{StaticResource BrushServsicBlue}" 
+                                                        VerticalAlignment="Bottom"/>
+                                            </Border>
+
+                                            <!-- Rótulo do Dia -->
+                                            <StackPanel Grid.Row="2" Spacing="1" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding DiaSemana}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding DataFormatada}" FontSize="10.5" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <!-- Total de Documentos -->
+                                            <Border Grid.Row="3" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="4" Padding="4,1" HorizontalAlignment="Center">
+                                                <TextBlock Text="{Binding TotalDocumentosFormatado}" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Resumo Informativo Inferior -->
+                            <Border Grid.Row="2" Background="#F8FAFC" CornerRadius="6" Padding="12,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="* O gráfico diário exibe exclusivamente vendas reais concluídas no caixa." FontSize="11" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <ic:SymbolIcon Symbol="Info" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                        <TextBlock Text="Filtro automático: 7 dias mais recentes" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- ========================================================== -->
+                <!-- SEÇÃO 3: TOP 5 PRODUTOS VENDIDOS & ATENDIMENTOS RECENTES   -->
+                <!-- ========================================================== -->
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- TOP 5 PRODUTOS MAIS VENDIDOS PELO VENDEDOR -->
+                    <Border Grid.Column="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                        <Grid RowSpacing="12">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                                <ic:SymbolIcon Symbol="Trophy" FontSize="18" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <TextBlock Text="Top Produtos Mais Vendidos (Seus Últimos 7 Dias)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            </StackPanel>
+
+                            <!-- Lista de Produtos -->
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding TopProdutos}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{StaticResource BrushBorder}" BorderThickness="0,0,0,1" Padding="6,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="32"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="100"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Posição com Badge -->
+                                                <Border Grid.Column="0" Width="24" Height="24" CornerRadius="12" Background="{StaticResource BrushServsicBlueSoft}" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding PosicaoFormatada}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <!-- Dados do Produto -->
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,10,0">
+                                                    <TextBlock Text="{Binding Produto}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding CodigoFormatado}" FontSize="11" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                </StackPanel>
+
+                                                <!-- Quantidade -->
+                                                <Border Grid.Column="2" Background="#F1F5F9" CornerRadius="6" Padding="8,3" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                    <TextBlock Text="{Binding QuantidadeFormatadaComUnidade}" FontSize="11.5" FontWeight="Bold" Foreground="{StaticResource BrushServsicDark}"/>
+                                                </Border>
+
+                                                <!-- Total em R$ -->
+                                                <TextBlock Grid.Column="3" Text="{Binding TotalFormatado}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+
+                    <!-- CARD DIREITO: PÓDIO DA SEMANA (TOP 3 VENDEDORES POR QUANTIDADE - DISCRETO E SEM VALORES) -->
+                    <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="18,16">
+                        <Grid RowSpacing="12">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="Trophy" FontSize="18" Foreground="#D97706"/>
+                                    <TextBlock Text="Pódio da Semana (Top 3 Vendedores)" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+                                <Border HorizontalAlignment="Right" Background="#F1F5F9" CornerRadius="10" Padding="8,2">
+                                    <TextBlock Text="Por Qtd. de Vendas" FontSize="10.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Estado Vazio (quando não há vendas finalizadas no período) -->
+                            <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14,28"
+                                    Visibility="{Binding TemTop3, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                <StackPanel HorizontalAlignment="Center" Spacing="8">
+                                    <ic:SymbolIcon Symbol="Trophy" FontSize="28" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Nenhuma venda concluída nesta semana para ranqueamento" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Lista dos 3 Vendedores em Destaque -->
+                            <ItemsControl Grid.Row="1" ItemsSource="{Binding Top3Vendedores}"
+                                          Visibility="{Binding TemTop3, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{Binding BadgeFundoCor}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Posição / Medalha -->
+                                                <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17" Background="#FFFFFF" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                                                        <ic:SymbolIcon Symbol="Trophy" FontSize="13" Foreground="{Binding IconeTrofeuCor}"/>
+                                                        <TextBlock Text="{Binding PódioMedalha}" FontSize="12" FontWeight="Bold" Foreground="{Binding BadgeTextoCor}"/>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Nome do Vendedor + Tag 'VOCÊ' se for o usuário logado -->
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding NomeVendedor}" FontSize="13.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+                                                    <Border Background="{StaticResource BrushServsicBlue}" CornerRadius="10" Padding="7,1" VerticalAlignment="Center"
+                                                            Visibility="{Binding IsUsuarioLogado, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                        <TextBlock Text="VOCÊ" FontSize="9.5" FontWeight="Bold" Foreground="#FFFFFF" CharacterSpacing="40"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Quantidade de Vendas (Discreta, apenas contagem, SEM R$) -->
+                                                <Border Grid.Column="2" Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="10,3" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding QuantidadeVendasFormatada}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                                </Border>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Rodapé Discreto com o Posicionamento / Incentivo -->
+                            <Border Grid.Row="2" Background="#F8FAFC" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ic:SymbolIcon Grid.Column="0" Symbol="ShieldCheckmark" FontSize="16" Foreground="{StaticResource BrushServsicBlue}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding MensagemPosicaoUsuario}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

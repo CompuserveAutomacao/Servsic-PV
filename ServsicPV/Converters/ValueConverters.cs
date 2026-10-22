@@ -110,13 +110,16 @@ public class StatusColorConverter : IValueConverter
                 : new SolidColorBrush(Color.FromArgb(255, 30, 41, 59));   // #1E293B Dark Slate when inactive
         }
 
-        string status = value?.ToString() ?? "";
+        string status = value?.ToString()?.Trim() ?? "";
         return status.ToUpperInvariant() switch
         {
-            "O" or "ORÇAMENTO" => new SolidColorBrush(Color.FromArgb(255, 2, 132, 199)),    // #0284C7 Azul Claro
+            "A" or "APROVADA" or "APROVADO" => new SolidColorBrush(Color.FromArgb(255, 22, 163, 74)),    // #16A34A Verde Sucesso
+            "R" or "RECUSADA" or "RECUSADO" => new SolidColorBrush(Color.FromArgb(255, 220, 38, 38)),    // #DC2626 Vermelho Recusada
+            "C" or "CANCELADA" or "CANCELADO" => new SolidColorBrush(Color.FromArgb(255, 100, 116, 139)), // #64748B Cinza Neutro Cancelada
+            "P" or "PENDENTE" => new SolidColorBrush(Color.FromArgb(255, 217, 119, 6)),                  // #D97706 Laranja/Âmbar Pendente
+            "O" or "ORÇAMENTO" or "ORCAMENTO" => new SolidColorBrush(Color.FromArgb(255, 2, 132, 199)),  // #0284C7 Azul Claro
             "V" or "VENDA" or "PEDIDO DE VENDA" => new SolidColorBrush(Color.FromArgb(255, 3, 105, 161)), // #0369A1 Azul Corporativo
-            "CANCELADO" => new SolidColorBrush(Color.FromArgb(255, 239, 68, 68)),            // Vermelho
-            _ => new SolidColorBrush(Color.FromArgb(255, 100, 116, 139))                      // Cinza
+            _ => new SolidColorBrush(Color.FromArgb(255, 100, 116, 139))
         };
     }
 

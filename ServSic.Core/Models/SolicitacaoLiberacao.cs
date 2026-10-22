@@ -93,6 +93,21 @@ public class SolicitacaoLiberacao
         }
     }
     public string AvaliadorDescricao => !string.IsNullOrWhiteSpace(NomeSupervisor) ? $"Avaliado por: {NomeSupervisor}" : "";
+
+    public string RespostaResumo
+    {
+        get
+        {
+            if (IsCancelada)
+                return "Cancelada no Balcão";
+            if (!string.IsNullOrWhiteSpace(NomeSupervisor))
+                return $"Avaliado por: {NomeSupervisor}";
+            return "";
+        }
+    }
+
+    public string HoraRespostaFormatada => DataHoraResposta.HasValue ? DataHoraResposta.Value.ToString("HH:mm:ss") : DataHora.ToString("HH:mm:ss");
+
     public string DataHoraFormatada => DataHora.ToString("dd/MM/yyyy HH:mm:ss");
     public string DataHoraRespostaFormatada => DataHoraResposta.HasValue ? $"Data/Hora: {DataHoraResposta.Value:dd/MM/yyyy HH:mm:ss}" : "";
     public string EstoqueAtualFormatado => EstoqueAtual.HasValue ? $"{EstoqueAtual.Value:N2} UN" : "";

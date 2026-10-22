@@ -28,7 +28,14 @@ public partial class LiberacoesView : UserControl
         {
             try
             {
-                ListaPendentes.Focus(FocusState.Programmatic);
+                if (ListaPendentes != null && ListaPendentes.IsLoaded)
+                {
+                    if (ListaPendentes.SelectedIndex < 0 && ListaPendentes.Items.Count > 0)
+                    {
+                        ListaPendentes.SelectedIndex = 0;
+                    }
+                    ListaPendentes.Focus(FocusState.Programmatic);
+                }
             }
             catch { }
         });
@@ -59,31 +66,30 @@ public partial class LiberacoesView : UserControl
         args.Handled = true;
     }
 
-    private void Lista_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is ListView lv && lv.SelectedItem is SolicitacaoLiberacao sel && ViewModel != null)
-        {
-            ViewModel.SolicitacaoSelecionada = sel;
-        }
-    }
-
     private void Lista_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.Enter)
+        try
         {
-            if (ViewModel != null && ViewModel.PodeExecutarAcao)
+            if (e.Key == Windows.System.VirtualKey.Enter)
             {
-                ViewModel.AprovarCommand.Execute(null);
-                e.Handled = true;
+                if (ViewModel != null && ViewModel.PodeExecutarAcao)
+                {
+                    ViewModel.AprovarCommand.Execute(null);
+                    e.Handled = true;
+                }
+            }
+            else if (e.Key == Windows.System.VirtualKey.Delete)
+            {
+                if (ViewModel != null && ViewModel.PodeExecutarAcao)
+                {
+                    ViewModel.AbrirRecusaCommand.Execute(null);
+                    e.Handled = true;
+                }
             }
         }
-        else if (e.Key == Windows.System.VirtualKey.Delete)
+        catch (Exception ex)
         {
-            if (ViewModel != null && ViewModel.PodeExecutarAcao)
-            {
-                ViewModel.AbrirRecusaCommand.Execute(null);
-                e.Handled = true;
-            }
+            System.Diagnostics.Debug.WriteLine($"[LiberacoesView] Erro no KeyDown da lista: {ex.Message}");
         }
     }
 }

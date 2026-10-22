@@ -30,11 +30,15 @@ public partial class PedidoCadastroView : UserControl
                 FocarCodigoProduto();
                 DispatcherQueue.TryEnqueue(async () =>
                 {
-                    await Task.Delay(60);
-                    if (vm.Pedido?.Itens?.Count > 0)
+                    try
                     {
-                        ListaItens?.ScrollIntoView(vm.Pedido.Itens[^1]);
+                        await Task.Delay(60);
+                        if (vm.Pedido?.Itens?.Count > 0 && ListaItens != null && ListaItens.IsLoaded)
+                        {
+                            ListaItens.ScrollIntoView(vm.Pedido.Itens[^1]);
+                        }
                     }
+                    catch { }
                 });
             };
             vm.OnItemAdicaoFalhou = () => FocarDescontoItem();
@@ -44,8 +48,12 @@ public partial class PedidoCadastroView : UserControl
             {
                 DispatcherQueue.TryEnqueue(async () =>
                 {
-                    await Task.Delay(40);
-                    BtnSalvarPdfOrcamento?.Focus(FocusState.Programmatic);
+                    try
+                    {
+                        await Task.Delay(40);
+                        BtnSalvarPdfOrcamento?.Focus(FocusState.Programmatic);
+                    }
+                    catch { }
                 });
             };
 
@@ -68,8 +76,12 @@ public partial class PedidoCadastroView : UserControl
                     {
                         DispatcherQueue.TryEnqueue(async () =>
                         {
-                            await Task.Delay(40);
-                            BtnConfirmarSalvarPendente?.Focus(FocusState.Programmatic);
+                            try
+                            {
+                                await Task.Delay(40);
+                                BtnConfirmarSalvarPendente?.Focus(FocusState.Programmatic);
+                            }
+                            catch { }
                         });
                     }
                     else
@@ -83,8 +95,12 @@ public partial class PedidoCadastroView : UserControl
                     {
                         DispatcherQueue.TryEnqueue(async () =>
                         {
-                            await Task.Delay(40);
-                            BtnConfirmarTipo?.Focus(FocusState.Programmatic);
+                            try
+                            {
+                                await Task.Delay(40);
+                                BtnConfirmarTipo?.Focus(FocusState.Programmatic);
+                            }
+                            catch { }
                         });
                     }
                     else
@@ -109,8 +125,12 @@ public partial class PedidoCadastroView : UserControl
                     {
                         DispatcherQueue.TryEnqueue(async () =>
                         {
-                            await Task.Delay(40);
-                            BtnSalvarPdfOrcamento?.Focus(FocusState.Programmatic);
+                            try
+                            {
+                                await Task.Delay(40);
+                                BtnSalvarPdfOrcamento?.Focus(FocusState.Programmatic);
+                            }
+                            catch { }
                         });
                     }
                     else
@@ -126,9 +146,19 @@ public partial class PedidoCadastroView : UserControl
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(60);
-            TxtCodigoProduto?.Focus(FocusState.Programmatic);
-            TxtCodigoProduto?.SelectAll();
+            try
+            {
+                await Task.Delay(60);
+                if (TxtCodigoProduto != null && TxtCodigoProduto.IsLoaded)
+                {
+                    TxtCodigoProduto.Focus(FocusState.Programmatic);
+                    TxtCodigoProduto.SelectAll();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PedidoCadastroView] Erro ao focar código produto: {ex.Message}");
+            }
         });
     }
 
@@ -136,9 +166,19 @@ public partial class PedidoCadastroView : UserControl
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(80);
-            TxtQuantidade?.Focus(FocusState.Programmatic);
-            TxtQuantidade?.SelectAll();
+            try
+            {
+                await Task.Delay(80);
+                if (TxtQuantidade != null && TxtQuantidade.IsLoaded)
+                {
+                    TxtQuantidade.Focus(FocusState.Programmatic);
+                    TxtQuantidade.SelectAll();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PedidoCadastroView] Erro ao focar quantidade: {ex.Message}");
+            }
         });
     }
 
@@ -151,9 +191,19 @@ public partial class PedidoCadastroView : UserControl
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(60);
-            TxtDescontoItem?.Focus(FocusState.Programmatic);
-            TxtDescontoItem?.SelectAll();
+            try
+            {
+                await Task.Delay(60);
+                if (TxtDescontoItem != null && TxtDescontoItem.IsLoaded)
+                {
+                    TxtDescontoItem.Focus(FocusState.Programmatic);
+                    TxtDescontoItem.SelectAll();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PedidoCadastroView] Erro ao focar desconto item: {ex.Message}");
+            }
         });
     }
 
@@ -161,23 +211,50 @@ public partial class PedidoCadastroView : UserControl
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(60);
-            BtnInserirItem?.Focus(FocusState.Programmatic);
+            try
+            {
+                await Task.Delay(60);
+                if (BtnInserirItem != null && BtnInserirItem.IsLoaded)
+                {
+                    BtnInserirItem.Focus(FocusState.Programmatic);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PedidoCadastroView] Erro ao focar botão inserir: {ex.Message}");
+            }
         });
     }
 
     public void FocarCheckoutValor()
     {
-        CheckoutModal?.FocarInicial();
+        try
+        {
+            CheckoutModal?.FocarInicial();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PedidoCadastroView] Erro ao focar checkout: {ex.Message}");
+        }
     }
 
     public void FocarSenhaGerente()
     {
         DispatcherQueue.TryEnqueue(async () =>
         {
-            await Task.Delay(50);
-            TxtSenhaGerente?.Focus(FocusState.Programmatic);
-            TxtSenhaGerente?.SelectAll();
+            try
+            {
+                await Task.Delay(50);
+                if (TxtSenhaGerente != null && TxtSenhaGerente.IsLoaded)
+                {
+                    TxtSenhaGerente.Focus(FocusState.Programmatic);
+                    TxtSenhaGerente.SelectAll();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PedidoCadastroView] Erro ao focar senha gerente: {ex.Message}");
+            }
         });
     }
 
@@ -664,22 +741,26 @@ public partial class PedidoCadastroView : UserControl
             {
                 DispatcherQueue.TryEnqueue(async () =>
                 {
-                    await Task.Delay(50);
-                    if (flyout.Content is StackPanel panel)
+                    try
                     {
-                        var txtQtd = panel.FindName("TxtModalQuantidade") as TextBox;
-                        var txtSubtotal = panel.FindName("TxtModalNovoSubtotal") as TextBlock;
-                        if (txtQtd != null)
+                        await Task.Delay(50);
+                        if (flyout.Content is StackPanel panel)
                         {
-                            txtQtd.Text = item.Quantidade.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-                            txtQtd.Focus(FocusState.Programmatic);
-                            txtQtd.SelectAll();
-                        }
-                        if (txtSubtotal != null)
-                        {
-                            txtSubtotal.Text = item.SubtotalBruto.ToString("C2");
+                            var txtQtd = panel.FindName("TxtModalQuantidade") as TextBox;
+                            var txtSubtotal = panel.FindName("TxtModalNovoSubtotal") as TextBlock;
+                            if (txtQtd != null)
+                            {
+                                txtQtd.Text = item.Quantidade.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+                                txtQtd.Focus(FocusState.Programmatic);
+                                txtQtd.SelectAll();
+                            }
+                            if (txtSubtotal != null)
+                            {
+                                txtSubtotal.Text = item.SubtotalBruto.ToString("C2");
+                            }
                         }
                     }
+                    catch { }
                 });
             }
         }
@@ -836,19 +917,23 @@ public partial class PedidoCadastroView : UserControl
             {
                 DispatcherQueue.TryEnqueue(async () =>
                 {
-                    await Task.Delay(50);
-                    if (flyout.Content is StackPanel panel)
+                    try
                     {
-                        var txtDesc = panel.FindName("TxtModalDesconto") as TextBox;
-                        var btnToggle = panel.FindName("BtnModalToggleTipo") as Button;
-                        if (btnToggle != null) btnToggle.Content = "%";
-                        if (txtDesc != null)
+                        await Task.Delay(50);
+                        if (flyout.Content is StackPanel panel)
                         {
-                            txtDesc.Text = item.PercentualDesconto.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
-                            txtDesc.Focus(FocusState.Programmatic);
-                            txtDesc.SelectAll();
+                            var txtDesc = panel.FindName("TxtModalDesconto") as TextBox;
+                            var btnToggle = panel.FindName("BtnModalToggleTipo") as Button;
+                            if (btnToggle != null) btnToggle.Content = "%";
+                            if (txtDesc != null)
+                            {
+                                txtDesc.Text = item.PercentualDesconto.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+                                txtDesc.Focus(FocusState.Programmatic);
+                                txtDesc.SelectAll();
+                            }
                         }
                     }
+                    catch { }
                 });
             }
         }

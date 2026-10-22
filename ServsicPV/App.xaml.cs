@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using Microsoft.UI.Xaml;
+using ServsicPV.Common;
 using ServsicPV.Views;
 
 namespace ServsicPV;
@@ -44,6 +45,7 @@ public partial class App : Application
     {
         try
         {
+            NotificationService.Inicializar();
             _ = Task.Run(async () => await ServSic.Core.Data.DatabaseMigrationService.ExecutarMigracaoAsync(forcar: true));
             _window = new LoginView();
             _window.Activate();

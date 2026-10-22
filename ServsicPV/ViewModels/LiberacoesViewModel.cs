@@ -21,7 +21,8 @@ public class LiberacoesViewModel : ViewModelBase
     private CancellationTokenSource? _monitoramentoCts;
 
     private Usuario? _usuarioLogado;
-    private SolicitacaoLiberacao? _solicitacaoSelecionada;
+    private SolicitacaoLiberacao? _solicitacaoPendenteSelecionada;
+    private SolicitacaoLiberacao? _solicitacaoHistoricoSelecionada;
     private bool _isAbaPendentes = true;
     private bool _isBusy;
     private int _contadorPendentes;
@@ -30,6 +31,7 @@ public class LiberacoesViewModel : ViewModelBase
     private string _mensagemAviso = string.Empty;
     private bool _isMensagemSucesso;
     private bool _isMensagemVisivel;
+    private readonly SemaphoreSlim _carregamentoSemaphore = new(1, 1);
 
     public Action? OnVoltarAoPedido;
     public Action? OnSolicitarFocoGrade;
@@ -58,18 +60,43 @@ public class LiberacoesViewModel : ViewModelBase
         set => SetProperty(ref _usuarioLogado, value);
     }
 
-    public SolicitacaoLiberacao? SolicitacaoSelecionada
+    public SolicitacaoLiberacao? SolicitacaoPendenteSelecionada
     {
-        get => _solicitacaoSelecionada;
+        get => _solicitacaoPendenteSelecionada;
         set
         {
-            if (SetProperty(ref _solicitacaoSelecionada, value))
+            if (SetProperty(ref _solicitacaoPendenteSelecionada, value))
             {
+                if (IsAbaPendentes)
+                {
+                    OnPropertyChanged(nameof(SolicitacaoSelecionada));
+                    OnPropertyChanged(nameof(PodeExecutarAcao));
+                }
                 (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
         }
     }
+
+    public SolicitacaoLiberacao? SolicitacaoHistoricoSelecionada
+    {
+        get => _solicitacaoHistoricoSelecionada;
+        set
+        {
+            if (SetProperty(ref _solicitacaoHistoricoSelecionada, value))
+            {
+                if (!IsAbaPendentes)
+                {
+                    OnPropertyChanged(nameof(SolicitacaoSelecionada));
+                    OnPropertyChanged(nameof(PodeExecutarAcao));
+                }
+                (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public SolicitacaoLiberacao? SolicitacaoSelecionada => IsAbaPendentes ? SolicitacaoPendenteSelecionada : SolicitacaoHistoricoSelecionada;
 
     public bool IsAbaPendentes
     {
@@ -79,6 +106,10 @@ public class LiberacoesViewModel : ViewModelBase
             if (SetProperty(ref _isAbaPendentes, value))
             {
                 OnPropertyChanged(nameof(IsAbaHistorico));
+                OnPropertyChanged(nameof(SolicitacaoSelecionada));
+                OnPropertyChanged(nameof(PodeExecutarAcao));
+                (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
         }
     }
@@ -88,7 +119,15 @@ public class LiberacoesViewModel : ViewModelBase
     public bool IsBusy
     {
         get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                OnPropertyChanged(nameof(PodeExecutarAcao));
+                (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     public int ContadorPendentes
@@ -127,7 +166,7 @@ public class LiberacoesViewModel : ViewModelBase
         set => SetProperty(ref _isMensagemVisivel, value);
     }
 
-    public bool PodeExecutarAcao => SolicitacaoSelecionada != null && SolicitacaoSelecionada.IsPendente && !IsBusy;
+    public bool PodeExecutarAcao => IsAbaPendentes && SolicitacaoPendenteSelecionada != null && SolicitacaoPendenteSelecionada.IsPendente && !IsBusy;
 
     public ICommand AprovarCommand { get; }
     public ICommand AbrirRecusaCommand { get; }
@@ -142,7 +181,10 @@ public class LiberacoesViewModel : ViewModelBase
     {
         if (IsAbaPendentes == pendentes) return;
         IsAbaPendentes = pendentes;
-        SolicitacaoSelecionada = pendentes ? SolicitacoesPendentes.FirstOrDefault() : HistoricoHoje.FirstOrDefault();
+        OnPropertyChanged(nameof(SolicitacaoSelecionada));
+        OnPropertyChanged(nameof(PodeExecutarAcao));
+        (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
     }
 
     public void IniciarMonitoramento()
@@ -207,55 +249,84 @@ public class LiberacoesViewModel : ViewModelBase
 
     private async Task ExecutarCarregamentoAsync(bool tocarSomSeHouverNovo)
     {
-        var pendentes = await _liberacaoService.ListarPendentesAsync();
-        var historico = await _liberacaoService.ListarHistoricoHojeAsync();
-
-        bool temNovo = false;
-        foreach (var p in pendentes)
+        if (!await _carregamentoSemaphore.WaitAsync(0))
         {
-            if (!_idsConhecidos.Contains(p.Controle))
-            {
-                _idsConhecidos.Add(p.Controle);
-                if (_primeiraCargaRealizada)
-                {
-                    temNovo = true;
-                }
-            }
+            // Já existe um carregamento em andamento, evita concorrência e recriação desordenada
+            return;
         }
 
-        if (!_primeiraCargaRealizada)
+        try
         {
-            _primeiraCargaRealizada = true;
-        }
-        else if (temNovo && tocarSomSeHouverNovo)
-        {
-            TocarAlertaSonoro();
-        }
+            var pendentes = await _liberacaoService.ListarPendentesAsync();
+            var historico = await _liberacaoService.ListarHistoricoHojeAsync();
 
-        var dispatcher = _dispatcherQueue ?? DispatcherQueue.GetForCurrentThread();
-        dispatcher?.TryEnqueue(() =>
-        {
-            SincronizarColecao(SolicitacoesPendentes, pendentes);
-            SincronizarColecao(HistoricoHoje, historico);
-
-            ContadorPendentes = SolicitacoesPendentes.Count;
-
-            // Preserva a seleção se ainda existir, ou seleciona o primeiro
-            if (IsAbaPendentes)
+            var novasPendentes = new List<SolicitacaoLiberacao>();
+            foreach (var p in pendentes)
             {
-                if (SolicitacaoSelecionada == null || !SolicitacoesPendentes.Any(x => x.Controle == SolicitacaoSelecionada.Controle))
+                if (!_idsConhecidos.Contains(p.Controle))
                 {
-                    SolicitacaoSelecionada = SolicitacoesPendentes.FirstOrDefault();
+                    _idsConhecidos.Add(p.Controle);
+                    if (_primeiraCargaRealizada)
+                    {
+                        novasPendentes.Add(p);
+                    }
                 }
             }
-            else
+
+            if (!_primeiraCargaRealizada)
             {
-                if (SolicitacaoSelecionada == null || !HistoricoHoje.Any(x => x.Controle == SolicitacaoSelecionada.Controle))
+                _primeiraCargaRealizada = true;
+            }
+            else if (novasPendentes.Count > 0 && tocarSomSeHouverNovo)
+            {
+                TocarAlertaSonoro();
+                foreach (var nova in novasPendentes)
                 {
-                    SolicitacaoSelecionada = HistoricoHoje.FirstOrDefault();
+                    try
+                    {
+                        NotificationService.NotificarNovaSolicitacao(nova);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[LiberacoesViewModel] Falha ao notificar Windows: {ex.Message}");
+                    }
                 }
             }
-        });
+
+            var dispatcher = _dispatcherQueue ?? DispatcherQueue.GetForCurrentThread();
+            dispatcher?.TryEnqueue(() =>
+            {
+                try
+                {
+                    SincronizarColecao(SolicitacoesPendentes, pendentes);
+                    SincronizarColecao(HistoricoHoje, historico);
+
+                    ContadorPendentes = SolicitacoesPendentes.Count;
+
+                    // Preserva a seleção se ainda existir, ou seleciona o primeiro
+                    if (SolicitacaoPendenteSelecionada == null || !SolicitacoesPendentes.Any(x => x.Controle == SolicitacaoPendenteSelecionada.Controle))
+                    {
+                        SolicitacaoPendenteSelecionada = SolicitacoesPendentes.FirstOrDefault();
+                    }
+
+                    if (SolicitacaoHistoricoSelecionada == null || !HistoricoHoje.Any(x => x.Controle == SolicitacaoHistoricoSelecionada.Controle))
+                    {
+                        SolicitacaoHistoricoSelecionada = HistoricoHoje.FirstOrDefault();
+                    }
+
+                    OnPropertyChanged(nameof(SolicitacaoSelecionada));
+                    OnPropertyChanged(nameof(PodeExecutarAcao));
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[LiberacoesViewModel] Erro na sincronização da UI: {ex.Message}");
+                }
+            });
+        }
+        finally
+        {
+            _carregamentoSemaphore.Release();
+        }
     }
 
     private void SincronizarColecao(ObservableCollection<SolicitacaoLiberacao> destino, List<SolicitacaoLiberacao> novos)
@@ -269,7 +340,7 @@ public class LiberacoesViewModel : ViewModelBase
             }
         }
 
-        // 2. Inserir ou atualizar na posição correta sem destruir a coleção
+        // 2. Inserir itens novos ou atualizar existentes sem destruir a coleção e NUNCA usar Move
         for (int i = 0; i < novos.Count; i++)
         {
             var novo = novos[i];
@@ -277,19 +348,13 @@ public class LiberacoesViewModel : ViewModelBase
 
             if (existente == null)
             {
-                if (i < destino.Count)
+                if (i <= destino.Count)
                     destino.Insert(i, novo);
                 else
                     destino.Add(novo);
             }
             else
             {
-                int indexAtual = destino.IndexOf(existente);
-                if (indexAtual != i && indexAtual >= 0 && i < destino.Count)
-                {
-                    destino.Move(indexAtual, i);
-                }
-
                 // Atualizar dados de status caso tenham mudado
                 if (existente.Status != novo.Status)
                     existente.Status = novo.Status;
@@ -305,16 +370,22 @@ public class LiberacoesViewModel : ViewModelBase
 
     public async Task AprovarAsync()
     {
-        if (SolicitacaoSelecionada == null || !SolicitacaoSelecionada.IsPendente)
+        if (IsBusy) return;
+
+        var sol = SolicitacaoPendenteSelecionada;
+        if (sol == null || !sol.IsPendente)
             return;
 
         int lkSup = UsuarioLogado?.Controle ?? 0;
         string nomeSup = UsuarioLogado?.Nome ?? "Supervisor";
-        int controle = SolicitacaoSelecionada.Controle;
+        int controle = sol.Controle;
 
         try
         {
             IsBusy = true;
+            (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
             bool ok = await _liberacaoService.AprovarSolicitacaoAsync(controle, lkSup, nomeSup);
             if (ok)
             {
@@ -333,12 +404,15 @@ public class LiberacoesViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+            (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
     }
 
     public void AbrirDialogRecusa()
     {
-        if (SolicitacaoSelecionada == null || !SolicitacaoSelecionada.IsPendente)
+        var sol = SolicitacaoPendenteSelecionada;
+        if (sol == null || !sol.IsPendente || IsBusy)
             return;
 
         MotivoRecusa = string.Empty;
@@ -353,18 +427,23 @@ public class LiberacoesViewModel : ViewModelBase
 
     public async Task ConfirmarRecusaAsync()
     {
-        if (SolicitacaoSelecionada == null || !SolicitacaoSelecionada.IsPendente)
+        if (IsBusy) return;
+
+        var sol = SolicitacaoPendenteSelecionada;
+        if (sol == null || !sol.IsPendente)
             return;
 
         int lkSup = UsuarioLogado?.Controle ?? 0;
         string nomeSup = UsuarioLogado?.Nome ?? "Supervisor";
-        int controle = SolicitacaoSelecionada.Controle;
+        int controle = sol.Controle;
         string motivo = string.IsNullOrWhiteSpace(MotivoRecusa) ? "Recusado pelo supervisor" : MotivoRecusa.Trim();
 
         try
         {
             IsBusy = true;
             IsRecusaDialogOpen = false;
+            (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
             bool ok = await _liberacaoService.RecusarSolicitacaoAsync(controle, lkSup, nomeSup, motivo);
             if (ok)
@@ -384,6 +463,8 @@ public class LiberacoesViewModel : ViewModelBase
         finally
         {
             IsBusy = false;
+            (AprovarCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (AbrirRecusaCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
     }
 
