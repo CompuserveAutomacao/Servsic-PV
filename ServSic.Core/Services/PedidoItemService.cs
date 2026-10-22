@@ -186,11 +186,9 @@ public class PedidoItemService
 
     public async Task ExcluirItensPorPedidoAsync(int lkEst3A, int? pedidoNum, IDbConnection conn, IDbTransaction trans)
     {
-        const string sqlDelete = @"
-            DELETE FROM TabEst3B 
-            WHERE LkEst3A = @lkEst3A 
-               OR (@pedidoNum IS NOT NULL AND @pedidoNum > 0 AND PEDIDO = @pedidoNum)";
-        await conn.ExecuteAsync(sqlDelete, new { lkEst3A, pedidoNum }, transaction: trans);
+        // Isolamento estrito por LkEst3A (chave estrangeira de TabEst3A.Controle)
+        const string sqlDelete = "DELETE FROM TabEst3B WHERE LkEst3A = @lkEst3A;";
+        await conn.ExecuteAsync(sqlDelete, new { lkEst3A }, transaction: trans);
     }
 
     public Task ExcluirItensPorPedidoAsync(int lkEst3A, IDbConnection conn, IDbTransaction trans)

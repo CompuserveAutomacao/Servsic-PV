@@ -294,6 +294,7 @@
                         <!-- Cabeçalho do Card de Produtos com Botões de Ação: Novo Pedido, Itens e Observações -->
                         <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
@@ -302,8 +303,47 @@
                                 <TextBlock Text="Produtos / Itens do Pedido" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
                             </StackPanel>
 
+                            <!-- Indicador de Estoque em Tempo Real do Produto Selecionado no Espaço Vazio -->
+                            <Border Grid.Column="1" 
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Margin="20,0,10,0"
+                                    Visibility="{Binding HasProdutoSelecionado, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    Background="{Binding BrushFundoEstoqueProdutoSelecionado}"
+                                    BorderBrush="{Binding BrushBordaEstoqueProdutoSelecionado}"
+                                    BorderThickness="1.5"
+                                    CornerRadius="6"
+                                    Padding="10,5">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <ic:SymbolIcon Symbol="Cube" 
+                                                   FontSize="16" 
+                                                   Foreground="{Binding BrushEstoqueProdutoSelecionado}"
+                                                   Visibility="{Binding HasEstoqueSuficiente, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    <ic:SymbolIcon Symbol="Warning" 
+                                                   FontSize="16" 
+                                                   Foreground="{Binding BrushEstoqueProdutoSelecionado}"
+                                                   Visibility="{Binding HasEstoqueInsuficiente, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    <TextBlock Text="ESTOQUE:" 
+                                               FontSize="11" 
+                                               FontWeight="Bold" 
+                                               Foreground="{StaticResource BrushTextSubtle}" 
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding TextoEstoqueProdutoSelecionado}" 
+                                               FontSize="12.5" 
+                                               FontWeight="Bold" 
+                                               Foreground="{Binding BrushEstoqueProdutoSelecionado}" 
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding TextoDetalheEstoqueProdutoSelecionado}" 
+                                               FontSize="11" 
+                                               FontWeight="SemiBold" 
+                                               Foreground="{StaticResource BrushTextSubtle}" 
+                                               VerticalAlignment="Center"
+                                               Visibility="{Binding HasDetalheEstoqueVisivel, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                </StackPanel>
+                            </Border>
+
                             <!-- Botões de Ação Unificados (Estilo Outline Azul Idêntico ao Itens) -->
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                 <!-- 1. Novo Pedido (F7) -->
                                 <Button Command="{Binding NovoCommand}" 
                                         IsTabStop="False"

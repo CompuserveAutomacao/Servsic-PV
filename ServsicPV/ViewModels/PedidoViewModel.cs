@@ -268,6 +268,7 @@ public class PedidoViewModel : ViewModelBase
                         }
                     }
                     RecalcularMargemDescontoItem();
+                    NotificarStatusEstoque();
                 }
             }
         }
@@ -282,6 +283,7 @@ public class PedidoViewModel : ViewModelBase
             {
                 _quantidadeTexto = value.ToString("G29", System.Globalization.CultureInfo.InvariantCulture);
                 OnPropertyChanged(nameof(QuantidadeTexto));
+                NotificarStatusEstoque();
             }
         }
     }
@@ -644,12 +646,79 @@ public class PedidoViewModel : ViewModelBase
                     OnPropertyChanged(nameof(PrecoUnitarioTexto));
                 }
                 OnPropertyChanged(nameof(HasProdutoSelecionado));
+                NotificarStatusEstoque();
                 RecalcularMargemDescontoItem();
             }
         }
     }
 
     public bool HasProdutoSelecionado => ProdutoSelecionado != null;
+
+    // --- Indicadores de Estoque do Produto Selecionado na Interface ---
+    public bool HasEstoqueSuficiente => HasProdutoSelecionado && (ProdutoSelecionado?.Estoque ?? 0) >= QuantidadeInput && (ProdutoSelecionado?.Estoque ?? 0) > 0;
+    
+    public bool HasEstoqueInsuficiente => HasProdutoSelecionado && !HasEstoqueSuficiente;
+
+    public string TextoEstoqueProdutoSelecionado
+    {
+        get
+        {
+            if (ProdutoSelecionado == null) return string.Empty;
+            decimal estoque = ProdutoSelecionado.Estoque;
+            string unidade = !string.IsNullOrWhiteSpace(ProdutoSelecionado.Unidade) ? ProdutoSelecionado.Unidade.Trim() : "UN";
+
+            if (estoque <= 0)
+            {
+                return $"0,00 {unidade} (Sem Estoque)";
+            }
+
+            if (QuantidadeInput > estoque)
+            {
+                return $"{estoque:N2} {unidade} (Insuficiente para {QuantidadeInput:N2})";
+            }
+
+            return $"{estoque:N2} {unidade}";
+        }
+    }
+
+    public string TextoDetalheEstoqueProdutoSelecionado
+    {
+        get
+        {
+            if (ProdutoSelecionado == null) return string.Empty;
+            if (ProdutoSelecionado.EstoqueDeposito > 0)
+            {
+                return $"(Loja: {ProdutoSelecionado.EstoqueLoja:N2} | Depósito: {ProdutoSelecionado.EstoqueDeposito:N2})";
+            }
+            return string.Empty;
+        }
+    }
+
+    public bool HasDetalheEstoqueVisivel => ProdutoSelecionado != null && ProdutoSelecionado.EstoqueDeposito > 0;
+
+    public Microsoft.UI.Xaml.Media.Brush BrushEstoqueProdutoSelecionado => HasEstoqueSuficiente
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 2, 132, 199)) // Azul Primário Corporativo #0284C7
+        : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 220, 38, 38)); // Vermelho Alerta #DC2626
+
+    public Microsoft.UI.Xaml.Media.Brush BrushFundoEstoqueProdutoSelecionado => HasEstoqueSuficiente
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)) // Branco Puro #FFFFFF
+        : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 254, 242, 242)); // Vermelho Suave #FEF2F2
+
+    public Microsoft.UI.Xaml.Media.Brush BrushBordaEstoqueProdutoSelecionado => HasEstoqueSuficiente
+        ? new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 186, 230, 253)) // Azul Suave #BAE6FD
+        : new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 254, 202, 202)); // Borda Vermelha #FECACA
+
+    public void NotificarStatusEstoque()
+    {
+        OnPropertyChanged(nameof(TextoEstoqueProdutoSelecionado));
+        OnPropertyChanged(nameof(TextoDetalheEstoqueProdutoSelecionado));
+        OnPropertyChanged(nameof(HasDetalheEstoqueVisivel));
+        OnPropertyChanged(nameof(HasEstoqueSuficiente));
+        OnPropertyChanged(nameof(HasEstoqueInsuficiente));
+        OnPropertyChanged(nameof(BrushEstoqueProdutoSelecionado));
+        OnPropertyChanged(nameof(BrushFundoEstoqueProdutoSelecionado));
+        OnPropertyChanged(nameof(BrushBordaEstoqueProdutoSelecionado));
+    }
 
     // --- Cálculo de Margem e Política de Desconto (ServNivelLimite + TabEst1.PerDescMax) ---
     public decimal LimiteDescontoUsuario => UsuarioLogado?.LimiteDesconto ?? 0m;
@@ -3129,6 +3198,7 @@ public class PedidoViewModel : ViewModelBase
         OnPropertyChanged(nameof(TipoDescontoItemSimbolo));
         OnPropertyChanged(nameof(DescontoItemInputTexto));
         OnPropertyChanged(nameof(VlUnitarioInput));
+        NotificarStatusEstoque();
     }
 
     // ==============================================================

@@ -265,24 +265,10 @@ public class PedidoCabService
                 new { pedido.Controle }, transaction: trans);
             isNovo = (existe == 0);
         }
-        else if (pedido.Pedido > 0)
-        {
-            var existingControle = await conn.ExecuteScalarAsync<int?>(
-                "SELECT TOP 1 Controle FROM TabEst3A WHERE Pedido = @Pedido",
-                new { pedido.Pedido }, transaction: trans);
-            if (existingControle.HasValue && existingControle.Value > 0)
-            {
-                pedido.Controle = existingControle.Value;
-                isNovo = false;
-            }
-            else
-            {
-                isNovo = true;
-            }
-        }
         else
         {
             isNovo = true;
+            pedido.Pedido = 0; // Garante que novo pedido receba número virgem exclusivo
         }
 
         const string sqlUpdateA = @"
@@ -334,53 +320,78 @@ public class PedidoCabService
 
         if (isNovo)
         {
-            const string sqlNewCodA = @"
-                DECLARE @NewCod INT;
+            // Arquitetura Ultra-Segura de Sequenciamento Concorrente:
+            // 1. sp_getapplock: Serializa acessos simultâneos de qualquer terminal do ServSic PV
+            // 2. WITH (TABLOCKX, HOLDLOCK) na TabNumPed: Isola contra o ERP legado que roda NovoPedido
+            // 3. INSERT INTO TabNumPed + SCOPE_IDENTITY(): Obtém o IDENTITY real atômico do SQL Server
+            // 4. WHILE EXISTS (TabEst3A): Proteção total contra duplicidades históricas
+            // 5. UPDATE TabNum SET N_Nota: Sincronização 100% com o ERP legado
+            // 6. Geração do Controle da TabEst3A garantida contra race conditions
+            const string sqlGerarSequencia = @"
+                -- A. Trava de aplicação distribuída exclusiva para este escopo transacional
+                DECLARE @lockResult INT;
+                EXEC @lockResult = sp_getapplock 
+                    @Resource = 'SERVSIC_SEQUENCIA_PEDIDO', 
+                    @LockMode = 'Exclusive', 
+                    @LockOwner = 'Transaction', 
+                    @LockTimeout = 15000;
+
+                IF @lockResult < 0
+                BEGIN
+                    RAISERROR('Tempo limite excedido ao aguardar bloqueio para geração de pedido.', 16, 1);
+                    RETURN;
+                END
+
+                -- B. Trava exclusiva da TabNumPed para que o ERP legado aguarde a gravação
+                DECLARE @dummy INT;
+                SELECT TOP 1 @dummy = 1 FROM TabNumPed WITH (TABLOCKX, HOLDLOCK);
+
+                -- C. Inserção na TabNumPed para obter o IDENTITY atômico real gerado pelo SQL Server
+                DECLARE @NumPed INT;
+                DECLARE @User INT = ISNULL(@LkUsuario, 1);
+                IF @User <= 0 SET @User = 1;
+
+                INSERT INTO TabNumPed (LkUser, Data) VALUES (@User, GETDATE());
+                SET @NumPed = SCOPE_IDENTITY();
+
+                -- D. Verificação defensiva se o número já existe na TabEst3A
+                WHILE EXISTS (SELECT 1 FROM TabEst3A WHERE Pedido = @NumPed)
+                BEGIN
+                    INSERT INTO TabNumPed (LkUser, Data) VALUES (@User, GETDATE());
+                    SET @NumPed = SCOPE_IDENTITY();
+                END
+
+                -- E. Atualização da TabNum exigida pelo ERP legado
+                UPDATE TabNum SET N_Nota = @NumPed;
+
+                -- F. Geração do Controle exclusivo da TabEst3A
+                DECLARE @NewControle INT;
                 BEGIN TRY
-                    EXEC NewCod_TabEst3A @NewCod OUTPUT;
+                    EXEC NewCod_TabEst3A @NewControle OUTPUT;
                 END TRY
                 BEGIN CATCH
-                    SELECT @NewCod = ISNULL(MAX(Controle), 0) + 1 FROM TabEst3A;
+                    SELECT @NewControle = ISNULL(MAX(Controle), 0) + 1 FROM TabEst3A WITH (TABLOCKX, HOLDLOCK);
                 END CATCH
-                SELECT @NewCod;";
 
-            pedido.Controle = await conn.ExecuteScalarAsync<int>(sqlNewCodA, transaction: trans);
+                WHILE EXISTS (SELECT 1 FROM TabEst3A WHERE Controle = @NewControle)
+                BEGIN
+                    SET @NewControle = @NewControle + 1;
+                END
 
-            if (pedido.Pedido <= 0)
+                SELECT @NumPed AS Pedido, @NewControle AS Controle;";
+
+            var seq = await conn.QueryFirstOrDefaultAsync<dynamic>(
+                sqlGerarSequencia, 
+                new { pedido.LkUsuario }, 
+                transaction: trans);
+
+            if (seq == null)
             {
-                const string sqlNextPedido = @"
-                    DECLARE @NumPed INT;
-                    DECLARE @User INT = ISNULL(@LkUsuario, 1);
-                    IF @User <= 0 SET @User = 1;
-
-                    BEGIN TRY
-                        EXEC NovoPedido @NumPed OUTPUT, @User;
-                    END TRY
-                    BEGIN CATCH
-                        -- Fallback sincronizado com a sequência oficial do ERP
-                        SELECT @NumPed = ISNULL(MAX(P), 0) + 1 
-                        FROM (
-                            SELECT ISNULL(MAX(Pedido), 0) AS P FROM TabNumPed
-                            UNION ALL
-                            SELECT ISNULL(MAX(N_Nota), 0) AS P FROM TabNum
-                            UNION ALL
-                            SELECT ISNULL(MAX(Pedido), 0) AS P FROM TabEst3A
-                        ) T;
-
-                        IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabNumPed')
-                        BEGIN
-                            INSERT INTO TabNumPed (LkUser, Data) VALUES (@User, GETDATE());
-                        END
-
-                        IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'TabNum')
-                        BEGIN
-                            UPDATE TabNum SET N_Nota = @NumPed;
-                        END
-                    END CATCH
-
-                    SELECT @NumPed;";
-                pedido.Pedido = await conn.ExecuteScalarAsync<int>(sqlNextPedido, new { pedido.LkUsuario }, transaction: trans);
+                throw new InvalidOperationException("Falha crítica ao obter sequência exclusiva de pedido e controle no banco de dados.");
             }
+
+            pedido.Pedido = Convert.ToInt32(seq.Pedido);
+            pedido.Controle = Convert.ToInt32(seq.Controle);
 
             if (string.IsNullOrWhiteSpace(pedido.Codigo) && pedido.LkCliente.HasValue)
             {
