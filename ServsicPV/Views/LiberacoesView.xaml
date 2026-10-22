@@ -1,0 +1,507 @@
+<UserControl
+    x:Class="ServsicPV.Views.LiberacoesView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ic="using:FluentIcons.WinUI"
+    mc:Ignorable="d">
+
+    <Grid Background="{StaticResource BrushIceBackground}" Padding="20,16" RowSpacing="14">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="F2" Invoked="OnF2Invoked"/>
+            <KeyboardAccelerator Key="F5" Invoked="OnF5Invoked"/>
+            <KeyboardAccelerator Key="Escape" Invoked="OnEscapeInvoked"/>
+        </Grid.KeyboardAccelerators>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho Superior -->
+            <RowDefinition Height="Auto"/> <!-- 1. Mensagem de Feedback -->
+            <RowDefinition Height="*"/>    <!-- 2. Área Central (Lista + Painel de Análise) -->
+        </Grid.RowDefinitions>
+
+        <!-- 0. Cabeçalho Superior -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lado Esquerdo: Identidade da Tela -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <Border Width="46" Height="46" CornerRadius="12" Background="{StaticResource BrushServsicNavyLight}" VerticalAlignment="Center">
+                    <ic:SymbolIcon Symbol="ShieldCheckmark" FontSize="24" Foreground="#38BDF8"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <TextBlock Text="Central de Liberações de Supervisor" FontSize="21" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                        <Border Background="{StaticResource BrushServsicBlue}" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Ellipse Width="8" Height="8" Fill="#FFFFFF"/>
+                                <TextBlock Text="TEMPO REAL" FontSize="10.5" FontWeight="Bold" Foreground="#FFFFFF" CharacterSpacing="50"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Monitoramento e autorizações de descontos excedentes e travas de estoque de todos os terminais" FontSize="12.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Lado Direito: Ações Rápidas -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <!-- Botão Atualizar Manual -->
+                <Button Command="{Binding AtualizarCommand}" Height="38" Padding="14,0" Style="{StaticResource BtnSecondary}" ToolTipService.ToolTip="Atualizar Fila (F5)">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ic:SymbolIcon Symbol="ArrowSync" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                        <TextBlock Text="Atualizar (F5)" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Botão Voltar ao Balcão -->
+                <Button Command="{Binding VoltarCommand}" Height="38" Padding="16,0" Style="{StaticResource BtnSecondary}" ToolTipService.ToolTip="Voltar para a tela de vendas (F2 / Esc)">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ic:SymbolIcon Symbol="ArrowLeft" FontSize="16" Foreground="{StaticResource BrushServsicBlue}"/>
+                        <TextBlock Text="Voltar ao Balcão (F2)" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- 1. Faixa de Notificação / Mensagem de Feedback -->
+        <Border Grid.Row="1"
+                Visibility="{Binding IsMensagemVisivel, Converter={StaticResource BoolToVisibilityConverter}}"
+                Background="{Binding IsMensagemSucesso, Converter={StaticResource NotificationBackgroundConverter}}"
+                BorderBrush="{Binding IsMensagemSucesso, Converter={StaticResource NotificationBorderConverter}}"
+                BorderThickness="1" CornerRadius="8" Padding="16,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <ic:SymbolIcon Grid.Column="0" Symbol="Info" FontSize="18" Foreground="{StaticResource BrushServsicBlue}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding MensagemAviso}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- 2. Área Central Dividida: Fila à Esquerda e Análise à Direita -->
+        <Grid Grid.Row="2" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="430"/> <!-- Coluna 0: Lista de Solicitações -->
+                <ColumnDefinition Width="*"/>   <!-- Coluna 1: Painel de Análise e Ação -->
+            </Grid.ColumnDefinitions>
+
+            <!-- ============================================================== -->
+            <!-- COLUNA ESQUERDA: LISTA / FILA DE SOLICITAÇÕES                  -->
+            <!-- ============================================================== -->
+            <Border Grid.Column="0" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10">
+                <Grid RowSpacing="10" Padding="14">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/> <!-- Abas Pendentes / Histórico -->
+                        <RowDefinition Height="*"/>    <!-- Lista de Solicitações -->
+                    </Grid.RowDefinitions>
+
+                    <!-- Seletor de Abas Corporativo -->
+                    <Grid Grid.Row="0" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Aba Pendentes -->
+                        <Button Grid.Column="0" Command="{Binding AlternarParaPendentesCommand}"
+                                Height="40" HorizontalAlignment="Stretch" CornerRadius="6"
+                                BorderThickness="1"
+                                Background="{Binding IsAbaPendentes, Converter={StaticResource StatusColorConverter}}"
+                                BorderBrush="{StaticResource BrushBorder}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ic:SymbolIcon Symbol="Clock" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Pendentes" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                <Border Background="#EF4444" CornerRadius="10" Padding="7,1" VerticalAlignment="Center"
+                                        Visibility="{Binding ContadorPendentes, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="{Binding ContadorPendentes}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                </Border>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Aba Histórico de Hoje -->
+                        <Button Grid.Column="1" Command="{Binding AlternarParaHistoricoCommand}"
+                                Height="40" HorizontalAlignment="Stretch" CornerRadius="6"
+                                BorderThickness="1"
+                                Background="{Binding IsAbaHistorico, Converter={StaticResource StatusColorConverter}}"
+                                BorderBrush="{StaticResource BrushBorder}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ic:SymbolIcon Symbol="History" FontSize="16" Foreground="#FFFFFF"/>
+                                <TextBlock Text="Histórico Hoje" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- Lista: Solicitações Pendentes -->
+                    <Grid Grid.Row="1" Visibility="{Binding IsAbaPendentes, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <!-- Estado Vazio: Nenhuma Pendência -->
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10"
+                                    Visibility="{Binding SolicitacoesPendentes.Count, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                            <Border Width="60" Height="60" CornerRadius="30" Background="{StaticResource BrushServsicBlueSoft}" HorizontalAlignment="Center">
+                                <ic:SymbolIcon Symbol="CheckmarkCircle" FontSize="32" Foreground="{StaticResource BrushServsicBlue}"/>
+                            </Border>
+                            <TextBlock Text="Nenhuma liberação pendente" FontSize="15" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Todos os terminais estão operando sem travas." FontSize="12" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Grade de Cards Pendentes -->
+                        <ListView x:Name="ListaPendentes"
+                                  ItemsSource="{Binding SolicitacoesPendentes}"
+                                  SelectedItem="{Binding SolicitacaoSelecionada, Mode=TwoWay}"
+                                  SelectionMode="Single"
+                                  SelectionChanged="Lista_SelectionChanged"
+                                  KeyDown="Lista_KeyDown">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0,2"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,3">
+                                        <Grid ColumnSpacing="10" RowSpacing="6">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Linha 1: Terminal e Horário -->
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <ic:SymbolIcon Symbol="Desktop" FontSize="14" Foreground="{StaticResource BrushServsicBlue}"/>
+                                                    <TextBlock Text="{Binding Terminal}" FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding TempoDecorrido}" FontSize="11" FontWeight="SemiBold" Foreground="#EF4444" VerticalAlignment="Center"/>
+                                            </Grid>
+
+                                            <!-- Linha 2: Tipo da Trava (Badge) e Descrição -->
+                                            <StackPanel Grid.Row="1" Spacing="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Border Background="{StaticResource BrushServsicNavyLight}" CornerRadius="4" Padding="6,2">
+                                                        <TextBlock Text="{Binding TipoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="#38BDF8"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding OperadorDescricao}" FontSize="11.5" Foreground="{StaticResource BrushTextSubtle}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Descricao}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+
+                    <!-- Lista: Histórico de Hoje -->
+                    <Grid Grid.Row="1" Visibility="{Binding IsAbaPendentes, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                        <ListView ItemsSource="{Binding HistoricoHoje}"
+                                  SelectedItem="{Binding SolicitacaoSelecionada, Mode=TwoWay}"
+                                  SelectionMode="Single"
+                                  SelectionChanged="Lista_SelectionChanged">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0,2"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,3">
+                                        <Grid ColumnSpacing="10" RowSpacing="6">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                                    <ic:SymbolIcon Symbol="Desktop" FontSize="14" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                    <TextBlock Text="{Binding Terminal}" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                                </StackPanel>
+                                                <Border Grid.Column="1" Background="{Binding Status, Converter={StaticResource StatusColorConverter}}" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding StatusDescricao}" FontSize="10" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                                </Border>
+                                            </Grid>
+
+                                            <StackPanel Grid.Row="1" Spacing="2">
+                                                <TextBlock Text="{Binding Descricao}" FontSize="11.5" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding AvaliadorDescricao}" FontSize="10.5" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- ============================================================== -->
+            <!-- COLUNA DIREITA: PAINEL DE ANÁLISE DETALHADA E AÇÕES             -->
+            <!-- ============================================================== -->
+            <Border Grid.Column="1" Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="10" Padding="20">
+                <Grid>
+                    <!-- Estado Vazio / Nenhuma Selecionada -->
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12"
+                                Visibility="{Binding SolicitacaoSelecionada, Converter={StaticResource NullToVisibilityConverter}, ConverterParameter=invert}">
+                        <Border Width="64" Height="64" CornerRadius="32" Background="{StaticResource BrushServsicBlueSoft}" HorizontalAlignment="Center">
+                            <ic:SymbolIcon Symbol="DocumentSearch" FontSize="32" Foreground="{StaticResource BrushServsicBlue}"/>
+                        </Border>
+                        <TextBlock Text="Selecione uma solicitação para analisar" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Use as setas para cima/baixo na lista ou clique em uma pendência." FontSize="12.5" Foreground="{StaticResource BrushTextSubtle}" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Detalhes da Solicitação Selecionada -->
+                    <Grid Visibility="{Binding SolicitacaoSelecionada, Converter={StaticResource NullToVisibilityConverter}}" RowSpacing="16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/> <!-- 0. Cabeçalho da Solicitação -->
+                            <RowDefinition Height="Auto"/> <!-- 1. Dados do Ponto de Venda / Terminal -->
+                            <RowDefinition Height="*"/>    <!-- 2. Núcleo da Análise (Estoque ou Desconto) -->
+                            <RowDefinition Height="Auto"/> <!-- 3. Barra de Decisão (Liberar / Recusar) -->
+                        </Grid.RowDefinitions>
+
+                        <!-- 0. Cabeçalho do Card de Análise -->
+                        <Border Grid.Row="0" Background="{StaticResource BrushServsicDark}" CornerRadius="8" Padding="16,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding SolicitacaoSelecionada.ControleFormatado}" FontSize="12" FontWeight="Bold" Foreground="#94A3B8" CharacterSpacing="50"/>
+                                        <Border Background="{StaticResource BrushServsicBlue}" CornerRadius="4" Padding="6,1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding SolicitacaoSelecionada.TipoDescricao}" FontSize="10.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.Descricao}" FontSize="16" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{Binding SolicitacaoSelecionada.Status, Converter={StaticResource StatusColorConverter}}" CornerRadius="6" Padding="12,5" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.StatusDescricao}" FontSize="12.5" FontWeight="Bold" Foreground="#FFFFFF"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- 1. Identificação do Ponto de Venda, Cliente e Operador -->
+                        <Border Grid.Row="1" Background="{StaticResource BrushIceBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="14">
+                            <Grid ColumnSpacing="16" RowSpacing="10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="1.3*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Terminal -->
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="TERMINAL / ESTAÇÃO" Style="{StaticResource TextSubheader}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.Terminal}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+
+                                <!-- Vendedor / Operador -->
+                                <StackPanel Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="OPERADOR / VENDEDOR" Style="{StaticResource TextSubheader}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.OperadorDescricao}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+
+                                <!-- Cliente -->
+                                <StackPanel Grid.Column="2" Spacing="2">
+                                    <TextBlock Text="CLIENTE" Style="{StaticResource TextSubheader}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.ClienteDescricao}" FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+
+                                <!-- Data / Hora do Pedido -->
+                                <StackPanel Grid.Column="3" Spacing="2">
+                                    <TextBlock Text="HORÁRIO" Style="{StaticResource TextSubheader}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.DataHoraFormatada}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushTextDark}"/>
+                                </StackPanel>
+
+                                <!-- Número do Pedido -->
+                                <StackPanel Grid.Column="4" Spacing="2">
+                                    <TextBlock Text="Nº PEDIDO" Style="{StaticResource TextSubheader}" FontSize="11" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding SolicitacaoSelecionada.PedidoExibicao}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource BrushServsicBlue}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 2. Núcleo da Análise Financeira / Operacional -->
+                        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="16">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Spacing="16">
+                                    <TextBlock Text="Dados da Análise Operacional" FontSize="14" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+
+                                    <!-- Cards Comparativos em Destaque -->
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Card 1: Valor Original ou Estoque Atual -->
+                                        <Border Grid.Column="0" Background="{StaticResource BrushIceBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="PARÂMETRO ATUAL" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                <TextBlock Text="{Binding SolicitacaoSelecionada.ValorOriginal, Converter={StaticResource CurrencyConverter}}"
+                                                           FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"
+                                                           Visibility="{Binding SolicitacaoSelecionada.ValorOriginal, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                <TextBlock Text="{Binding SolicitacaoSelecionada.EstoqueAtualFormatado}"
+                                                           FontSize="18" FontWeight="Bold" Foreground="#EF4444"
+                                                           Visibility="{Binding SolicitacaoSelecionada.EstoqueAtual, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Card 2: Valor Solicitado ou Qtd Requerida -->
+                                        <Border Grid.Column="1" Background="{StaticResource BrushIceBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="SOLICITADO PELO BALCÃO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                <TextBlock Text="{Binding SolicitacaoSelecionada.ValorSolicitado, Converter={StaticResource CurrencyConverter}}"
+                                                           FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"
+                                                           Visibility="{Binding SolicitacaoSelecionada.ValorSolicitado, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                <TextBlock Text="{Binding SolicitacaoSelecionada.QtdSolicitadaFormatada}"
+                                                           FontSize="18" FontWeight="Bold" Foreground="{StaticResource BrushServsicBlue}"
+                                                           Visibility="{Binding SolicitacaoSelecionada.QtdSolicitada, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Card 3: Percentual de Desconto ou Diferença -->
+                                        <Border Grid.Column="2" Background="{StaticResource BrushIceBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="PERCENTUAL / IMPACTO" FontSize="11" FontWeight="Bold" Foreground="{StaticResource BrushTextSubtle}"/>
+                                                <TextBlock Text="{Binding SolicitacaoSelecionada.PercentualDescontoFormatado}"
+                                                           FontSize="18" FontWeight="Bold" Foreground="#EF4444"
+                                                           Visibility="{Binding SolicitacaoSelecionada.PercentualDesconto, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                                <TextBlock Text="{Binding SolicitacaoSelecionada.ImpactoEstoqueDescricao}" FontSize="13" FontWeight="Bold" Foreground="#EF4444"
+                                                           Visibility="{Binding SolicitacaoSelecionada.EstoqueAtual, Converter={StaticResource NullToVisibilityConverter}}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+
+                                    <!-- Detalhes do Produto / Justificativa / Observação -->
+                                    <StackPanel Spacing="6" Visibility="{Binding SolicitacaoSelecionada.Detalhes, Converter={StaticResource StringToVisibilityConverter}}">
+                                        <TextBlock Text="Detalhes e Observações Registradas:" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                        <Border Background="{StaticResource BrushIceBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="12">
+                                            <TextBlock Text="{Binding SolicitacaoSelecionada.Detalhes}" FontSize="13" Foreground="{StaticResource BrushTextDark}" TextWrapping="Wrap"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- Se já processada, exibe dados do supervisor -->
+                                    <Border Background="{StaticResource BrushIceBackground}" BorderBrush="{StaticResource BrushBorder}" BorderThickness="1" CornerRadius="6" Padding="12"
+                                            Visibility="{Binding SolicitacaoSelecionada.IsPendente, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Resultado da Avaliação:" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                            <TextBlock Text="{Binding SolicitacaoSelecionada.AvaliadorDescricao}" FontSize="12.5" Foreground="{StaticResource BrushTextDark}"/>
+                                            <TextBlock Text="{Binding SolicitacaoSelecionada.DataHoraRespostaFormatada}" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                                            <TextBlock Text="{Binding SolicitacaoSelecionada.MotivoRecusaFormatado}" FontSize="12" FontWeight="SemiBold" Foreground="#EF4444"
+                                                       Visibility="{Binding SolicitacaoSelecionada.MotivoRecusa, Converter={StaticResource StringToVisibilityConverter}}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+
+                        <!-- 3. Botões de Decisão (Aprovar / Recusar) para Solicitação Pendente -->
+                        <Grid Grid.Row="3" ColumnSpacing="14" Visibility="{Binding SolicitacaoSelecionada.IsPendente, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Botão Recusar Operação -->
+                            <Button Grid.Column="0" Command="{Binding AbrirRecusaCommand}"
+                                    Height="48" HorizontalAlignment="Stretch" CornerRadius="8"
+                                    Background="#FFFFFF" BorderBrush="#EF4444" BorderThickness="1.5"
+                                    ToolTipService.ToolTip="Recusar solicitação do balcão">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="#EF4444"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                                </Button.Resources>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <ic:SymbolIcon Symbol="Dismiss" FontSize="18" Foreground="#EF4444"/>
+                                    <TextBlock Text="Recusar Solicitação" FontSize="14.5" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Botão Liberar Operação (Enter) -->
+                            <Button Grid.Column="1" Command="{Binding AprovarCommand}"
+                                    Height="48" HorizontalAlignment="Stretch" CornerRadius="8"
+                                    ToolTipService.ToolTip="Liberar imediatamente a operação no balcão (Enter)">
+                                <Button.Resources>
+                                    <SolidColorBrush x:Key="ButtonBackground" Color="#0284C7"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#0B192C"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#07111E"/>
+                                    <SolidColorBrush x:Key="ButtonBackgroundFocused" Color="#0B192C"/>
+                                    <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF"/>
+                                    <SolidColorBrush x:Key="ButtonForegroundFocused" Color="#FFFFFF"/>
+                                </Button.Resources>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <ic:SymbolIcon Symbol="Checkmark" FontSize="18" Foreground="#FFFFFF"/>
+                                    <TextBlock Text="Liberar Operação (Enter)" FontSize="14.5" FontWeight="Bold"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ============================================================== -->
+        <!-- MODAL DE RECUSA COM JUSTIFICATIVA                              -->
+        <!-- ============================================================== -->
+        <Grid Grid.Row="0" Grid.RowSpan="3" Background="#80000000"
+              Visibility="{Binding IsRecusaDialogOpen, Converter={StaticResource BoolToVisibilityConverter}}">
+            <Border Background="#FFFFFF" CornerRadius="12" Width="440" Padding="24"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    BorderBrush="{StaticResource BrushBorder}" BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Border Width="36" Height="36" CornerRadius="8" Background="#FEE2E2" VerticalAlignment="Center">
+                            <ic:SymbolIcon Symbol="DismissCircle" FontSize="20" Foreground="#EF4444"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Recusar Solicitação" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                            <TextBlock Text="Informe o motivo da recusa para o operador:" FontSize="12" Foreground="{StaticResource BrushTextSubtle}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBox x:Name="TxtMotivoRecusa"
+                             Text="{Binding MotivoRecusa, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Ex: Desconto não autorizado pela diretoria / Aguardar reposição..."
+                             TextWrapping="Wrap" AcceptsReturn="True" Height="80"/>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Command="{Binding CancelarRecusaCommand}" Height="38"
+                                Style="{StaticResource BtnSecondary}" HorizontalAlignment="Stretch" Content="Cancelar (Esc)"/>
+                        <Button Grid.Column="1" Command="{Binding ConfirmarRecusaCommand}" Height="38"
+                                Background="#EF4444" Foreground="#FFFFFF" HorizontalAlignment="Stretch" FontWeight="Bold" Content="Confirmar Recusa"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

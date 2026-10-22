@@ -24,8 +24,23 @@ public class BoolToVisibilityConverter : IValueConverter
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        bool b = value is bool val && val;
-        if (Invert) b = !b;
+        bool b = false;
+        if (value is bool val)
+            b = val;
+        else if (value is int intVal)
+            b = intVal > 0;
+        else if (value is long longVal)
+            b = longVal > 0;
+        else if (value is double dblVal)
+            b = dblVal > 0;
+        else if (value is decimal decVal)
+            b = decVal > 0;
+
+        bool invert = Invert;
+        if (parameter is string p && (p.Equals("invert", StringComparison.OrdinalIgnoreCase) || p.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            invert = !invert;
+
+        if (invert) b = !b;
         return b ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -38,9 +53,19 @@ public class NullToVisibilityConverter : IValueConverter
 
     public object Convert(object value, Type targetType, object parameter, string language)
     {
-        bool isNull = value == null;
-        if (Invert) isNull = !isNull;
-        return isNull ? Visibility.Visible : Visibility.Collapsed;
+        bool isNotNull = value != null;
+
+        if (value is string s && string.IsNullOrWhiteSpace(s))
+            isNotNull = false;
+
+        bool invert = Invert;
+        if (parameter is string p && (p.Equals("invert", StringComparison.OrdinalIgnoreCase) || p.Equals("true", StringComparison.OrdinalIgnoreCase)))
+            invert = !invert;
+
+        if (invert)
+            isNotNull = !isNotNull;
+
+        return isNotNull ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language) => throw new NotImplementedException();

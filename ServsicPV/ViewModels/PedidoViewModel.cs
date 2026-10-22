@@ -27,6 +27,7 @@ public class PedidoViewModel : ViewModelBase
     private readonly ConfiguracaoVendaService _configuracaoVendaService = new();
     private readonly AuthService _authService = new();
     private readonly PedidoPdfService _pedidoPdfService = new();
+    private readonly System.Collections.Generic.List<int> _solicitacoesLiberadasNesteAtendimento = new();
 
     // --- Modal: Componente Independente de Checkout ---
     private bool _isCheckoutOpen;
@@ -1191,6 +1192,31 @@ public class PedidoViewModel : ViewModelBase
 
     public Action? OnSolicitarFocoSenhaGerente;
 
+    // --- Suporte a Liberação Remota de Supervisor (Central do Fiscal) ---
+    private readonly LiberacaoService _liberacaoService = new();
+    private CancellationTokenSource? _esperaLiberacaoRemotaCts;
+    private int? _idSolicitacaoRemotaAtual;
+    private bool _isAguardandoLiberacaoRemota;
+    private string _statusLiberacaoRemotaTexto = string.Empty;
+
+    public bool IsAguardandoLiberacaoRemota
+    {
+        get => _isAguardandoLiberacaoRemota;
+        set => SetProperty(ref _isAguardandoLiberacaoRemota, value);
+    }
+
+    public string StatusLiberacaoRemotaTexto
+    {
+        get => _statusLiberacaoRemotaTexto;
+        set => SetProperty(ref _statusLiberacaoRemotaTexto, value);
+    }
+
+    public int? IdSolicitacaoRemotaAtual
+    {
+        get => _idSolicitacaoRemotaAtual;
+        set => SetProperty(ref _idSolicitacaoRemotaAtual, value);
+    }
+
     // --- Modal: Decisão de Emissão de Orçamento (PDF vs Bobina) ---
     private bool _isDecisaoOrcamentoOpen;
     private PedidoVenda? _orcamentoFinalizado;
@@ -1498,6 +1524,13 @@ public class PedidoViewModel : ViewModelBase
             {
                 SelectedVendedor = Vendedores.FirstOrDefault(v => v.Controle == UsuarioLogado.LkVendedor.Value);
             }
+            if (SelectedVendedor == null && Vendedores.Count > 0)
+            {
+                // Fallback seguro: busca vendedor com mesmo nome do usuário ou vendedor padrão
+                SelectedVendedor = Vendedores.FirstOrDefault(v => v.Nome.Equals(UsuarioLogado?.Nome, StringComparison.OrdinalIgnoreCase))
+                                   ?? Vendedores.FirstOrDefault(v => v.Controle == 1)
+                                   ?? Vendedores.FirstOrDefault();
+            }
         }
         catch (Exception ex)
         {
@@ -1656,7 +1689,19 @@ public class PedidoViewModel : ViewModelBase
     }
 
     // --- Métodos de Liberação de Gerente ---
-    public async Task AbrirLiberacaoGerenteAsync(string titulo, string subtitulo, string motivo, string detalhe, Func<Usuario, Task> acaoAposLiberacao)
+    public async Task AbrirLiberacaoGerenteAsync(
+        string titulo, 
+        string subtitulo, 
+        string motivo, 
+        string detalhe, 
+        Func<Usuario, Task> acaoAposLiberacao,
+        string tipo = "DESCONTO",
+        decimal? valorOriginal = null,
+        decimal? valorSolicitado = null,
+        decimal? percentualDesconto = null,
+        int? lkProduto = null,
+        decimal? qtdSolicitada = null,
+        decimal? estoqueAtual = null)
     {
         TituloLiberacaoGerente = titulo;
         SubtituloLiberacaoGerente = subtitulo;
@@ -1695,6 +1740,138 @@ public class PedidoViewModel : ViewModelBase
 
         IsLiberacaoGerenteOpen = true;
         OnSolicitarFocoSenhaGerente?.Invoke();
+
+        // Dispara solicitação remota automática para a Central do Supervisor
+        _ = IniciarSolicitacaoRemotaAsync(tipo, motivo, detalhe, valorOriginal, valorSolicitado, percentualDesconto, lkProduto, qtdSolicitada, estoqueAtual);
+    }
+
+    private async Task IniciarSolicitacaoRemotaAsync(
+        string tipo, string motivo, string detalhe,
+        decimal? valorOriginal, decimal? valorSolicitado, decimal? percentualDesconto,
+        int? lkProduto, decimal? qtdSolicitada, decimal? estoqueAtual)
+    {
+        try
+        {
+            _esperaLiberacaoRemotaCts?.Cancel();
+            _esperaLiberacaoRemotaCts?.Dispose();
+            _esperaLiberacaoRemotaCts = new CancellationTokenSource();
+            var token = _esperaLiberacaoRemotaCts.Token;
+
+            int? lkVendedor = UsuarioLogado?.LkVendedor 
+                              ?? Pedido?.LkVendedor 
+                              ?? SelectedVendedor?.Controle;
+
+            string? nomeVendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor)
+                                   ? UsuarioLogado.NomeVendedor
+                                   : (SelectedVendedor?.Nome ?? Pedido?.Vendedor ?? UsuarioLogado?.Nome);
+
+            int? lkCliente = SelectedCliente?.Controle ?? Pedido?.LkCliente;
+            string? nomeCliente = SelectedCliente?.Nome ?? Pedido?.Cliente;
+
+            int? lkPedido = (Pedido?.Pedido > 0) ? Pedido.Pedido : (Pedido?.Controle > 0 ? Pedido.Controle : (int?)null);
+
+            var sol = new SolicitacaoLiberacao
+            {
+                Terminal = Environment.MachineName,
+                LkUsuario = UsuarioLogado?.Controle ?? 0,
+                NomeUsuario = UsuarioLogado?.Nome ?? "Operador",
+                LkVendedor = lkVendedor,
+                NomeVendedor = nomeVendedor,
+                LkCliente = lkCliente,
+                NomeCliente = nomeCliente,
+                LkPedido = lkPedido,
+                Tipo = tipo,
+                Descricao = motivo,
+                Detalhes = detalhe,
+                ValorOriginal = valorOriginal,
+                ValorSolicitado = valorSolicitado,
+                PercentualDesconto = percentualDesconto,
+                LkProduto = lkProduto,
+                QtdSolicitada = qtdSolicitada,
+                EstoqueAtual = estoqueAtual,
+                Status = "P"
+            };
+
+            int solId = await _liberacaoService.CriarSolicitacaoAsync(sol);
+            IdSolicitacaoRemotaAtual = solId;
+            IsAguardandoLiberacaoRemota = true;
+            StatusLiberacaoRemotaTexto = $"Solicitação #{solId} enviada ao fiscal. Aguardando liberação remota...";
+
+            // Inicia loop de escuta em segundo plano
+            _ = Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested && IsLiberacaoGerenteOpen && IdSolicitacaoRemotaAtual == solId)
+                {
+                    try
+                    {
+                        await Task.Delay(1500, token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+
+                    try
+                    {
+                        var atual = await _liberacaoService.ObterPorIdAsync(solId);
+                        if (atual == null) break;
+
+                        if (atual.Status == "A") // Aprovada pelo supervisor!
+                        {
+                            if (_dispatcherQueue != null)
+                            {
+                                _dispatcherQueue.TryEnqueue(async () =>
+                                {
+                                    IsLiberacaoGerenteOpen = false;
+                                    IsAguardandoLiberacaoRemota = false;
+                                    IdSolicitacaoRemotaAtual = null;
+                                    _solicitacoesLiberadasNesteAtendimento.Add(solId);
+
+                                    var gerenteAprovador = new Usuario
+                                    {
+                                        Controle = atual.LkSupervisor ?? 0,
+                                        Nome = atual.NomeSupervisor ?? "Supervisor",
+                                        Nivel = 1
+                                    };
+
+                                    var acao = _callbackAcaoLiberada;
+                                    _callbackAcaoLiberada = null;
+                                    if (acao != null)
+                                    {
+                                        await acao.Invoke(gerenteAprovador);
+                                    }
+
+                                    ExibirMensagem($"Operação liberada remotamente por {gerenteAprovador.Nome}!", true, 4000);
+                                });
+                            }
+                            break;
+                        }
+                        else if (atual.Status == "R") // Recusada pelo supervisor!
+                        {
+                            if (_dispatcherQueue != null)
+                            {
+                                _dispatcherQueue.TryEnqueue(() =>
+                                {
+                                    IsAguardandoLiberacaoRemota = false;
+                                    MensagemErroLiberacao = $"Solicitação recusada por {atual.NomeSupervisor ?? "Supervisor"}: {atual.MotivoRecusa ?? "Sem justificativa"}";
+                                });
+                            }
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        // Tolera falhas momentâneas de rede
+                    }
+                }
+            }, token);
+        }
+        catch (Exception ex)
+        {
+            IsAguardandoLiberacaoRemota = false;
+            StatusLiberacaoRemotaTexto = string.Empty;
+            System.Diagnostics.Debug.WriteLine($"[LiberacaoRemota] Erro ao disparar solicitação remota: {ex.Message}");
+        }
     }
 
     public async Task ConfirmarLiberacaoGerenteAsync()
@@ -1730,6 +1907,19 @@ public class PedidoViewModel : ViewModelBase
             IsLiberacaoGerenteOpen = false;
             MensagemErroLiberacao = string.Empty;
             SenhaGerenteInput = string.Empty;
+            IsAguardandoLiberacaoRemota = false;
+
+            if (IdSolicitacaoRemotaAtual.HasValue)
+            {
+                int solId = IdSolicitacaoRemotaAtual.Value;
+                IdSolicitacaoRemotaAtual = null;
+                _solicitacoesLiberadasNesteAtendimento.Add(solId);
+                _esperaLiberacaoRemotaCts?.Cancel();
+                _ = Task.Run(async () =>
+                {
+                    try { await _liberacaoService.AprovarSolicitacaoAsync(solId, gerenteAutenticado.Controle, gerenteAutenticado.Nome); } catch { }
+                });
+            }
 
             var acao = _callbackAcaoLiberada;
             _callbackAcaoLiberada = null;
@@ -1757,13 +1947,34 @@ public class PedidoViewModel : ViewModelBase
         _callbackAcaoLiberada = null;
         SenhaGerenteInput = string.Empty;
         MensagemErroLiberacao = string.Empty;
+        IsAguardandoLiberacaoRemota = false;
+
+        _esperaLiberacaoRemotaCts?.Cancel();
+        _esperaLiberacaoRemotaCts?.Dispose();
+        _esperaLiberacaoRemotaCts = null;
+
+        if (IdSolicitacaoRemotaAtual.HasValue)
+        {
+            int solId = IdSolicitacaoRemotaAtual.Value;
+            IdSolicitacaoRemotaAtual = null;
+            _ = Task.Run(async () =>
+            {
+                try { await _liberacaoService.CancelarSolicitacaoAsync(solId); } catch { }
+            });
+        }
     }
 
     public void NovoPedido(bool preservarMensagem = false)
     {
         _produtosEstoqueLiberados.Clear();
+        _solicitacoesLiberadasNesteAtendimento.Clear();
         _selectedCliente = null;
         FiltroCliente = string.Empty;
+
+        int? lkVend = UsuarioLogado?.LkVendedor ?? SelectedVendedor?.Controle;
+        string? nomeVend = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) 
+            ? UsuarioLogado.NomeVendedor 
+            : (SelectedVendedor?.Nome ?? UsuarioLogado?.Nome);
 
         var novoPedido = new PedidoVenda
         {
@@ -1771,8 +1982,8 @@ public class PedidoViewModel : ViewModelBase
             Data = DateTime.Today,
             HoraIni = DateTime.Now.ToString("HH:mm"),
             LkUsuario = UsuarioLogado?.Controle,
-            LkVendedor = UsuarioLogado?.LkVendedor,
-            Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) ? UsuarioLogado.NomeVendedor : UsuarioLogado?.Nome,
+            LkVendedor = lkVend,
+            Vendedor = nomeVend,
             VendedorCelular = UsuarioLogado?.CelularVendedor,
             VendedorTelefone = UsuarioLogado?.TelefoneVendedor,
             IdEmpresa = 2
@@ -2606,16 +2817,24 @@ public class PedidoViewModel : ViewModelBase
             string motivo = string.Join("\n", motivos);
             string detalhe = $"Produto: {prod.Descricao}\nQuantidade: {qtd:N2} {prod.Unidade} | Subtotal: {subtotalItem:C2}\nInforme a senha de um Gerente ou Supervisor para autorizar a operação.";
 
-            _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
-            {
-                string obs = $"liberado por {gerente.Nome}";
-                if (precisaLiberacaoEstoque)
+            _ = AbrirLiberacaoGerenteAsync(
+                titulo, subtitulo, motivo, detalhe, async (gerente) =>
                 {
-                    _produtosEstoqueLiberados.Add(prod.Controle);
-                }
-                InserirItemInterno(qtd, desc, obs, estoqueLiberado: precisaLiberacaoEstoque);
-                await Task.CompletedTask;
-            });
+                    string obs = $"liberado por {gerente.Nome}";
+                    if (precisaLiberacaoEstoque)
+                    {
+                        _produtosEstoqueLiberados.Add(prod.Controle);
+                    }
+                    InserirItemInterno(qtd, desc, obs, estoqueLiberado: precisaLiberacaoEstoque);
+                    await Task.CompletedTask;
+                },
+                tipo: (precisaLiberacaoDesconto && precisaLiberacaoEstoque) ? "AMBOS" : (precisaLiberacaoEstoque ? "ESTOQUE" : "DESCONTO"),
+                valorOriginal: subtotalItem,
+                valorSolicitado: precisaLiberacaoDesconto ? desc : null,
+                percentualDesconto: precisaLiberacaoDesconto ? percInformado : null,
+                lkProduto: prod.Controle,
+                qtdSolicitada: qtd,
+                estoqueAtual: precisaLiberacaoEstoque ? prod.Estoque : null);
             return;
         }
 
@@ -2831,18 +3050,24 @@ public class PedidoViewModel : ViewModelBase
                     string motivo = $"Desconto alterado para {perc:N2}% ({novoDesconto:C2}) ultrapassa o limite do vendedor ({limiteEfetivo:N2}% / {maxDesconto:C2}).";
                     string detalhe = $"Item: {item.Produto}\nSubtotal: {item.SubtotalBruto:C2} | Novo Desconto: {novoDesconto:C2} ({perc:N2}%)\nInforme a senha de um Gerente ou Supervisor para autorizar.";
 
-                    _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
-                    {
-                        LimparPagamentosAoAlterarPedido();
-                        item.Desconto = novoDesconto;
-                        item.RecalcularTotal();
-                        Pedido.RecalcularTotais();
-                        OnPropertyChanged(nameof(Pedido));
-                        OnPropertyChanged(nameof(Itens));
-                        RecalcularMargemDescontoGeral();
-                        ExibirMensagem($"Desconto do item '{item.Produto}' atualizado para {novoDesconto:C2} (liberado por {gerente.Nome}).", true, 3500);
-                        await Task.CompletedTask;
-                    });
+                    _ = AbrirLiberacaoGerenteAsync(
+                        titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                        {
+                            LimparPagamentosAoAlterarPedido();
+                            item.Desconto = novoDesconto;
+                            item.RecalcularTotal();
+                            Pedido.RecalcularTotais();
+                            OnPropertyChanged(nameof(Pedido));
+                            OnPropertyChanged(nameof(Itens));
+                            RecalcularMargemDescontoGeral();
+                            ExibirMensagem($"Desconto do item '{item.Produto}' atualizado para {novoDesconto:C2} (liberado por {gerente.Nome}).", true, 3500);
+                            await Task.CompletedTask;
+                        },
+                        tipo: "DESCONTO",
+                        valorOriginal: item.SubtotalBruto,
+                        valorSolicitado: novoDesconto,
+                        percentualDesconto: perc,
+                        lkProduto: item.LkProduto);
                     return false;
                 }
             }
@@ -3197,14 +3422,22 @@ public class PedidoViewModel : ViewModelBase
     private async Task ExecutarGravacaoPedidoAsync()
     {
         Pedido.LkUsuario = UsuarioLogado?.Controle;
-        Pedido.LkVendedor = UsuarioLogado?.LkVendedor ?? Pedido.LkVendedor;
+        Pedido.LkVendedor = UsuarioLogado?.LkVendedor ?? SelectedVendedor?.Controle ?? Pedido.LkVendedor;
         Pedido.Vendedor = !string.IsNullOrWhiteSpace(UsuarioLogado?.NomeVendedor) 
             ? UsuarioLogado.NomeVendedor 
-            : (Pedido.Vendedor ?? UsuarioLogado?.Nome);
+            : (SelectedVendedor?.Nome ?? Pedido.Vendedor ?? UsuarioLogado?.Nome);
 
         var salvo = await _pedidoService.SalvarAsync(Pedido);
         Pedido = salvo;
         OnPropertyChanged(nameof(Pedido));
+
+        // Vincula as liberações deste atendimento ao número definitivo do pedido gravado
+        if (_solicitacoesLiberadasNesteAtendimento.Count > 0 && salvo?.Pedido > 0)
+        {
+            var ids = _solicitacoesLiberadasNesteAtendimento.ToList();
+            _solicitacoesLiberadasNesteAtendimento.Clear();
+            _ = _liberacaoService.VincularPedidoAsync(ids, salvo.Pedido);
+        }
     }
 
     public async Task FinalizarPedidoDiretoAsync()
@@ -3286,15 +3519,17 @@ public class PedidoViewModel : ViewModelBase
                     string motivo = $"Existem {itensComEstoqueInsuficiente.Count} item(ns) com estoque insuficiente neste {tipoNome}.";
                     string detalhe = string.Join("\n", itensComEstoqueInsuficiente) + $"\n\nAutorização de Gerente requerida para {acaoNome}.";
 
-                    _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
-                    {
-                        foreach (var it in Pedido.Itens)
+                    _ = AbrirLiberacaoGerenteAsync(
+                        titulo, subtitulo, motivo, detalhe, async (gerente) =>
                         {
-                            it.EstoqueLiberado = true;
-                            _produtosEstoqueLiberados.Add(it.LkProduto);
-                        }
-                        await IniciarCheckoutModalAsync();
-                    });
+                            foreach (var it in Pedido.Itens)
+                            {
+                                it.EstoqueLiberado = true;
+                                _produtosEstoqueLiberados.Add(it.LkProduto);
+                            }
+                            await IniciarCheckoutModalAsync();
+                        },
+                        tipo: "ESTOQUE");
                     return;
                 }
             }
@@ -3315,10 +3550,15 @@ public class PedidoViewModel : ViewModelBase
                 string motivo = $"Desconto geral de {DescontoGeralPercAtual:N2}% ({Pedido.Desconto:C2}) ultrapassa o teto permitido do vendedor ({LimiteDescontoUsuario:N2}%).";
                 string detalhe = $"Subtotal: {Pedido.Subtotal:C2} | Desconto Geral: {Pedido.Desconto:C2} ({DescontoGeralPercAtual:N2}%)\nInforme a senha de Gerente para autorizar.";
 
-                _ = AbrirLiberacaoGerenteAsync(titulo, subtitulo, motivo, detalhe, async (gerente) =>
-                {
-                    await IniciarCheckoutModalAsync();
-                });
+                _ = AbrirLiberacaoGerenteAsync(
+                    titulo, subtitulo, motivo, detalhe, async (gerente) =>
+                    {
+                        await IniciarCheckoutModalAsync();
+                    },
+                    tipo: "DESCONTO",
+                    valorOriginal: Pedido.Subtotal,
+                    valorSolicitado: Pedido.Desconto,
+                    percentualDesconto: DescontoGeralPercAtual);
                 return;
             }
         }

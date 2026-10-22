@@ -18,6 +18,9 @@ public partial class MainView : Window
     private readonly ClienteConsultaViewModel _clienteConsultaViewModel;
     private readonly ProdutoConsultaView _produtoConsultaView;
     private readonly ProdutoConsultaViewModel _produtoConsultaViewModel;
+    private readonly LiberacoesView _liberacoesView;
+    private readonly LiberacoesViewModel _liberacoesViewModel;
+    private readonly LiberacaoService _liberacaoService;
     private readonly PedidoService _pedidoService;
 
     public MainView(Usuario usuario)
@@ -118,6 +121,25 @@ public partial class MainView : Window
             MostrarConsultaProduto(filtro, !string.IsNullOrWhiteSpace(filtro));
         };
 
+        // Tela de Liberações de Supervisor / Gerente
+        _liberacaoService = new LiberacaoService();
+        _liberacoesViewModel = new LiberacoesViewModel(_liberacaoService) { UsuarioLogado = usuario };
+        _liberacoesViewModel.OnVoltarAoPedido = () => MostrarCadastro();
+        _liberacoesView = new LiberacoesView { DataContext = _liberacoesViewModel };
+
+        if (usuario.Nivel >= 1)
+        {
+            BtnSupervisor.Visibility = Visibility.Visible;
+            _liberacoesViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(LiberacoesViewModel.ContadorPendentes))
+                {
+                    DispatcherQueue.TryEnqueue(() => AtualizarBadgeSupervisor(_liberacoesViewModel.ContadorPendentes));
+                }
+            };
+            _liberacoesViewModel.IniciarMonitoramento();
+        }
+
         // Exibe tela de cadastro inicialmente
         MostrarCadastro();
     }
@@ -125,6 +147,38 @@ public partial class MainView : Window
     private void MostrarCadastro()
     {
         ContentArea.Content = _cadastroView;
+    }
+
+    private void MostrarLiberacoes()
+    {
+        ContentArea.Content = _liberacoesView;
+        _ = _liberacoesViewModel.CarregarDadosAsync(tocarSomSeHouverNovo: false);
+        _liberacoesView.FocarGrade();
+    }
+
+    private void AtualizarBadgeSupervisor(int count)
+    {
+        if (count > 0)
+        {
+            BadgeContadorLiberacoes.Visibility = Visibility.Visible;
+            TxtContadorLiberacoes.Text = count > 99 ? "99+" : count.ToString();
+        }
+        else
+        {
+            BadgeContadorLiberacoes.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void BtnSupervisor_Click(object sender, RoutedEventArgs e)
+    {
+        if (ReferenceEquals(ContentArea.Content, _liberacoesView))
+        {
+            MostrarCadastro();
+        }
+        else
+        {
+            MostrarLiberacoes();
+        }
     }
 
     private void MostrarConsulta()
@@ -398,6 +452,7 @@ public partial class MainView : Window
             return;
         }
 
+        _liberacoesViewModel.PararMonitoramento();
         var loginView = new LoginView();
         loginView.Activate();
         this.Close();

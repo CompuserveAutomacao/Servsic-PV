@@ -407,7 +407,59 @@ public static class DatabaseMigrationService
                 END";
             await ExecutarPassoAsync(conn, "TabEst3C.cAut e Complementos", sqlTabEst3CColunas);
 
-            // 14. Sincronização de INI (Venda/VendedorPorUsuario = N)
+            // 14. TabSolLiberacao - Central de Liberações de Gerente/Supervisor (Descontos e Estoque)
+            const string sqlTabSolLiberacao = @"
+                IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_NAME) = 'TABSOLLIBERACAO')
+                BEGIN
+                    CREATE TABLE dbo.TabSolLiberacao (
+                        Controle             INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        DataHora             DATETIME NOT NULL CONSTRAINT DF_TabSolLiberacao_DataHora DEFAULT GETDATE(),
+                        Terminal             VARCHAR(60) NOT NULL,
+                        LkUsuario            INT NOT NULL,
+                        NomeUsuario          VARCHAR(60) NOT NULL,
+                        LkVendedor           INT NULL,
+                        LkPedido             INT NULL,
+                        Tipo                 VARCHAR(20) NOT NULL,
+                        Descricao            VARCHAR(255) NOT NULL,
+                        Detalhes             VARCHAR(500) NULL,
+                        ValorOriginal        DECIMAL(14,2) NULL,
+                        ValorSolicitado      DECIMAL(14,2) NULL,
+                        PercentualDesconto   DECIMAL(6,2) NULL,
+                        LkProduto            INT NULL,
+                        QtdSolicitada        DECIMAL(12,3) NULL,
+                        EstoqueAtual         DECIMAL(12,3) NULL,
+                        Status               CHAR(1) NOT NULL CONSTRAINT DF_TabSolLiberacao_Status DEFAULT 'P',
+                        LkSupervisor         INT NULL,
+                        NomeSupervisor       VARCHAR(60) NULL,
+                        DataHoraResposta     DATETIME NULL,
+                        MotivoRecusa         VARCHAR(120) NULL
+                    );
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_NAME) = 'TABSOLLIBERACAO')
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABSOLLIBERACAO' AND UPPER(COLUMN_NAME) = 'NOMEVENDEDOR')
+                    BEGIN
+                        ALTER TABLE dbo.TabSolLiberacao ADD NomeVendedor VARCHAR(60) NULL;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABSOLLIBERACAO' AND UPPER(COLUMN_NAME) = 'LKCLIENTE')
+                    BEGIN
+                        ALTER TABLE dbo.TabSolLiberacao ADD LkCliente INT NULL;
+                    END
+                    IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_NAME) = 'TABSOLLIBERACAO' AND UPPER(COLUMN_NAME) = 'NOMECLIENTE')
+                    BEGIN
+                        ALTER TABLE dbo.TabSolLiberacao ADD NomeCliente VARCHAR(100) NULL;
+                    END
+                END
+
+                IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_NAME) = 'TABSOLLIBERACAO')
+                   AND NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TabSolLiberacao_StatusData' AND object_id = OBJECT_ID('dbo.TabSolLiberacao'))
+                BEGIN
+                    CREATE NONCLUSTERED INDEX IX_TabSolLiberacao_StatusData ON dbo.TabSolLiberacao (Status, DataHora DESC);
+                END";
+            await ExecutarPassoAsync(conn, "TabSolLiberacao", sqlTabSolLiberacao);
+
+            // 15. Sincronização de INI (Venda/VendedorPorUsuario = N)
             SincronizarIniVendedorPorUsuario();
 
             lock (_lock)

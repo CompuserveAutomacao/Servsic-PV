@@ -1690,6 +1690,21 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Indicador de Liberação Remota (Central do Supervisor) -->
+                    <Border Background="#F0F9FF" BorderBrush="#BAE6FD" BorderThickness="1" CornerRadius="8" Padding="12"
+                            Visibility="{Binding IsAguardandoLiberacaoRemota, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <ProgressRing IsActive="True" Width="20" Height="20" Foreground="{StaticResource BrushServsicBlue}"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Aguardando Liberação Remota..." FontSize="12.5" FontWeight="Bold" Foreground="{StaticResource BrushTextDark}"/>
+                                    <TextBlock Text="{Binding StatusLiberacaoRemotaTexto}" FontSize="11" Foreground="#0369A1"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock Text="O supervisor pode aprovar direto da mesa dele! Ou, caso esteja presente aqui no balcão, digite a senha abaixo:" FontSize="11" Foreground="#475569" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Formulário de Autenticação do Gerente -->
                     <StackPanel Spacing="10">
                         <!-- Seleção do Gerente -->
